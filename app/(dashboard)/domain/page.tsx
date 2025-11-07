@@ -98,7 +98,7 @@ export default function Domain(){
   }
 
   // Get default domain from shop settings or use placeholder
-  const defaultDomain = domains.find(d => d.is_active)?.domain || 'eterni.shamlai.com';
+  const defaultDomain = domains.find(d => d.is_primary)?.domain || 'eterni.shamlai.com';
 
   return (
     <div className="grid gap-4">
@@ -154,12 +154,12 @@ export default function Domain(){
                     <div className="font-medium">{domain.domain}</div>
                     <div className="text-xs text-gray-500">
                       {domain.is_verified ? 'Verified' : 'Pending verification'} • 
-                      {domain.is_active ? ' Active' : ' Inactive'}
+                      {domain.is_primary ? ' Primary' : ' Secondary'}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {domain.is_verified && !domain.is_active && (
-                      <button className="btn btn-sm btn-primary">Activate</button>
+                    {domain.is_verified && !domain.is_primary && (
+                      <button className="btn btn-sm btn-primary">Set as Primary</button>
                     )}
                   </div>
                 </div>

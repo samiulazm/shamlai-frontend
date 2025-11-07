@@ -155,6 +155,7 @@ export interface Order {
   customer_phone?: string;
   shipping_first_name: string;
   shipping_last_name: string;
+  shipping_phone?: string;
   shipping_address1: string;
   shipping_address2?: string;
   shipping_city: string;
@@ -452,6 +453,18 @@ export interface CustomDomain {
   ssl_enabled: boolean;
   created_at: string;
   verified_at?: string;
+  updated_at: string;
+}
+
+// Add User type for users page
+export interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  role: 'admin' | 'merchant' | 'customer';
+  is_active: boolean;
+  created_at: string;
   updated_at: string;
 }
 

@@ -69,10 +69,10 @@ export default function SeoMarketing(){
 
       // Update shop settings with SEO fields
       const updatedSettings = await ShopService.upsertShopSettings(user.user.id, {
-        meta_title: formData.meta_title || null,
-        meta_description: formData.meta_description || null,
-        facebook_pixel_id: formData.facebook_pixel_id || null,
-        google_analytics_id: formData.google_analytics_id || null
+        meta_title: formData.meta_title || undefined,
+        meta_description: formData.meta_description || undefined,
+        facebook_pixel_id: formData.facebook_pixel_id || undefined,
+        google_analytics_id: formData.google_analytics_id || undefined
       });
       
       setSettings(updatedSettings);

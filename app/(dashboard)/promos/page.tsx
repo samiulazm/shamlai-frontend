@@ -75,12 +75,12 @@ export default function Promos(){
         code: formData.code.toUpperCase(),
         discount_type: formData.discount_type,
         discount_value: formData.discount_value,
-        description: formData.description || null,
-        minimum_purchase: formData.minimum_purchase || null,
-        usage_limit: formData.usage_limit || null,
-        usage_limit_per_customer: null,
-        starts_at: formData.starts_at || null,
-        expires_at: formData.expires_at || null,
+        description: formData.description || undefined,
+        minimum_purchase: formData.minimum_purchase || undefined,
+        usage_limit: formData.usage_limit || undefined,
+        usage_limit_per_customer: undefined,
+        starts_at: formData.starts_at || undefined,
+        expires_at: formData.expires_at || undefined,
         is_active: true
       });
 
