@@ -129,7 +129,7 @@ export default function Users(){
                 {users.map((user) => (
                   <div key={user.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
-                      <div className="font-medium">{user.nickname || 'No name'}</div>
+                      <div className="font-medium">{user.full_name || user.email || 'No name'}</div>
                       <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                     </div>
                     <span className="badge bg-blue-100 text-blue-800">Member</span>
