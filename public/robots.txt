@@ -1,0 +1,16 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin and dashboard areas
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+# Disallow checkout process
+Disallow: /checkout
+Disallow: /cart
+
+# Sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml
+
