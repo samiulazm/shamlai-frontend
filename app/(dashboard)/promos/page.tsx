@@ -81,7 +81,8 @@ export default function Promos(){
         usage_limit_per_customer: undefined,
         starts_at: formData.starts_at || undefined,
         expires_at: formData.expires_at || undefined,
-        is_active: true
+        is_active: true,
+        applies_to: 'all' // Default to apply to all products
       });
 
       // Reset form and refresh
