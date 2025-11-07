@@ -2,16 +2,25 @@ import { createClient } from '@insforge/sdk';
 import { logger } from './utils/logger';
 
 // InsForge Backend Configuration
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
+// During build time, use a placeholder URL; at runtime, check for the actual URL
+const INSFORGE_URL =
+  process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
 
-// Validate environment variables in production
-if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_INSFORGE_URL) {
-  throw new Error('NEXT_PUBLIC_INSFORGE_URL environment variable is required in production');
+// Validate environment variables at runtime (not during build)
+// This check will run when the client is actually instantiated in the browser
+if (
+  typeof window !== 'undefined' &&
+  process.env.NODE_ENV === 'production' &&
+  !process.env.NEXT_PUBLIC_INSFORGE_URL
+) {
+  console.warn(
+    'Warning: NEXT_PUBLIC_INSFORGE_URL environment variable is not set. Using fallback URL.'
+  );
 }
 
 // Create and export the InsForge client
-export const insforgeClient = createClient({ 
-  baseUrl: INSFORGE_URL 
+export const insforgeClient = createClient({
+  baseUrl: INSFORGE_URL,
 });
 
 // Export types for TypeScript usage
@@ -26,7 +35,7 @@ export const handleInsforgeError = (error: any) => {
   return {
     message: error?.message || 'An unexpected error occurred',
     code: error?.code || 'UNKNOWN_ERROR',
-    details: error?.details || null
+    details: error?.details || null,
   };
 };
 
@@ -38,9 +47,7 @@ export const uploadFile = async (
   onProgress?: (progress: number) => void
 ) => {
   try {
-    const { data, error } = await insforgeClient.storage
-      .from(bucket)
-      .upload(fileName, file);
+    const { data, error } = await insforgeClient.storage.from(bucket).upload(fileName, file);
 
     if (error) throw error;
 
@@ -126,4 +133,3 @@ export * from './hooks/useProducts';
 export * from './hooks/useOrders';
 export * from './hooks/useCart';
 export * from './hooks/useShop';
-

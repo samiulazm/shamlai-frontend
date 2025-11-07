@@ -5,7 +5,7 @@ import type {
   Order,
   Customer,
   DiscountCode,
-  ShopSettings
+  ShopSettings,
 } from '../types/database';
 
 // ============================================================================
@@ -21,12 +21,12 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Validate URL format
+ * Validate URL format (HTTP/HTTPS only)
  */
 export function isValidUrl(url: string): boolean {
   try {
-    new URL(url);
-    return true;
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
   } catch {
     return false;
   }
@@ -137,7 +137,7 @@ export function validateProduct(product: Partial<Product>): ProductValidationRes
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -165,7 +165,7 @@ export function validateProductVariant(variant: Partial<ProductVariant>): Produc
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -238,7 +238,7 @@ export function validateOrder(order: Partial<Order>): ProductValidationResult {
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -272,7 +272,7 @@ export function validateCustomer(customer: Partial<Customer>): ProductValidation
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -298,7 +298,11 @@ export function validateDiscountCode(discount: Partial<DiscountCode>): ProductVa
     errors.push('Discount value must be greater than 0');
   }
 
-  if (discount.discount_type === 'percentage' && discount.discount_value && discount.discount_value > 100) {
+  if (
+    discount.discount_type === 'percentage' &&
+    discount.discount_value &&
+    discount.discount_value > 100
+  ) {
     errors.push('Percentage discount cannot exceed 100%');
   }
 
@@ -329,7 +333,7 @@ export function validateDiscountCode(discount: Partial<DiscountCode>): ProductVa
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -375,7 +379,7 @@ export function validateShopSettings(settings: Partial<ShopSettings>): ProductVa
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -395,7 +399,7 @@ export function validateImageFile(
   if (!validTypes.includes(file.type)) {
     return {
       isValid: false,
-      error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.'
+      error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.',
     };
   }
 
@@ -403,7 +407,7 @@ export function validateImageFile(
   if (file.size > maxSizeBytes) {
     return {
       isValid: false,
-      error: `File size must be less than ${maxSizeMB}MB`
+      error: `File size must be less than ${maxSizeMB}MB`,
     };
   }
 
@@ -433,7 +437,7 @@ export function validateImageFiles(
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -479,7 +483,7 @@ export function validatePassword(password: string): {
     /[A-Z]/.test(password),
     /\d/.test(password),
     /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    password.length >= 12
+    password.length >= 12,
   ].filter(Boolean).length;
 
   if (criteriaCount >= 5) {
@@ -491,11 +495,6 @@ export function validatePassword(password: string): {
   return {
     isValid: errors.length === 0,
     strength,
-    errors
+    errors,
   };
 }
-
-
-
-
-
