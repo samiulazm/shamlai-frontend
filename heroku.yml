@@ -1,0 +1,20 @@
+# Heroku container deployment configuration
+# This file is optional and only needed if you want to use Docker deployments
+
+setup:
+  addons:
+    # Uncomment if you need Redis for rate limiting
+    # - plan: heroku-redis:mini
+    
+    # Uncomment if you need log management
+    # - plan: papertrail:choklad
+
+build:
+  docker:
+    web: Dockerfile
+  config:
+    NODE_ENV: production
+
+run:
+  web: npm start
+

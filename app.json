@@ -1,0 +1,67 @@
+{
+  "name": "Shamlai Frontend",
+  "description": "Next.js e-commerce platform frontend with InsForge backend integration",
+  "repository": "https://github.com/yourusername/shamlai-frontend",
+  "logo": "",
+  "keywords": [
+    "nextjs",
+    "ecommerce",
+    "react",
+    "typescript",
+    "insforge"
+  ],
+  "success_url": "/",
+  "scripts": {
+    "postdeploy": "echo 'Deployment successful!'"
+  },
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment (production recommended)",
+      "value": "production",
+      "required": true
+    },
+    "NEXT_PUBLIC_APP_URL": {
+      "description": "Your Heroku app URL (e.g., https://your-app.herokuapp.com)",
+      "required": true
+    },
+    "NEXT_PUBLIC_APP_NAME": {
+      "description": "Application name",
+      "value": "Shamlai",
+      "required": true
+    },
+    "NEXT_PUBLIC_INSFORGE_URL": {
+      "description": "InsForge backend URL",
+      "required": true
+    },
+    "INSFORGE_SERVICE_ROLE_KEY": {
+      "description": "InsForge service role key for server-side operations",
+      "required": true
+    },
+    "NEXTAUTH_SECRET": {
+      "description": "Secret for NextAuth.js (generate with: openssl rand -base64 32)",
+      "generator": "secret",
+      "required": true
+    },
+    "NEXTAUTH_URL": {
+      "description": "Your Heroku app URL (same as NEXT_PUBLIC_APP_URL)",
+      "required": true
+    },
+    "NEXT_TELEMETRY_DISABLED": {
+      "description": "Disable Next.js telemetry",
+      "value": "1"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "stack": "heroku-22"
+}
+

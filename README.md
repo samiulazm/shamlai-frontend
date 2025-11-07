@@ -162,6 +162,29 @@ npm install -g vercel
 vercel --prod
 ```
 
+### Heroku
+
+Deploy to Heroku in minutes with our automated scripts:
+
+```bash
+# For Linux/Mac
+chmod +x deploy-to-heroku.sh
+./deploy-to-heroku.sh
+
+# For Windows (PowerShell)
+.\deploy-to-heroku.ps1
+
+# Or manually
+heroku create your-app-name
+heroku config:set NODE_ENV=production
+heroku config:set NEXT_PUBLIC_INSFORGE_URL=your-backend-url
+git push heroku main
+```
+
+See [HEROKU_DEPLOYMENT.md](HEROKU_DEPLOYMENT.md) for complete guide.
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ### Docker
 
 ```bash
@@ -234,6 +257,7 @@ WCAG 2.1 Level AA compliant:
 
 - [Production Ready Checklist](PRODUCTION_READY.md)
 - [Deployment Guide](DEPLOYMENT.md)
+- [Heroku Deployment Guide](HEROKU_DEPLOYMENT.md)
 - [Backend Integration](BACKEND_INTEGRATION.md)
 - [Demo Setup](DEMO_SETUP.md)
 
