@@ -156,8 +156,9 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   eslint: {
-    // Don't run ESLint during builds (run it in CI/CD instead)
-    ignoreDuringBuilds: false,
+    // Disable ESLint during production builds (Heroku)
+    // Run linting in development and CI/CD pipelines instead
+    ignoreDuringBuilds: true,
   },
 };
 
