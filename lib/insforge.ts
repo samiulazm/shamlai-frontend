@@ -2,26 +2,13 @@ import { createClient } from '@insforge/sdk';
 import { logger } from './utils/logger';
 
 // InsForge Backend Configuration
+// Validate environment variables in production
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_INSFORGE_URL) {
+  throw new Error('NEXT_PUBLIC_INSFORGE_URL environment variable is required in production');
+}
+
 const INSFORGE_URL =
   process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
-
-// Validate environment variable in production (works on both server and client at runtime)
-// Note: This runs during module initialization, but Next.js build process handles it gracefully
-// by using the fallback URL during static generation
-if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_INSFORGE_URL) {
-  // Use logger for proper warning that works on both server and client
-  const warningMessage =
-    'NEXT_PUBLIC_INSFORGE_URL environment variable is not set. Using fallback URL. This should be configured in production.';
-
-  // Log warning on both server and client
-  if (typeof window !== 'undefined') {
-    // Client-side
-    console.warn(`[InsForge Client] ${warningMessage}`);
-  } else {
-    // Server-side - log but don't throw to allow build to complete
-    console.warn(`[InsForge Server] ${warningMessage}`);
-  }
-}
 
 // Create and export the InsForge client
 export const insforgeClient = createClient({
