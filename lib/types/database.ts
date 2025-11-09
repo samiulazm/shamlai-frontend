@@ -134,7 +134,20 @@ export interface Address {
   updated_at: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+export type OrderStatus =
+  | 'pending'
+  | 'rts' // Ready to Ship
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'pending_return'
+  | 'returned'
+  | 'partial'
+  | 'cancelled'
+  | 'pending_cancel'
+  | 'preorder'
+  | 'lost'
+  | 'refunded';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type FulfillmentStatus = 'unfulfilled' | 'partial' | 'fulfilled';
 
@@ -175,6 +188,9 @@ export interface Order {
   discount_code?: string;
   tracking_number?: string;
   tracking_url?: string;
+  source?: string; // Order source: 'web', 'facebook', 'manual', 'phone', etc.
+  delivery_method?: string; // Delivery method: 'pathao', 'steadfast', 'office', etc.
+  sent_to_courier_at?: string; // Timestamp when order was sent to courier
   shipped_at?: string;
   delivered_at?: string;
   cancelled_at?: string;
@@ -601,9 +617,15 @@ export interface AnalyticsEvent {
 export type ProductInsert = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 export type CategoryInsert = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
 export type OrderInsert = Omit<Order, 'id' | 'created_at' | 'updated_at'>;
-export type CustomerInsert = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'total_orders' | 'total_spent'>;
+export type CustomerInsert = Omit<
+  Customer,
+  'id' | 'created_at' | 'updated_at' | 'total_orders' | 'total_spent'
+>;
 export type CartInsert = Omit<Cart, 'id' | 'created_at' | 'updated_at'>;
-export type DiscountCodeInsert = Omit<DiscountCode, 'id' | 'created_at' | 'updated_at' | 'usage_count'>;
+export type DiscountCodeInsert = Omit<
+  DiscountCode,
+  'id' | 'created_at' | 'updated_at' | 'usage_count'
+>;
 
 // ============================================================================
 // Database Update Types (all fields optional except id)
@@ -637,6 +659,3 @@ export interface QueryFilters {
   sortOrder?: 'asc' | 'desc';
   search?: string;
 }
-
-
-

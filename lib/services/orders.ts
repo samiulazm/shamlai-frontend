@@ -10,7 +10,7 @@ import type {
   OrderStatusHistory,
   Customer,
   PaginatedResponse,
-  QueryFilters
+  QueryFilters,
 } from '../types/database';
 import { updateInventory } from './products';
 
@@ -28,6 +28,7 @@ export async function getOrders(
     customerId?: string;
     startDate?: string;
     endDate?: string;
+    deliveryMethod?: string;
   }
 ): Promise<PaginatedResponse<Order>> {
   try {
@@ -53,8 +54,13 @@ export async function getOrders(
     if (filters?.endDate) {
       query = query.lte('created_at', filters.endDate);
     }
+    if (filters?.deliveryMethod) {
+      query = query.eq('delivery_method', filters.deliveryMethod);
+    }
     if (filters?.search) {
-      query = query.or(`order_number.ilike.%${filters.search}%,customer_email.ilike.%${filters.search}%`);
+      query = query.or(
+        `order_number.ilike.%${filters.search}%,customer_email.ilike.%${filters.search}%`
+      );
     }
 
     // Sorting
@@ -74,13 +80,17 @@ export async function getOrders(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching orders', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      filters,
-    });
+    logger.error(
+      'Error fetching orders',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        filters,
+      }
+    );
     throw error;
   }
 }
@@ -88,10 +98,12 @@ export async function getOrders(
 /**
  * Get a single order by ID with items
  */
-export async function getOrderById(orderId: string): Promise<Order & {
-  items?: OrderItem[];
-  customer?: Customer;
-}> {
+export async function getOrderById(orderId: string): Promise<
+  Order & {
+    items?: OrderItem[];
+    customer?: Customer;
+  }
+> {
   try {
     const { data: order, error } = await insforgeClient.database
       .from('orders')
@@ -104,27 +116,24 @@ export async function getOrderById(orderId: string): Promise<Order & {
 
     // Fetch order items and customer
     const [itemsResult, customerResult] = await Promise.all([
-      insforgeClient.database
-        .from('order_items')
-        .select('*')
-        .eq('order_id', orderId),
-      
-      insforgeClient.database
-        .from('customers')
-        .select('*')
-        .eq('id', order.customer_id)
-        .single()
+      insforgeClient.database.from('order_items').select('*').eq('order_id', orderId),
+
+      insforgeClient.database.from('customers').select('*').eq('id', order.customer_id).single(),
     ]);
 
     return {
       ...order,
       items: itemsResult.data || [],
-      customer: customerResult.data || undefined
+      customer: customerResult.data || undefined,
     };
   } catch (error: any) {
-    logger.error('Error fetching order', error instanceof Error ? error : new Error(String(error)), {
-      orderId,
-    });
+    logger.error(
+      'Error fetching order',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderId,
+      }
+    );
     throw error;
   }
 }
@@ -132,9 +141,11 @@ export async function getOrderById(orderId: string): Promise<Order & {
 /**
  * Get order by order number
  */
-export async function getOrderByNumber(orderNumber: string): Promise<Order & {
-  items?: OrderItem[];
-}> {
+export async function getOrderByNumber(orderNumber: string): Promise<
+  Order & {
+    items?: OrderItem[];
+  }
+> {
   try {
     const { data: order, error } = await insforgeClient.database
       .from('orders')
@@ -147,9 +158,13 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order & {
 
     return await getOrderById(order.id);
   } catch (error: any) {
-    logger.error('Error fetching order by number', error instanceof Error ? error : new Error(String(error)), {
-      orderNumber,
-    });
+    logger.error(
+      'Error fetching order by number',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderNumber,
+      }
+    );
     throw error;
   }
 }
@@ -170,7 +185,7 @@ export async function createOrder(
       crypto.getRandomValues(randomBytes);
     }
     const randomStr = Array.from(randomBytes)
-      .map(b => b.toString(36).padStart(2, '0'))
+      .map((b) => b.toString(36).padStart(2, '0'))
       .join('')
       .substring(0, 9)
       .toUpperCase();
@@ -186,9 +201,9 @@ export async function createOrder(
     if (orderError) throw orderError;
 
     // Create order items
-    const orderItems = items.map(item => ({
+    const orderItems = items.map((item) => ({
       ...item,
-      order_id: order.id
+      order_id: order.id,
     }));
 
     const { error: itemsError } = await insforgeClient.database
@@ -214,9 +229,13 @@ export async function createOrder(
 
     return order;
   } catch (error: any) {
-    logger.error('Error creating order', error instanceof Error ? error : new Error(String(error)), {
-      shopId: orderData.shop_id,
-    });
+    logger.error(
+      'Error creating order',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId: orderData.shop_id,
+      }
+    );
     throw error;
   }
 }
@@ -234,7 +253,7 @@ export async function updateOrderStatus(
   try {
     const updates: any = {
       status: newStatus,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     // Set status-specific timestamps
@@ -259,22 +278,26 @@ export async function updateOrderStatus(
     if (error) throw error;
 
     // Log status change
-    await insforgeClient.database
-      .from('order_status_history')
-      .insert([{
+    await insforgeClient.database.from('order_status_history').insert([
+      {
         order_id: orderId,
         status: newStatus,
         comment,
         notify_customer: notifyCustomer,
-        created_by: userId
-      }]);
+        created_by: userId,
+      },
+    ]);
 
     return order;
   } catch (error: any) {
-    logger.error('Error updating order status', error instanceof Error ? error : new Error(String(error)), {
-      orderId,
-      status,
-    });
+    logger.error(
+      'Error updating order status',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderId,
+        status,
+      }
+    );
     throw error;
   }
 }
@@ -282,10 +305,7 @@ export async function updateOrderStatus(
 /**
  * Update order
  */
-export async function updateOrder(
-  orderId: string,
-  updates: OrderUpdate
-): Promise<Order> {
+export async function updateOrder(orderId: string, updates: OrderUpdate): Promise<Order> {
   try {
     const { data, error } = await insforgeClient.database
       .from('orders')
@@ -297,9 +317,13 @@ export async function updateOrder(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating order', error instanceof Error ? error : new Error(String(error)), {
-      orderId,
-    });
+    logger.error(
+      'Error updating order',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderId,
+      }
+    );
     throw error;
   }
 }
@@ -339,13 +363,17 @@ export async function cancelOrder(
     // Update order cancellation details
     return await updateOrder(orderId, {
       cancelled_at: new Date().toISOString(),
-      cancellation_reason: reason
+      cancellation_reason: reason,
     });
   } catch (error: any) {
-    logger.error('Error cancelling order', error instanceof Error ? error : new Error(String(error)), {
-      orderId,
-      reason,
-    });
+    logger.error(
+      'Error cancelling order',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderId,
+        reason,
+      }
+    );
     throw error;
   }
 }
@@ -364,9 +392,13 @@ export async function getOrderStatusHistory(orderId: string): Promise<OrderStatu
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching order status history', error instanceof Error ? error : new Error(String(error)), {
-      orderId,
-    });
+    logger.error(
+      'Error fetching order status history',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        orderId,
+      }
+    );
     throw error;
   }
 }
@@ -402,27 +434,33 @@ export async function getOrCreateCustomer(
     // Create new customer
     const { data: customer, error } = await insforgeClient.database
       .from('customers')
-      .insert([{
-        shop_id: shopId,
-        user_id: userId,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        accepts_marketing: false,
-        total_orders: 0,
-        total_spent: 0
-      }])
+      .insert([
+        {
+          shop_id: shopId,
+          user_id: userId,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          accepts_marketing: false,
+          total_orders: 0,
+          total_spent: 0,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
     return customer;
   } catch (error: any) {
-    logger.error('Error getting or creating customer', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      email,
-    });
+    logger.error(
+      'Error getting or creating customer',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        email,
+      }
+    );
     throw error;
   }
 }
@@ -448,14 +486,18 @@ async function updateCustomerStats(customerId: string): Promise<void> {
         .update({
           total_orders: totalOrders,
           total_spent: totalSpent,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', customerId);
     }
   } catch (error: any) {
-    logger.error('Error updating customer stats', error instanceof Error ? error : new Error(String(error)), {
-      customerId,
-    });
+    logger.error(
+      'Error updating customer stats',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        customerId,
+      }
+    );
     // Don't throw, this is a background task
   }
 }
@@ -494,12 +536,16 @@ export async function getCustomerOrders(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching customer orders', error instanceof Error ? error : new Error(String(error)), {
-      customerId,
-    });
+    logger.error(
+      'Error fetching customer orders',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        customerId,
+      }
+    );
     throw error;
   }
 }
@@ -522,10 +568,7 @@ export async function getOrderStats(
   ordersByStatus: Record<OrderStatus, number>;
 }> {
   try {
-    let query = insforgeClient.database
-      .from('orders')
-      .select('*')
-      .eq('shop_id', shopId);
+    let query = insforgeClient.database.from('orders').select('*').eq('shop_id', shopId);
 
     if (startDate) {
       query = query.gte('created_at', startDate);
@@ -539,19 +582,27 @@ export async function getOrderStats(
     if (error) throw error;
 
     const totalOrders = orders?.length || 0;
-    const totalRevenue = orders?.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0) || 0;
+    const totalRevenue =
+      orders?.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0) || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const ordersByStatus: Record<OrderStatus, number> = {
       pending: 0,
+      rts: 0,
       processing: 0,
       shipped: 0,
       delivered: 0,
+      pending_return: 0,
+      returned: 0,
+      partial: 0,
       cancelled: 0,
-      refunded: 0
+      pending_cancel: 0,
+      preorder: 0,
+      lost: 0,
+      refunded: 0,
     };
 
-    orders?.forEach(order => {
+    orders?.forEach((order) => {
       const status = order.status as OrderStatus;
       if (status in ordersByStatus) {
         ordersByStatus[status] = (ordersByStatus[status] || 0) + 1;
@@ -562,16 +613,14 @@ export async function getOrderStats(
       totalOrders,
       totalRevenue,
       averageOrderValue,
-      ordersByStatus
+      ordersByStatus,
     };
   } catch (error: any) {
     const { logger } = await import('../utils/logger');
-    logger.error('Error fetching order stats', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error fetching order stats',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }
-
-
-
-
-

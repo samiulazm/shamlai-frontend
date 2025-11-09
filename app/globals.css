@@ -256,6 +256,15 @@ body {
     background-color: #F9FAFB;
   }
   
+  .btn-secondary {
+    background-color: #6B7280;
+    color: white;
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #4B5563;
+  }
+  
   /* Card base styles */
   .card {
     background-color: white;
@@ -352,6 +361,38 @@ body {
   .badge-info {
     background-color: rgba(59, 130, 246, 0.1);
     color: #2563EB;
+  }
+  
+  /* Alert styles */
+  .alert {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+  }
+  
+  .alert-error {
+    background-color: #FEF2F2;
+    color: #991B1B;
+    border-color: #FECACA;
+  }
+  
+  .alert-success {
+    background-color: #F0FDF4;
+    color: #166534;
+    border-color: #BBF7D0;
+  }
+  
+  .alert-warning {
+    background-color: #FFFBEB;
+    color: #92400E;
+    border-color: #FDE68A;
+  }
+  
+  .alert-info {
+    background-color: #EFF6FF;
+    color: #1E40AF;
+    border-color: #BFDBFE;
   }
   
   /* Sidebar link styles */
