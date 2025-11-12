@@ -60,7 +60,7 @@ export default function StoreHome(){
     return (
       <div className="container-responsive py-20">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--theme-primary)' }}></div>
           <p className="mt-4 text-gray-600">Loading shop...</p>
         </div>
       </div>
@@ -74,7 +74,10 @@ export default function StoreHome(){
 
   return (
     <div className="container-responsive py-10">
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-10 text-center border border-indigo-100">
+      <div className="rounded-2xl bg-gradient-to-br from-gray-50 via-white to-gray-50 p-10 text-center border border-gray-200" style={{
+        background: `linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 5%, white), white, color-mix(in srgb, var(--theme-secondary) 5%, white))`,
+        borderColor: 'color-mix(in srgb, var(--theme-primary) 10%, white)'
+      }}>
         <div className="text-3xl font-bold text-gray-900">{shopName}</div>
         <p className="mt-2 text-gray-600">{shopDescription}</p>
         {products.length > 0 && (
@@ -88,7 +91,7 @@ export default function StoreHome(){
             <div className="text-6xl mb-4">🛒</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Products Yet</h3>
             <p className="text-gray-600 mb-6">This shop is still setting up their products.</p>
-            <Link href="/login" className="text-indigo-600 hover:underline">
+            <Link href="/login" className="hover:underline" style={{ color: 'var(--theme-primary)' }}>
               Are you the owner? Login to add products →
             </Link>
           </div>
@@ -137,7 +140,7 @@ export default function StoreHome(){
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                      <h3 className="font-semibold text-gray-900 transition-colors line-clamp-2 group-hover:[color:var(--theme-primary)]">
                         {product.name}
                       </h3>
                       {product.short_description && (
