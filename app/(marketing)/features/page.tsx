@@ -14,7 +14,16 @@ import {
   TrendingUp,
   CheckCircle2,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Truck,
+  Smartphone,
+  MessageCircle,
+  Globe,
+  Banknote,
+  Video,
+  Share2,
+  Phone,
+  ShoppingBag
 } from "lucide-react";
 
 export default function FeaturesPage() {
@@ -23,6 +32,8 @@ export default function FeaturesPage() {
 
   const categories = [
     { id: "all", name: "All Features", icon: Sparkles },
+    { id: "bangladesh", name: "🇧🇩 Bangladesh", icon: ShoppingBag },
+    { id: "facebook", name: "Facebook Live", icon: Video },
     { id: "ecommerce", name: "E-commerce", icon: ShoppingCart },
     { id: "analytics", name: "Analytics", icon: BarChart3 },
     { id: "automation", name: "Automation", icon: Bot },
@@ -31,114 +42,227 @@ export default function FeaturesPage() {
   const features = [
     {
       id: 1,
-      category: "ecommerce",
-      title: "Quick Store Setup",
-      description: "Launch your online store in minutes with our streamlined setup process.",
-      icon: Store,
-      color: "from-blue-500 to-indigo-600",
+      category: "bangladesh",
+      title: "বিকাশ, নগদ, রকেট পেমেন্ট",
+      description: "সব জনপ্রিয় মোবাইল ব্যাংকিং সিস্টেম সাপোর্ট। bKash, Nagad, Rocket দিয়ে সহজে পেমেন্ট নিন।",
+      icon: Smartphone,
+      color: "from-pink-600 to-rose-600",
       benefits: [
-        "Pre-built store templates",
-        "Drag-and-drop customization",
-        "Mobile-responsive design",
-        "SEO optimized out of the box"
+        "bKash Payment Gateway (Checkout & Tokenized)",
+        "Nagad instant payment integration",
+        "Rocket mobile banking support",
+        "Automatic payment verification",
+        "One-click refund processing",
+        "Real-time transaction alerts"
       ]
     },
     {
       id: 2,
-      category: "ecommerce",
-      title: "Smart Product Management",
-      description: "Manage inventory, variants, and pricing with intelligent tools.",
-      icon: Package,
-      color: "from-purple-500 to-pink-600",
+      category: "bangladesh",
+      title: "পাঠাও, রেডেক্স, স্টেডফাস্ট",
+      description: "বাংলাদেশের সব ডেলিভারি সার্ভিস এক জায়গায়। Pathao, Redx, eCourier, Steadfast সব কানেক্টেড।",
+      icon: Truck,
+      color: "from-green-600 to-emerald-600",
       benefits: [
-        "Bulk product import",
-        "Automated inventory tracking",
-        "Multi-variant support",
-        "Dynamic pricing rules"
+        "Pathao Courier auto-booking",
+        "Redx instant parcel creation",
+        "eCourier & Steadfast integration",
+        "Real-time tracking with customer SMS",
+        "Auto shipping cost calculator",
+        "Bulk order processing for 100+ orders",
+        "Inside/Outside Dhaka detection"
       ]
     },
     {
       id: 3,
-      category: "ecommerce",
-      title: "Seamless Checkout",
-      description: "Optimize conversions with a fast, secure checkout experience.",
-      icon: CreditCard,
-      color: "from-green-500 to-emerald-600",
+      category: "bangladesh",
+      title: "Cash on Delivery (COD)",
+      description: "ক্যাশ অন ডেলিভারি সম্পূর্ণ সাপোর্ট। গ্রাহকরা পণ্য হাতে পেয়ে টাকা দেবেন।",
+      icon: Banknote,
+      color: "from-orange-600 to-amber-600",
       benefits: [
-        "One-click checkout",
-        "Multiple payment gateways",
-        "Guest checkout option",
-        "Abandoned cart recovery"
+        "Full COD support with verification",
+        "Partial payment (advance + COD)",
+        "Phone call verification before dispatch",
+        "Auto SMS to confirm COD orders",
+        "Easy return & refund for COD",
+        "COD tracking dashboard"
       ]
     },
     {
       id: 4,
-      category: "analytics",
-      title: "Real-time Analytics",
-      description: "Track sales, visitors, and performance metrics in real-time.",
-      icon: BarChart3,
-      color: "from-orange-500 to-red-600",
+      category: "bangladesh",
+      title: "বাংলা ভাষা সাপোর্ট",
+      description: "সম্পূর্ণ বাংলায় কাজ করুন। দোকান, প্রোডাক্ট, অর্ডার সব বাংলায় ম্যানেজ করুন।",
+      icon: Globe,
+      color: "from-teal-600 to-cyan-600",
       benefits: [
-        "Live sales dashboard",
-        "Customer behavior insights",
-        "Revenue forecasting",
-        "Custom report builder"
+        "Full Bengali interface (100% বাংলা)",
+        "Bilingual product descriptions",
+        "Bengali SMS notifications to customers",
+        "Bengali invoice & receipt generation",
+        "BDT currency with ৳ symbol",
+        "Bengali date & number formats"
       ]
     },
     {
       id: 5,
-      category: "analytics",
-      title: "Growth Metrics",
-      description: "Understand your business growth with comprehensive metrics.",
-      icon: TrendingUp,
-      color: "from-cyan-500 to-blue-600",
+      category: "facebook",
+      title: "Facebook Live Shopping",
+      description: "ফেসবুক লাইভ করে সরাসরি বিক্রি করুন! লাইভের কমেন্ট থেকে অটো অর্ডার তৈরি হয়।",
+      icon: Video,
+      color: "from-blue-600 to-indigo-700",
       benefits: [
-        "Customer lifetime value",
-        "Conversion rate tracking",
-        "Product performance analysis",
-        "Marketing ROI calculator"
+        "Facebook Live comment tracking",
+        "Auto order from 'inbox' or '+1' comments",
+        "Live sales counter on screen",
+        "Instant customer reply automation",
+        "Product catalog sync with FB Live",
+        "Post-live order management dashboard"
       ]
     },
     {
       id: 6,
-      category: "automation",
-      title: "AI-Powered Assistant",
-      description: "Let AI handle customer inquiries and routine tasks automatically.",
-      icon: Bot,
-      color: "from-violet-500 to-purple-600",
+      category: "facebook",
+      title: "Facebook & Instagram Ads",
+      description: "ফেসবুক ও ইনস্টাগ্রাম এ এড চালান এবং সরাসরি অর্ডার নিন। Pixel integration সহ!",
+      icon: Share2,
+      color: "from-purple-600 to-pink-600",
       benefits: [
-        "24/7 customer support bot",
-        "Automated order updates",
-        "Smart product recommendations",
-        "Natural language processing"
+        "Facebook Pixel integration",
+        "Instagram Shopping setup",
+        "Direct checkout from FB/IG ads",
+        "Retargeting pixel for cart abandonment",
+        "Conversion tracking dashboard",
+        "Ad performance analytics"
       ]
     },
     {
       id: 7,
-      category: "automation",
-      title: "Marketing Automation",
-      description: "Automate your marketing campaigns and boost engagement.",
-      icon: Zap,
-      color: "from-yellow-500 to-orange-600",
+      category: "facebook",
+      title: "Facebook Messenger Chatbot",
+      description: "ফেসবুক মেসেঞ্জারে AI চ্যাটবট। বাংলায় কথা বলে, অর্ডার নেয়, প্রোডাক্ট দেখায়!",
+      icon: MessageCircle,
+      color: "from-sky-600 to-blue-600",
       benefits: [
-        "Email campaign automation",
-        "Social media scheduling",
-        "Targeted promotions",
-        "Customer segmentation"
+        "Facebook Messenger bot (Bengali support)",
+        "WhatsApp Business API integration",
+        "Auto-reply to product inquiries",
+        "Send product catalog in chat",
+        "Order status updates via Messenger",
+        "24/7 automated customer service"
       ]
     },
     {
       id: 8,
+      category: "facebook",
+      title: "Social Media Order Manager",
+      description: "ফেসবুক পেজ, ইনস্ট, হোয়াটসঅ্যাপ সব জায়গার অর্ডার এক ড্যাশবোর্ডে দেখুন!",
+      icon: ShoppingBag,
+      color: "from-rose-600 to-red-600",
+      benefits: [
+        "Unified inbox for FB, Instagram, WhatsApp",
+        "Auto-import orders from comments/DMs",
+        "Customer phone number extraction",
+        "Duplicate order prevention",
+        "Bulk message to customers",
+        "Order confirmation screenshots"
+      ]
+    },
+    {
+      id: 9,
       category: "ecommerce",
-      title: "Customer Management",
-      description: "Build lasting relationships with comprehensive customer tools.",
+      title: "Quick Store Setup",
+      description: "মাত্র ২ ক্লিকে দোকান তৈরি করুন। কোডিং এর দরকার নেই!",
+      icon: Store,
+      color: "from-blue-500 to-indigo-600",
+      benefits: [
+        "Ready-made BD e-commerce templates",
+        "Drag-and-drop customization",
+        "Mobile-first responsive design",
+        "SEO optimized for Bangladesh market",
+        "Custom domain support (.com.bd)",
+        "Free SSL certificate"
+      ]
+    },
+    {
+      id: 10,
+      category: "ecommerce",
+      title: "Smart Product Management",
+      description: "প্রোডাক্ট ম্যানেজমেন্ট সহজ। সাইজ, কালার ভ্যারিয়েন্ট, স্টক ট্র্যাকিং সব আছে।",
+      icon: Package,
+      color: "from-purple-500 to-pink-600",
+      benefits: [
+        "Unlimited products & variants (Size, Color)",
+        "Bulk product import from Excel",
+        "Auto low stock alerts",
+        "Product image gallery (10+ images)",
+        "Pre-order & advance booking system",
+        "Flash sale & discount management"
+      ]
+    },
+    {
+      id: 11,
+      category: "automation",
+      title: "SMS Notifications (বাংলা)",
+      description: "গ্রাহকদের অটো এসএমএস পাঠান। অর্ডার কনফার্ম, শিপমেন্ট, ডেলিভারি - সব আপডেট!",
+      icon: Phone,
+      color: "from-green-600 to-teal-600",
+      benefits: [
+        "Auto SMS for order confirmation",
+        "Shipping & delivery SMS updates",
+        "Bengali SMS templates",
+        "Bulk SMS for promotions",
+        "OTP verification for customers",
+        "Integration with local SMS providers"
+      ]
+    },
+    {
+      id: 12,
+      category: "analytics",
+      title: "Real-time Sales Dashboard",
+      description: "লাইভ সেলস দেখুন। কত টাকা বিক্রি হলো, কোন প্রোডাক্ট বেশি বিক্রি - সব এক নজরে!",
+      icon: BarChart3,
+      color: "from-orange-500 to-red-600",
+      benefits: [
+        "Live sales counter (today, this week, month)",
+        "Product-wise sales reports",
+        "Customer location analytics (division/district)",
+        "Payment method breakdown",
+        "Peak sales time analysis",
+        "Export reports to Excel"
+      ]
+    },
+    {
+      id: 13,
+      category: "automation",
+      title: "AI Order Management",
+      description: "AI দিয়ে অর্ডার ম্যানেজ করুন। অটো স্ট্যাটাস আপডেট, কুরিয়ার বুকিং, এসএমএস সব!",
+      icon: Bot,
+      color: "from-violet-500 to-purple-600",
+      benefits: [
+        "Auto order status updates",
+        "Smart fraud detection for fake orders",
+        "Auto courier booking based on location",
+        "Predicted delivery date calculator",
+        "Auto customer follow-up messages",
+        "Intelligent inventory management"
+      ]
+    },
+    {
+      id: 14,
+      category: "ecommerce",
+      title: "Customer Database & CRM",
+      description: "সব কাস্টমারের তথ্য সেভ থাকে। রিপিট অর্ডার, ফোন নাম্বার, ঠিকানা সব একসাথে!",
       icon: Users,
       color: "from-pink-500 to-rose-600",
       benefits: [
-        "Customer profiles & history",
-        "Loyalty program management",
-        "Review & rating system",
-        "Communication hub"
+        "Complete customer profiles",
+        "Order history & repeat customer tracking",
+        "Customer segmentation (VIP, regular, new)",
+        "Birthday & special occasion reminders",
+        "Loyalty points system",
+        "Customer review & rating collection"
       ]
     }
   ];
@@ -194,17 +318,17 @@ export default function FeaturesPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700">
               <Sparkles className="h-4 w-4" />
-              Powerful Features for Modern Commerce
+              🇧🇩 বাংলাদেশের জন্য তৈরি | Made for Bangladesh
             </div>
             <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Everything you need to{" "}
+              ফেসবুক লাইভ সেলার ও{" "}
               <span className="bg-gradient-to-r from-brand-indigo to-purple-600 bg-clip-text text-transparent">
-                grow your business
+                SME ব্যবসার সব সুবিধা
               </span>
             </h1>
             <p className="mb-8 text-lg text-gray-600 sm:text-xl">
-              Discover how Shamlai's comprehensive feature set empowers merchants
-              to build, manage, and scale their online stores with ease.
+              বিকাশ, পাঠাও, Facebook Live Shopping, বাংলা এসএমএস -
+              বাংলাদেশী ই-কমার্স বিজনেসের জন্য দরকারি সব ফিচার এক জায়গায়!
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/signup" className="btn btn-primary flex items-center gap-2">
@@ -305,10 +429,11 @@ export default function FeaturesPage() {
         <div className="container-responsive">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl">
-              Ready to experience these features?
+              আপনার ব্যবসা শুরু করতে প্রস্তুত?
             </h2>
             <p className="mb-8 text-lg text-indigo-100">
-              Join thousands of merchants who are already growing their business with Shamlai.
+              হাজারো বাংলাদেশী সেলার Shamlai দিয়ে তাদের ব্যবসা বাড়াচ্ছেন।
+              Facebook Live থেকে ফুল টাইম ই-কমার্স - আপনিও শুরু করুন আজই!
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/signup" className="btn bg-white text-brand-indigo hover:bg-gray-50">
