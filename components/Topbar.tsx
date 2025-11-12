@@ -68,7 +68,7 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
     <div className="sticky top-0 z-20 border-b bg-white">
       <div className="container-responsive h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Store className="h-5 w-5 text-brand-indigo" />
+          <Store className="h-5 w-5" style={{ color: 'var(--theme-primary)' }} />
           <span className="font-semibold">{title ?? "Shamlai"}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
             >
-              <div className="h-8 w-8 rounded-full bg-brand-indigo text-white flex items-center justify-center text-sm font-semibold">
+              <div className="h-8 w-8 rounded-full text-white flex items-center justify-center text-sm font-semibold" style={{ backgroundColor: 'var(--theme-primary)' }}>
                 {getUserInitials()}
               </div>
               <ChevronDown className="h-4 w-4 text-gray-500" />

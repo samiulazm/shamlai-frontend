@@ -6,7 +6,7 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          indigo: "#4F46E5",
+          indigo: "var(--theme-primary)",
           emerald: "#10B981",
           coral: "#F87171",
           gray: "#F3F4F6"

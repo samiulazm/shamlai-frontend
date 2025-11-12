@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import { insforgeClient, ShopService } from "@/lib";
+import { getActiveTheme } from "@/lib/services/shop";
 import { logger } from "@/lib/utils/logger";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeInjector } from "@/components/theme/ThemeInjector";
+import type { Theme } from "@/lib/types/database";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }){
   const router = useRouter();
@@ -13,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [shopName, setShopName] = useState<string>("Shamlai");
   const [shopId, setShopId] = useState<string>("");
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -45,7 +50,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         });
         // Continue with default name
       }
-      
+
+      // Fetch active theme
+      try {
+        const activeTheme = await getActiveTheme(currentShopId);
+        setTheme(activeTheme);
+      } catch (themeErr) {
+        logger.error('Error fetching theme', themeErr instanceof Error ? themeErr : new Error(String(themeErr)), {
+          shopId: currentShopId,
+        });
+        // Continue with default theme (null)
+      }
+
       setLoading(false);
     } catch (err) {
       logger.error('Auth check error', err instanceof Error ? err : new Error(String(err)));
@@ -57,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-indigo mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--theme-primary)' }}></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -65,14 +81,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Topbar title={shopName} user={user} shopId={shopId} />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1">
-          <div className="container-responsive py-6">{children}</div>
-        </main>
+    <ThemeProvider initialTheme={theme}>
+      <ThemeInjector />
+      <div className="min-h-screen bg-gray-50">
+        <Topbar title={shopName} user={user} shopId={shopId} />
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1">
+            <div className="container-responsive py-6">{children}</div>
+          </main>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }
