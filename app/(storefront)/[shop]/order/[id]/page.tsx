@@ -49,7 +49,7 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
       <div className="container-responsive py-16">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--theme-primary)' }}></div>
             <p className="mt-4 text-gray-600">Loading order...</p>
           </div>
         </div>

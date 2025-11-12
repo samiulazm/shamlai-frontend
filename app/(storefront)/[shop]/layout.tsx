@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { insforgeClient, CartService } from '@/lib/insforge';
+import { getActiveTheme } from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeInjector } from '@/components/theme/ThemeInjector';
 import Link from 'next/link';
+import type { Theme } from '@/lib/types/database';
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }){
   const params = useParams();
@@ -13,10 +17,12 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
   const [shopName, setShopName] = useState('Shop');
   const [isOwner, setIsOwner] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     fetchShopInfo();
     fetchCartCount();
+    fetchTheme();
   }, [shopId]);
 
   const fetchShopInfo = async () => {
@@ -55,7 +61,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
 
       const cart = await CartService.getOrCreateCart(undefined, sessionId);
       const cartWithItems = await CartService.getCartWithItems(cart.id);
-      
+
       const itemCount = cartWithItems.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       setCartItemCount(itemCount);
     } catch (error) {
@@ -64,13 +70,27 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
     }
   };
 
+  const fetchTheme = async () => {
+    try {
+      const activeTheme = await getActiveTheme(shopId);
+      setTheme(activeTheme);
+    } catch (error) {
+      logger.error('Error fetching theme', error instanceof Error ? error : new Error(String(error)), {
+        shopId,
+      });
+      // Continue with default theme (null)
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
-        <div className="container-responsive h-16 flex items-center justify-between">
-          <Link href={`/${shopId}`} className="font-bold text-lg text-gray-900 hover:text-indigo-600 transition-colors">
-            {shopName}
-          </Link>
+    <ThemeProvider initialTheme={theme}>
+      <ThemeInjector />
+      <div className="min-h-screen bg-white">
+        <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
+          <div className="container-responsive h-16 flex items-center justify-between">
+            <Link href={`/${shopId}`} className="font-bold text-lg text-gray-900 transition-colors" style={{ color: 'var(--theme-primary)' }}>
+              {shopName}
+            </Link>
           <nav className="flex items-center gap-6">
             <Link href={`/${shopId}`} className="text-sm text-gray-600 hover:text-gray-900">
               Home
@@ -83,7 +103,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" style={{ backgroundColor: 'var(--theme-primary)' }}>
                   {cartItemCount > 9 ? '9+' : cartItemCount}
                 </span>
               )}
@@ -100,18 +120,19 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
         </div>
       </header>
       <main className="min-h-[calc(100vh-8rem)]">{children}</main>
-      <footer className="border-t bg-gray-50 py-8">
-        <div className="container-responsive text-center">
-          <p className="text-sm text-gray-600">
-            Powered by <span className="font-semibold text-indigo-600">Shamlai</span>
-          </p>
-          {isOwner && (
-            <p className="text-xs text-gray-500 mt-2">
-              You're viewing your shop as the owner
+        <footer className="border-t bg-gray-50 py-8">
+          <div className="container-responsive text-center">
+            <p className="text-sm text-gray-600">
+              Powered by <span className="font-semibold" style={{ color: 'var(--theme-primary)' }}>Shamlai</span>
             </p>
-          )}
-        </div>
-      </footer>
-    </div>
+            {isOwner && (
+              <p className="text-xs text-gray-500 mt-2">
+                You're viewing your shop as the owner
+              </p>
+            )}
+          </div>
+        </footer>
+      </div>
+    </ThemeProvider>
   );
 }
