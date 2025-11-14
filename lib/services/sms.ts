@@ -1,12 +1,21 @@
 import twilio from 'twilio';
 import { logger } from '@/lib/utils/logger';
 
-// Initialize Twilio client
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+// Lazy-load Twilio client to support testing with environment variables
+function getTwilioClient() {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
+  if (!accountSid || !authToken) {
+    return null;
+  }
+
+  return twilio(accountSid, authToken);
+}
+
+function getTwilioPhoneNumber() {
+  return process.env.TWILIO_PHONE_NUMBER;
+}
 
 export interface SendSMSParams {
   to: string;
@@ -18,6 +27,9 @@ export interface SendSMSParams {
  */
 export async function sendSMS(params: SendSMSParams) {
   try {
+    const client = getTwilioClient();
+    const fromNumber = getTwilioPhoneNumber();
+
     if (!client || !fromNumber) {
       logger.warn('Twilio not configured, skipping SMS');
       return { success: false, error: new Error('SMS service not configured') };

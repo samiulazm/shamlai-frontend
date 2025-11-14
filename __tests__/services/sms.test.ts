@@ -1,4 +1,20 @@
+/**
+ * @jest-environment node
+ */
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+
+// Mock Twilio module - the factory function runs before all imports
+const mockMessagesCreate = jest.fn();
+const mockTwilioClient = {
+  messages: {
+    create: mockMessagesCreate,
+  },
+};
+
+jest.mock('twilio', () => {
+  return jest.fn(() => mockTwilioClient);
+});
+
 import {
   sendSMS,
   sendOrderConfirmationSMS,
@@ -6,25 +22,19 @@ import {
   sendDeliveryNotificationSMS,
 } from '@/lib/services/sms';
 
-// Mock Twilio
-jest.mock('twilio', () => {
-  return jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn().mockResolvedValue({
-        sid: 'SM_test_123',
-        status: 'sent',
-      }),
-    },
-  }));
-});
-
 describe('SMS Service', () => {
   beforeEach(() => {
+    // Clear all mocks
     jest.clearAllMocks();
     // Set environment variables
     process.env.TWILIO_ACCOUNT_SID = 'AC_test_sid';
     process.env.TWILIO_AUTH_TOKEN = 'test_token';
     process.env.TWILIO_PHONE_NUMBER = '+15551234567';
+    // Setup default mock response
+    mockMessagesCreate.mockResolvedValue({
+      sid: 'SM_test_123',
+      status: 'sent',
+    });
   });
 
   describe('sendSMS', () => {
@@ -65,7 +75,7 @@ describe('SMS Service', () => {
       const result = await sendOrderConfirmationSMS(
         '+15559876543',
         'ORD-12345',
-        150.00,
+        150.0,
         'Test Shop'
       );
 
@@ -89,11 +99,7 @@ describe('SMS Service', () => {
 
   describe('sendDeliveryNotificationSMS', () => {
     it('should send delivery notification SMS', async () => {
-      const result = await sendDeliveryNotificationSMS(
-        '+15559876543',
-        'ORD-12345',
-        'Test Shop'
-      );
+      const result = await sendDeliveryNotificationSMS('+15559876543', 'ORD-12345', 'Test Shop');
 
       expect(result.success).toBe(true);
     });
@@ -101,12 +107,7 @@ describe('SMS Service', () => {
 
   describe('error handling', () => {
     it('should handle Twilio API errors', async () => {
-      const twilio = require('twilio');
-      twilio.mockImplementation(() => ({
-        messages: {
-          create: jest.fn().mockRejectedValue(new Error('Twilio API error')),
-        },
-      }));
+      mockMessagesCreate.mockRejectedValueOnce(new Error('Twilio API error'));
 
       const result = await sendSMS({
         to: '+15559876543',

@@ -46,10 +46,15 @@ export interface CourierTrackingResponse {
 // Pathao Courier Integration
 // ============================================================================
 
-const PATHAO_API_URL = process.env.PATHAO_API_URL || 'https://api-hermes.pathao.com/api/v1';
-const PATHAO_CLIENT_ID = process.env.PATHAO_CLIENT_ID;
-const PATHAO_CLIENT_SECRET = process.env.PATHAO_CLIENT_SECRET;
-const PATHAO_STORE_ID = process.env.PATHAO_STORE_ID;
+// Lazy-load environment variables to support testing
+function getPathaoConfig() {
+  return {
+    apiUrl: process.env.PATHAO_API_URL || 'https://api-hermes.pathao.com/api/v1',
+    clientId: process.env.PATHAO_CLIENT_ID,
+    clientSecret: process.env.PATHAO_CLIENT_SECRET,
+    storeId: process.env.PATHAO_STORE_ID,
+  };
+}
 
 let pathaoAccessToken: string | null = null;
 let pathaoTokenExpiry: number | null = null;
@@ -64,19 +69,21 @@ async function getPathaoToken(): Promise<string> {
       return pathaoAccessToken;
     }
 
-    if (!PATHAO_CLIENT_ID || !PATHAO_CLIENT_SECRET) {
+    const config = getPathaoConfig();
+
+    if (!config.clientId || !config.clientSecret) {
       throw new Error('Pathao credentials not configured');
     }
 
-    const response = await fetch(`${PATHAO_API_URL}/issue-token`, {
+    const response = await fetch(`${config.apiUrl}/issue-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
-        client_id: PATHAO_CLIENT_ID,
-        client_secret: PATHAO_CLIENT_SECRET,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
         grant_type: 'client_credentials',
       }),
     });
@@ -87,7 +94,7 @@ async function getPathaoToken(): Promise<string> {
 
     const data = await response.json();
     pathaoAccessToken = data.access_token;
-    pathaoTokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 min before expiry
+    pathaoTokenExpiry = Date.now() + data.expires_in * 1000 - 60000; // Refresh 1 min before expiry
 
     if (!pathaoAccessToken) {
       throw new Error('Failed to get Pathao access token');
@@ -108,9 +115,10 @@ export async function createPathaoShipment(
 ): Promise<CourierShipmentResponse> {
   try {
     const token = await getPathaoToken();
+    const config = getPathaoConfig();
 
     const payload = {
-      store_id: PATHAO_STORE_ID,
+      store_id: config.storeId,
       merchant_order_id: params.orderNumber,
       recipient_name: params.customerName,
       recipient_phone: params.customerPhone,
@@ -123,15 +131,15 @@ export async function createPathaoShipment(
       item_quantity: params.items.reduce((sum, item) => sum + item.quantity, 0),
       item_weight: params.weight || 0.5, // Default 0.5kg
       amount_to_collect: params.totalAmount,
-      item_description: params.items.map(item => `${item.name} (${item.quantity})`).join(', '),
+      item_description: params.items.map((item) => `${item.name} (${item.quantity})`).join(', '),
     };
 
-    const response = await fetch(`${PATHAO_API_URL}/orders`, {
+    const response = await fetch(`${config.apiUrl}/orders`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -158,7 +166,10 @@ export async function createPathaoShipment(
       invoiceId: data.data.invoice_id,
     };
   } catch (error) {
-    logger.error('Pathao shipment error', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Pathao shipment error',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create shipment',
@@ -172,11 +183,12 @@ export async function createPathaoShipment(
 export async function trackPathaoShipment(consignmentId: string): Promise<CourierTrackingResponse> {
   try {
     const token = await getPathaoToken();
+    const config = getPathaoConfig();
 
-    const response = await fetch(`${PATHAO_API_URL}/orders/${consignmentId}`, {
+    const response = await fetch(`${config.apiUrl}/orders/${consignmentId}`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
       },
     });
 
@@ -195,7 +207,10 @@ export async function trackPathaoShipment(consignmentId: string): Promise<Courie
       statusHistory: data.data.order_logs || [],
     };
   } catch (error) {
-    logger.error('Pathao tracking error', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Pathao tracking error',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       success: false,
       error: 'Failed to track shipment',
@@ -207,8 +222,13 @@ export async function trackPathaoShipment(consignmentId: string): Promise<Courie
 // RedX Courier Integration
 // ============================================================================
 
-const REDX_API_URL = process.env.REDX_API_URL || 'https://openapi.redx.com.bd/v1.0.0-beta';
-const REDX_API_KEY = process.env.REDX_API_KEY;
+// Lazy-load environment variables to support testing
+function getRedXConfig() {
+  return {
+    apiUrl: process.env.REDX_API_URL || 'https://openapi.redx.com.bd/v1.0.0-beta',
+    apiKey: process.env.REDX_API_KEY,
+  };
+}
 
 /**
  * Create RedX shipment
@@ -217,7 +237,9 @@ export async function createRedXShipment(
   params: CourierShipmentParams
 ): Promise<CourierShipmentResponse> {
   try {
-    if (!REDX_API_KEY) {
+    const config = getRedXConfig();
+
+    if (!config.apiKey) {
       throw new Error('RedX API key not configured');
     }
 
@@ -234,10 +256,10 @@ export async function createRedXShipment(
       value: params.totalAmount,
     };
 
-    const response = await fetch(`${REDX_API_URL}/parcel`, {
+    const response = await fetch(`${config.apiUrl}/parcel`, {
       method: 'POST',
       headers: {
-        'API-ACCESS-TOKEN': REDX_API_KEY,
+        'API-ACCESS-TOKEN': config.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -277,13 +299,15 @@ export async function createRedXShipment(
  */
 export async function trackRedXShipment(trackingId: string): Promise<CourierTrackingResponse> {
   try {
-    if (!REDX_API_KEY) {
+    const config = getRedXConfig();
+
+    if (!config.apiKey) {
       throw new Error('RedX API key not configured');
     }
 
-    const response = await fetch(`${REDX_API_URL}/parcel/track/${trackingId}`, {
+    const response = await fetch(`${config.apiUrl}/parcel/track/${trackingId}`, {
       headers: {
-        'API-ACCESS-TOKEN': REDX_API_KEY,
+        'API-ACCESS-TOKEN': config.apiKey,
       },
     });
 

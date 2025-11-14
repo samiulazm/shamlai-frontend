@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import {
   createShipment,
@@ -7,11 +10,14 @@ import {
 } from '@/lib/services/courier';
 
 // Mock fetch
-global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+global.fetch = mockFetch;
 
 describe('Courier Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Clear all mocks
+    mockFetch.mockClear();
+    mockFetch.mockReset();
     // Set environment variables
     process.env.PATHAO_CLIENT_ID = 'test_client_id';
     process.env.PATHAO_CLIENT_SECRET = 'test_client_secret';
@@ -38,7 +44,7 @@ describe('Courier Service', () => {
   describe('Pathao Integration', () => {
     it('should create Pathao shipment successfully', async () => {
       // Mock token request
-      (global.fetch as jest.MockedFunction<typeof fetch>)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ access_token: 'test_token', expires_in: 3600 }),
@@ -60,7 +66,7 @@ describe('Courier Service', () => {
     });
 
     it('should handle Pathao API errors', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ access_token: 'test_token', expires_in: 3600 }),
@@ -79,7 +85,7 @@ describe('Courier Service', () => {
 
   describe('RedX Integration', () => {
     it('should create RedX shipment successfully', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
@@ -94,7 +100,7 @@ describe('Courier Service', () => {
     });
 
     it('should handle RedX API errors', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({ success: false, message: 'API error' }),
       } as Response);
@@ -108,7 +114,7 @@ describe('Courier Service', () => {
 
   describe('Generic Interface', () => {
     it('should route to correct courier service', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ access_token: 'test_token', expires_in: 3600 }),
@@ -137,7 +143,7 @@ describe('Courier Service', () => {
 
   describe('Tracking', () => {
     it('should track Pathao shipment', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ access_token: 'test_token', expires_in: 3600 }),
@@ -147,9 +153,7 @@ describe('Courier Service', () => {
           json: async () => ({
             data: {
               order_status: 'delivered',
-              order_logs: [
-                { status: 'delivered', timestamp: '2025-01-13T10:00:00Z' },
-              ],
+              order_logs: [{ status: 'delivered', timestamp: '2025-01-13T10:00:00Z' }],
             },
           }),
         } as Response);
@@ -161,7 +165,7 @@ describe('Courier Service', () => {
     });
 
     it('should track RedX shipment', async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
