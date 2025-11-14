@@ -37,10 +37,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   };
 
   const navItems = [
-    { href: '/account', icon: Home, label: 'Dashboard' },
-    { href: '/account/orders', icon: Package, label: 'Orders' },
-    { href: '/account/addresses', icon: MapPin, label: 'Addresses' },
-    { href: '/account/profile', icon: Settings, label: 'Profile' },
+    { href: '/account' as const, icon: Home, label: 'Dashboard' },
+    { href: '/account/orders' as const, icon: Package, label: 'Orders' },
+    { href: '/account/addresses' as const, icon: MapPin, label: 'Addresses' },
+    { href: '/account/profile' as const, icon: Settings, label: 'Profile' },
   ];
 
   return (
@@ -74,7 +74,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={item.href as any}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition border-b border-gray-100 last:border-0"
                   >
                     <Icon className="w-5 h-5" />

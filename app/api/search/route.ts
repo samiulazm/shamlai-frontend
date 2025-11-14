@@ -8,11 +8,13 @@ import { logger } from '@/lib/utils/logger';
 export async function GET(request: NextRequest) {
   try {
     // Get current user
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
-    if (!user) {
+    if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = data.user;
 
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q');

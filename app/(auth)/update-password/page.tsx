@@ -43,18 +43,24 @@ export default function UpdatePassword() {
     setLoading(true);
 
     try {
-      const { error: updateError } = await insforgeClient.auth.updateUser({
-        password,
-      });
+      // TODO: Password update not yet implemented in @insforge/sdk
+      // This is a placeholder that needs to be implemented when the SDK supports it
+      logger.warn('Password update functionality not yet available');
+      setError('Password update functionality is not yet available. Please contact support.');
+      setLoading(false);
 
-      if (updateError) {
-        setError(updateError.message || 'Failed to update password');
-        setLoading(false);
-        return;
-      }
-
-      // Redirect to login
-      router.push('/login?message=Password updated successfully');
+      // Placeholder for when SDK supports password update:
+      // const { error: updateError } = await insforgeClient.auth.updateUser({
+      //   password,
+      // });
+      //
+      // if (updateError) {
+      //   setError(updateError.message || 'Failed to update password');
+      //   setLoading(false);
+      //   return;
+      // }
+      //
+      // router.push('/login?message=Password updated successfully');
     } catch (err: any) {
       logger.error('Password update error', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'An error occurred');

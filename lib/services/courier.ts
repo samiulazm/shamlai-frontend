@@ -89,6 +89,10 @@ async function getPathaoToken(): Promise<string> {
     pathaoAccessToken = data.access_token;
     pathaoTokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 min before expiry
 
+    if (!pathaoAccessToken) {
+      throw new Error('Failed to get Pathao access token');
+    }
+
     return pathaoAccessToken;
   } catch (error) {
     logger.error('Pathao token error', error instanceof Error ? error : new Error(String(error)));

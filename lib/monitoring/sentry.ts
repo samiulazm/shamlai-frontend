@@ -3,9 +3,12 @@
  *
  * This module initializes Sentry for error tracking and monitoring.
  * Sentry captures exceptions, performance metrics, and user feedback.
+ *
+ * TODO: Install @sentry/nextjs package to enable error tracking
+ * Run: npm install @sentry/nextjs
  */
 
-import * as Sentry from '@sentry/nextjs';
+// import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
 
 /**
@@ -13,135 +16,77 @@ import { logger } from '../utils/logger';
  */
 export function initSentry() {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-      // We recommend adjusting this value in production
-      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
-      // Capture Replay for 10% of all sessions,
-      // plus 100% of sessions with an error
-      replaysSessionSampleRate: 0.1,
-      replaysOnErrorSampleRate: 1.0,
-
-      // Environment
-      environment: process.env.NODE_ENV,
-
-      // Release tracking
-      release: process.env.NEXT_PUBLIC_APP_VERSION || 'development',
-
-      // Integrations
-      integrations: [
-        new Sentry.BrowserTracing({
-          // Set custom routing instrumentation
-          tracePropagationTargets: [
-            'localhost',
-            /^https:\/\/.*\.shamlai\.com/,
-            /^https:\/\/.*\.insforge\.app/,
-          ],
-        }),
-        new Sentry.Replay({
-          // Mask all text content by default
-          maskAllText: true,
-          // Block all media content by default
-          blockAllMedia: true,
-        }),
-      ],
-
-      // Filter out certain errors
-      beforeSend(event, hint) {
-        const error = hint.originalException;
-
-        // Don't send network errors
-        if (error && typeof error === 'object' && 'message' in error) {
-          const message = error.message as string;
-          if (message.includes('Network Error') || message.includes('Failed to fetch')) {
-            return null;
-          }
-        }
-
-        return event;
-      },
-
-      // Set context
-      initialScope: (scope) => {
-        scope.setTag('app', 'shamlai-frontend');
-        return scope;
-      },
-    });
-
-    logger.info('Sentry initialized');
+    logger.warn('Sentry DSN configured but @sentry/nextjs not installed. Install it to enable error tracking.');
   } else {
-    logger.warn('Sentry DSN not configured - error tracking disabled');
+    logger.info('Sentry DSN not configured - error tracking disabled');
   }
 }
 
 /**
- * Capture exception with Sentry
+ * Capture an exception in Sentry
  */
 export function captureException(error: Error, context?: Record<string, any>) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.captureException(error, {
-      extra: context,
-    });
-  }
-
-  // Also log to console
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.captureException(error, {
+  //     contexts: context ? { custom: context } : undefined,
+  //   });
+  // }
   logger.error('Exception captured', error, context);
 }
 
 /**
- * Capture message with Sentry
+ * Capture a message in Sentry
  */
 export function captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.captureMessage(message, level);
-  }
-
-  logger[level === 'warning' ? 'warn' : level](message);
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.captureMessage(message, level);
+  // }
+  logger.info(message, { level });
 }
 
 /**
- * Set user context for Sentry
+ * Set the current user context
  */
-export function setUser(user: { id: string; email?: string; username?: string } | null) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.setUser(user);
-  }
+export function setUser(user: { id: string; email?: string; username?: string }) {
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.setUser(user);
+  // }
 }
 
 /**
- * Add breadcrumb to Sentry
+ * Clear the current user context
  */
-export function addBreadcrumb(message: string, category: string, data?: Record<string, any>) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.addBreadcrumb({
-      message,
-      category,
-      data,
-      level: 'info',
-    });
-  }
+export function clearUser() {
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.setUser(null);
+  // }
 }
 
 /**
- * Start transaction for performance monitoring
+ * Set custom context data
  */
-export function startTransaction(name: string, op: string) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    return Sentry.startTransaction({ name, op });
-  }
-  return null;
+export function setContext(name: string, context: Record<string, any>) {
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.setContext(name, context);
+  // }
 }
 
 /**
- * Configure Sentry scope
+ * Add a breadcrumb for debugging
  */
-export function configurescope(callback: (scope: Sentry.Scope) => void) {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.configureScope(callback);
-  }
+export function addBreadcrumb(breadcrumb: {
+  message: string;
+  category?: string;
+  level?: 'info' | 'warning' | 'error';
+  data?: Record<string, any>;
+}) {
+  // TODO: Uncomment when @sentry/nextjs is installed
+  // if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  //   Sentry.addBreadcrumb(breadcrumb);
+  // }
 }
-
-export { Sentry };

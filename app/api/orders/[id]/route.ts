@@ -15,12 +15,13 @@ export async function GET(
     const { id } = params;
 
     // Get current user
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
     const order = await getOrderById(id);
 
     // Check authorization (either shop owner or customer)
-    if (user) {
+    if (data?.user) {
+      const user = data.user;
       if (order.shop_id !== user.id && order.customer?.user_id !== user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
@@ -50,11 +51,13 @@ export async function PATCH(
     const { id } = params;
 
     // Get current user
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
-    if (!user) {
+    if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = data.user;
 
     // Verify ownership
     const { data: order } = await insforgeClient.database

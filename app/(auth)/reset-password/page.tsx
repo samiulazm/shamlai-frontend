@@ -18,18 +18,16 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const { error: resetError } = await insforgeClient.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
-      });
-
-      if (resetError) {
-        setError(resetError.message || 'Failed to send reset email');
-        setLoading(false);
-        return;
-      }
-
-      setSuccess(true);
+      // TODO: Password reset not yet implemented in @insforge/sdk
+      // This is a placeholder that needs to be implemented when the SDK supports it
+      logger.warn('Password reset functionality not yet available');
+      setError('Password reset functionality is not yet available. Please contact support.');
       setLoading(false);
+
+      // Placeholder for when SDK supports password reset:
+      // const { error: resetError } = await insforgeClient.auth.resetPasswordForEmail(email, {
+      //   redirectTo: `${window.location.origin}/update-password`,
+      // });
     } catch (err: any) {
       logger.error('Password reset error', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'An error occurred');

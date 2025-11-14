@@ -119,7 +119,7 @@ export default function OrderDetailPage() {
         <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
         <p className="text-gray-600">{error || 'Order not found'}</p>
         <Link
-          href="/account/orders"
+          href={"/account/orders" as const}
           className="mt-4 inline-block text-indigo-600 hover:text-indigo-700 font-medium"
         >
           ← Back to Orders
@@ -155,7 +155,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <Link
-          href="/account/orders"
+          href={"/account/orders" as const}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

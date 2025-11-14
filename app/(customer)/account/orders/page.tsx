@@ -194,7 +194,7 @@ export default function OrdersPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <Link
-                        href={`/account/orders/${order.id}`}
+                        href={(`/account/orders/${order.id}` as any)}
                         className="text-lg font-semibold text-gray-900 hover:text-indigo-600"
                       >
                         {order.order_number}

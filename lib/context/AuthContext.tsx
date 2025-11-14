@@ -31,28 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     checkUser();
 
-    // Listen for auth state changes
-    const { data: authListener } = insforgeClient.auth.onAuthStateChange(
-      async (event, session) => {
-        logger.info('Auth state changed', { event });
-
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            nickname: session.user.user_metadata?.nickname,
-            role: session.user.user_metadata?.role || 'merchant',
-          });
-        } else {
-          setUser(null);
-        }
-
-        setLoading(false);
-      }
-    );
+    // Note: @insforge/sdk doesn't have onAuthStateChange yet
+    // Polling for session changes every 5 minutes as a workaround
+    const interval = setInterval(() => {
+      checkUser();
+    }, 5 * 60 * 1000);
 
     return () => {
-      authListener?.subscription?.unsubscribe();
+      clearInterval(interval);
     };
   }, []);
 
@@ -63,12 +49,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         logger.error('Failed to get current user', error);
         setUser(null);
-      } else if (data) {
+      } else if (data?.user) {
         setUser({
-          id: data.id,
-          email: data.email || '',
-          nickname: data.user_metadata?.nickname,
-          role: data.user_metadata?.role || 'merchant',
+          id: data.user.id,
+          email: data.user.email || '',
+          nickname: data.profile?.nickname || data.user.name || '',
+          role: data.profile?.role || 'merchant',
+          shop_id: data.user.id, // Using user ID as shop ID
         });
       }
     } catch (err) {
@@ -91,11 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
+        // Fetch full user profile
+        const userProfile = await insforgeClient.auth.getCurrentUser();
         setUser({
           id: data.user.id,
           email: data.user.email || '',
-          nickname: data.user.user_metadata?.nickname,
-          role: data.user.user_metadata?.role || 'merchant',
+          nickname: userProfile.data?.profile?.nickname || data.user.name || '',
+          role: userProfile.data?.profile?.role || 'merchant',
+          shop_id: data.user.id,
         });
       }
 
@@ -112,12 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await insforgeClient.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            nickname: shopName || email.split('@')[0],
-            role: 'merchant',
-          },
-        },
+        name: shopName || email.split('@')[0],
       });
 
       if (error) {
@@ -125,6 +110,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
+        // Set profile with nickname and role
+        try {
+          await insforgeClient.auth.setProfile({
+            nickname: shopName || email.split('@')[0],
+            role: 'merchant',
+          });
+        } catch (profileError) {
+          logger.warn('Failed to set user profile', profileError instanceof Error ? profileError : new Error(String(profileError)));
+        }
+
         // Create shop settings
         try {
           await insforgeClient.database
@@ -149,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email || '',
           nickname: shopName,
           role: 'merchant',
+          shop_id: data.user.id,
         });
       }
 
@@ -170,23 +166,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshSession = async () => {
-    try {
-      const { data, error } = await insforgeClient.auth.refreshSession();
-
-      if (error) {
-        logger.error('Failed to refresh session', error);
-        setUser(null);
-      } else if (data?.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          nickname: data.user.user_metadata?.nickname,
-          role: data.user.user_metadata?.role || 'merchant',
-        });
-      }
-    } catch (err) {
-      logger.error('Error refreshing session', err instanceof Error ? err : new Error(String(err)));
-    }
+    // Note: @insforge/sdk doesn't have refreshSession method yet
+    // Using checkUser as a workaround to refresh user state
+    await checkUser();
   };
 
   return (

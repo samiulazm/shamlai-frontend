@@ -17,14 +17,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has permission to refund this order
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
-    if (!user) {
+    if (!data?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    const user = data.user;
 
     // Get order to verify ownership
     const { data: order, error: orderError } = await insforgeClient.database

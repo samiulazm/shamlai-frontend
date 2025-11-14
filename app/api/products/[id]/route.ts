@@ -47,11 +47,13 @@ export async function PATCH(
     const { id } = params;
 
     // Get current user
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
-    if (!user) {
+    if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = data.user;
 
     // Verify ownership
     const { data: product } = await insforgeClient.database
@@ -99,11 +101,13 @@ export async function DELETE(
     const { id } = params;
 
     // Get current user
-    const { data: { user } } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await insforgeClient.auth.getCurrentUser();
 
-    if (!user) {
+    if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = data.user;
 
     // Verify ownership
     const { data: product } = await insforgeClient.database
