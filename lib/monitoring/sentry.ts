@@ -140,7 +140,8 @@ export function startTransaction(name: string, op: string) {
  */
 export function configurescope(callback: (scope: Sentry.Scope) => void) {
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.configureScope(callback);
+    const scope = Sentry.getCurrentScope();
+    callback(scope);
   }
 }
 
