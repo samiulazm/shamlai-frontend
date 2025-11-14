@@ -7,6 +7,7 @@ import {
   trackShipment,
   createPathaoShipment,
   createRedXShipment,
+  __resetCourierTestState,
 } from '@/lib/services/courier';
 
 // Mock fetch
@@ -18,6 +19,9 @@ describe('Courier Service', () => {
     // Clear all mocks
     mockFetch.mockClear();
     mockFetch.mockReset();
+    if (__resetCourierTestState) {
+      __resetCourierTestState();
+    }
     // Set environment variables
     process.env.PATHAO_CLIENT_ID = 'test_client_id';
     process.env.PATHAO_CLIENT_SECRET = 'test_client_secret';

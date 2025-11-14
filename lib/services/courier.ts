@@ -379,3 +379,11 @@ export async function trackShipment(
       };
   }
 }
+
+// Test helpers
+export function __resetCourierTestState() {
+  if (process.env.NODE_ENV === 'test') {
+    pathaoAccessToken = null;
+    pathaoTokenExpiry = null;
+  }
+}
