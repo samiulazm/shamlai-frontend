@@ -1,0 +1,70 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_APP_URL": "@app-url",
+    "NEXT_PUBLIC_INSFORGE_URL": "@insforge-url",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe-publishable-key",
+    "NEXT_PUBLIC_GA_MEASUREMENT_ID": "@ga-measurement-id",
+    "NEXT_PUBLIC_FB_PIXEL_ID": "@fb-pixel-id",
+    "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn"
+  },
+  "build": {
+    "env": {
+      "STRIPE_SECRET_KEY": "@stripe-secret-key",
+      "STRIPE_WEBHOOK_SECRET": "@stripe-webhook-secret",
+      "RESEND_API_KEY": "@resend-api-key",
+      "RESEND_FROM_EMAIL": "@resend-from-email",
+      "TWILIO_ACCOUNT_SID": "@twilio-account-sid",
+      "TWILIO_AUTH_TOKEN": "@twilio-auth-token",
+      "TWILIO_PHONE_NUMBER": "@twilio-phone-number",
+      "PATHAO_CLIENT_ID": "@pathao-client-id",
+      "PATHAO_CLIENT_SECRET": "@pathao-client-secret",
+      "PATHAO_STORE_ID": "@pathao-store-id",
+      "REDX_API_KEY": "@redx-api-key"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/dashboard",
+      "permanent": true
+    }
+  ]
+}
