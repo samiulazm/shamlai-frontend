@@ -176,7 +176,7 @@ export default function AccountDashboard() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
             <Link
-              href={"/account/orders" as const}
+              href={"/account/orders" as any}
               className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
             >
               View All
@@ -203,7 +203,7 @@ export default function AccountDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <Link
-                        href={(`/account/orders/${order.id}` as any)}
+                        href={`/account/orders/${order.id}` as any}
                         className="text-lg font-semibold text-gray-900 hover:text-indigo-600"
                       >
                         {order.order_number}
@@ -227,7 +227,7 @@ export default function AccountDashboard() {
                       ${parseFloat(order.total.toString()).toFixed(2)}
                     </p>
                     <Link
-                      href={`/account/orders/${order.id}`}
+                      href={`/account/orders/${order.id}` as any}
                       className="text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-1 inline-block"
                     >
                       View Details
