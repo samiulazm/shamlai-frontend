@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Order management with status tracking and fulfillment
 - Customer management and purchase history
 - Multi-store support with custom domains
-- Payment gateway integrations (PayPal, Cash on Delivery)
+- Payment gateway integrations (Cash on Delivery)
 - Delivery integrations (RedX, Pathao)
 - Marketing tools (discount codes, promotions)
 - AI-powered chatbot for customer support

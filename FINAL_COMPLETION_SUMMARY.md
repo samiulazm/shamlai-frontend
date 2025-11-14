@@ -141,7 +141,7 @@
 - ✅ Complete checkout flow
 - ✅ Discount codes
 - ✅ Tax calculation
-- ✅ Multiple payment methods (PayPal, COD)
+- ✅ Cash on Delivery workflow (manual/offline recording)
 - ✅ Inventory management (auto-deduction)
 - ✅ Order management (13 statuses)
 - ✅ Customer management
@@ -424,7 +424,7 @@
 
 ### Integrations:
 
-- Square (card payments)
+- Manual card/offline payment recording
 - Resend 4.0 (emails)
 - Twilio 5.3 (SMS)
 - Pathao (courier)

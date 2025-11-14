@@ -84,7 +84,7 @@ const products = await ProductService.getProducts(shopId, {
   page: 1,
   pageSize: 20,
   categoryId: 'category-id',
-  isActive: true
+  isActive: true,
 });
 
 // Get single product with images and variants
@@ -190,7 +190,7 @@ async function checkout(cartId: string, shippingInfo: any, paymentInfo: any) {
     // ... shipping and billing addresses
   };
 
-  const orderItems = cart.items.map(item => ({
+  const orderItems = cart.items.map((item) => ({
     product_id: item.product_id,
     variant_id: item.variant_id,
     product_name: item.product.name,
@@ -199,7 +199,7 @@ async function checkout(cartId: string, shippingInfo: any, paymentInfo: any) {
     price: item.price,
     discount_amount: 0,
     total: item.price * item.quantity,
-    image_url: item.product.image_url
+    image_url: item.product.image_url,
   }));
 
   const order = await OrderService.createOrder(orderData, orderItems);
@@ -280,13 +280,13 @@ import { insforgeClient } from '@/lib';
 // Sign up
 const { data, error } = await insforgeClient.auth.signUp({
   email: 'user@example.com',
-  password: 'SecurePassword123!'
+  password: 'SecurePassword123!',
 });
 
 // Sign in
 const { data, error } = await insforgeClient.auth.signInWithPassword({
   email: 'user@example.com',
-  password: 'SecurePassword123!'
+  password: 'SecurePassword123!',
 });
 
 // Get current user
@@ -304,7 +304,7 @@ await insforgeClient.auth.signOut();
 const { data, error } = await insforgeClient.auth.signInWithOAuth({
   provider: 'google',
   redirectTo: window.location.origin + '/dashboard',
-  skipBrowserRedirect: true
+  skipBrowserRedirect: true,
 });
 
 if (data?.url) {
@@ -327,7 +327,7 @@ import type { Product } from '@/lib';
 
 export default function ProductList({ shopId }: { shopId: string }) {
   const [selectedCategory, setSelectedCategory] = useState<string>();
-  
+
   const { categories } = useCategories();
   const { products, loading, error } = useProducts(shopId, {
     categoryId: selectedCategory,
@@ -345,7 +345,7 @@ export default function ProductList({ shopId }: { shopId: string }) {
         selected={selectedCategory}
         onChange={setSelectedCategory}
       />
-      
+
       <div className="grid grid-cols-4 gap-4">
         {products?.data.map(product => (
           <ProductCard key={product.id} product={product} />
@@ -383,19 +383,19 @@ export default function ShoppingCart({ userId }: { userId: string }) {
   return (
     <div>
       <h2>Shopping Cart ({cart?.itemCount || 0} items)</h2>
-      
+
       {cart?.items.map(item => (
         <div key={item.id}>
           <img src={item.product.image_url} alt={item.product.name} />
           <h3>{item.product.name}</h3>
           <p>${item.price}</p>
-          
+
           <input
             type="number"
             value={item.quantity}
             onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
           />
-          
+
           <button onClick={() => removeItem(item.id)}>Remove</button>
         </div>
       ))}
@@ -419,7 +419,7 @@ The seed data utility creates:
 - **Product Variants**: Sizes, colors, and combinations
 - **3 Discount Codes**: WELCOME10, SAVE20, FREESHIP
 - **3 Shipping Methods**: Standard, Express, Overnight
-- **3 Payment Methods**: Credit Card, PayPal, Cash on Delivery
+- **Payment Method**: Cash on Delivery (manual/offline recording)
 - **Shop Settings**: Complete store configuration
 
 Run the seed script:
@@ -487,10 +487,7 @@ await OrderService.updateOrderStatus(
 );
 
 // Cancel order (restores inventory)
-await OrderService.cancelOrder(
-  orderId,
-  'Customer requested cancellation'
-);
+await OrderService.cancelOrder(orderId, 'Customer requested cancellation');
 
 // Get order statistics
 const stats = await OrderService.getOrderStats(shopId, startDate, endDate);
@@ -500,21 +497,20 @@ const stats = await OrderService.getOrderStats(shopId, startDate, endDate);
 ## 📈 Performance Tips
 
 1. **Use Pagination**: Always paginate large datasets
+
    ```typescript
    const products = await ProductService.getProducts(shopId, {
      page: 1,
-     pageSize: 20
+     pageSize: 20,
    });
    ```
 
 2. **Cache Results**: Use React Query or SWR for caching
+
    ```typescript
    import useSWR from 'swr';
-   
-   const { data, error } = useSWR(
-     ['products', shopId],
-     () => ProductService.getProducts(shopId)
-   );
+
+   const { data, error } = useSWR(['products', shopId], () => ProductService.getProducts(shopId));
    ```
 
 3. **Optimize Images**: Use proper image sizes and formats
@@ -524,7 +520,7 @@ const stats = await OrderService.getOrderStats(shopId, startDate, endDate);
    const [products, categories, orders] = await Promise.all([
      ProductService.getProducts(shopId),
      ProductService.getCategories(),
-     OrderService.getOrders(shopId)
+     OrderService.getOrders(shopId),
    ]);
    ```
 
@@ -568,8 +564,3 @@ When adding new features:
 ## 📝 License
 
 This integration is part of the Shamlai e-commerce platform.
-
-
-
-
-

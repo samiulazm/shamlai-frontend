@@ -99,7 +99,7 @@ Click the button below to deploy directly to Heroku:
 
 Refer to `env.example.txt` for all available environment variables including:
 
-- Payment gateway integration (PayPal)
+- Payment gateway integration (Cash on Delivery / manual workflows)
 - Delivery services (RedX, Pathao)
 - Email services (SendGrid, Resend)
 - Analytics (Google Analytics, Facebook Pixel)

@@ -130,7 +130,7 @@ The database schema is automatically managed by InsForge. Key tables:
 
 ### Payment Integration
 
-Cash on Delivery is fully supported out of the box. If you want to record external payments (PayPal, bank transfer, etc.), update the payment method options in InsForge and mark orders as paid via the dashboard workflows. All automated payment processing hooks referencing third-party gateways have been removed for simplicity.
+Cash on Delivery is fully supported out of the box. If you want to record external payments (bank transfer, manual POS, etc.), update the payment method options in InsForge and mark orders as paid via the dashboard workflows. All automated payment processing hooks referencing third-party gateways have been removed for simplicity.
 
 ### Email Templates
 

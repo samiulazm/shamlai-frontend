@@ -152,7 +152,7 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - ✅ Shipping cost calculation
 - ✅ Customer creation/lookup
 - ✅ Order creation with workflows
-- ✅ Payment method support (COD, PayPal)
+- ✅ Payment method support (Cash on Delivery)
 
 **Cart Endpoint Features:**
 

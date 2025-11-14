@@ -16,7 +16,7 @@ A **production-ready**, full-featured Next.js 14 App Router e-commerce platform 
 - **Order Management** - Order tracking, fulfillment, and history
 - **Customer Management** - Customer profiles and purchase history
 - **Multi-Store Support** - Manage multiple storefronts
-- **Payment Integration** - Cash on Delivery and PayPal workflows
+- **Payment Integration** - Cash on Delivery workflow
 - **Delivery Integration** - RedX, Pathao (Bangladesh)
 - **AI Chatbot** - Automated customer support
 - **Marketing Tools** - Discount codes, promotions, email campaigns
