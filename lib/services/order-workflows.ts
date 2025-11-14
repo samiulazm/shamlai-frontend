@@ -154,13 +154,12 @@ export async function updateOrderWithWorkflow(
       getOrderById(orderId),
       insforgeClient.database
         .from('shop_settings')
-        .select('shop_name, shop_email')
+        .select('shop_name')
         .eq('shop_id', order.shop_id)
         .single(),
     ]);
 
     const shopName = shopSettings?.shop_name || 'Shop';
-    const shopEmail = shopSettings?.shop_email || 'noreply@example.com';
     const customer = orderWithDetails.customer;
 
     if (!customer) {
