@@ -4,27 +4,25 @@ Complete backend integration for the Shamlai e-commerce platform using InsForge 
 
 ## 📁 Structure
 
-```
 lib/
-├── insforge.ts                 # Core InsForge client configuration
-├── index.ts                    # Main export file
+├── insforge.ts # Core InsForge client configuration
+├── index.ts # Main export file
 ├── types/
-│   └── database.ts            # TypeScript types for all database tables
+│ └── database.ts # TypeScript types for all database tables
 ├── services/
-│   ├── products.ts            # Product & category management
-│   ├── orders.ts              # Order processing & fulfillment
-│   ├── cart.ts                # Shopping cart operations
-│   ├── marketing.ts           # Discounts, reviews, wishlists
-│   └── shop.ts                # Shop settings & configuration
+│ ├── products.ts # Product & category management
+│ ├── orders.ts # Order processing & fulfillment
+│ ├── cart.ts # Shopping cart operations
+│ ├── marketing.ts # Discounts, reviews, wishlists
+│ └── shop.ts # Shop settings & configuration
 ├── hooks/
-│   ├── useProducts.ts         # React hooks for products
-│   ├── useOrders.ts           # React hooks for orders
-│   ├── useCart.ts             # React hooks for cart
-│   └── useShop.ts             # React hooks for shop settings
+│ ├── useProducts.ts # React hooks for products
+│ ├── useOrders.ts # React hooks for orders
+│ ├── useCart.ts # React hooks for cart
+│ └── useShop.ts # React hooks for shop settings
 └── utils/
-    ├── validation.ts          # Data validation utilities
-    └── seed-data.ts           # Database seeding utilities
-```
+├── validation.ts # Data validation utilities
+└── seed-data.ts # Database seeding utilities
 
 ## 🚀 Quick Start
 
@@ -60,10 +58,10 @@ import { useProducts, useCart, useOrders } from '@/lib';
 
 function ProductList() {
   const { products, loading, error } = useProducts(shopId);
-  
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  
+
   return (
     <div>
       {products?.data.map(product => (
@@ -217,7 +215,7 @@ const { products, loading, error } = useProducts(shopId, {
   page: 1,
   pageSize: 20,
   categoryId: 'category-uuid',
-  search: 'search term'
+  search: 'search term',
 });
 ```
 
@@ -264,7 +262,7 @@ const {
   clearCart,
   validateCart,
   calculateTotals,
-  refreshCart
+  refreshCart,
 } = useCart(userId, sessionId);
 
 // Add item to cart
@@ -320,29 +318,29 @@ await SeedData.clearShopData(shopId);
 ## 🎯 Constants
 
 ```typescript
-import { 
+import {
   STORAGE_BUCKETS,
   ORDER_STATUS,
   PAYMENT_STATUS,
   FULFILLMENT_STATUS,
-  DISCOUNT_TYPES
+  DISCOUNT_TYPES,
 } from '@/lib';
 
 // Storage buckets
-STORAGE_BUCKETS.PRODUCT_IMAGES
-STORAGE_BUCKETS.CATEGORY_IMAGES
-STORAGE_BUCKETS.SHOP_ASSETS
-STORAGE_BUCKETS.BLOG_IMAGES
-STORAGE_BUCKETS.REVIEW_IMAGES
-STORAGE_BUCKETS.CHATBOT_ATTACHMENTS
+STORAGE_BUCKETS.PRODUCT_IMAGES;
+STORAGE_BUCKETS.CATEGORY_IMAGES;
+STORAGE_BUCKETS.SHOP_ASSETS;
+STORAGE_BUCKETS.BLOG_IMAGES;
+STORAGE_BUCKETS.REVIEW_IMAGES;
+STORAGE_BUCKETS.CHATBOT_ATTACHMENTS;
 
 // Order status values
-ORDER_STATUS.PENDING
-ORDER_STATUS.PROCESSING
-ORDER_STATUS.SHIPPED
-ORDER_STATUS.DELIVERED
-ORDER_STATUS.CANCELLED
-ORDER_STATUS.REFUNDED
+ORDER_STATUS.PENDING;
+ORDER_STATUS.PROCESSING;
+ORDER_STATUS.SHIPPED;
+ORDER_STATUS.DELIVERED;
+ORDER_STATUS.CANCELLED;
+ORDER_STATUS.REFUNDED;
 ```
 
 ## 📝 TypeScript Types
@@ -357,32 +355,32 @@ import type {
   ProductUpdate,
   ProductVariant,
   Category,
-  
+
   // Orders
   Order,
   OrderItem,
   Customer,
   Address,
-  
+
   // Cart
   Cart,
   CartItem,
-  
+
   // Marketing
   DiscountCode,
   ProductReview,
   Wishlist,
-  
+
   // Shop
   ShopSettings,
   PaymentMethod,
   ShippingMethod,
   Theme,
-  
+
   // Utility
   PaginatedResponse,
   QueryFilters,
-  DatabaseResponse
+  DatabaseResponse,
 } from '@/lib';
 ```
 
@@ -397,7 +395,7 @@ import { useProducts, useProductMutations, Validation } from '@/lib';
 function ProductManagement({ shopId }: { shopId: string }) {
   const { products, loading, error } = useProducts(shopId);
   const { createProduct, updateProduct, deleteProduct } = useProductMutations();
-  
+
   const handleCreate = async (formData: FormData) => {
     const productData = {
       shop_id: shopId,
@@ -406,19 +404,19 @@ function ProductManagement({ shopId }: { shopId: string }) {
       base_price: parseFloat(formData.get('price') as string),
       // ... other fields
     };
-    
+
     // Validate
     const validation = Validation.validateProduct(productData);
     if (!validation.isValid) {
       alert(validation.errors.join('\n'));
       return;
     }
-    
+
     // Create
     const images = formData.getAll('images') as File[];
     await createProduct(productData, images);
   };
-  
+
   return (
     <div>
       {/* Your UI here */}
@@ -437,7 +435,7 @@ import { insforgeClient } from '@/lib';
 // Sign in
 const { data, error } = await insforgeClient.auth.signInWithPassword({
   email: 'user@example.com',
-  password: 'password'
+  password: 'password',
 });
 
 // Get current user
@@ -480,7 +478,7 @@ async function initializeStore() {
   // Get current user (shop owner)
   const { data } = await insforgeClient.auth.getCurrentUser();
   const shopId = data?.user?.id;
-  
+
   if (shopId) {
     // Seed all demo data
     await SeedData.seedAllData(shopId);
@@ -498,11 +496,7 @@ async function initializeStore() {
 ## 🤝 Support
 
 For issues or questions:
+
 1. Check the type definitions (`lib/types/database.ts`)
 2. Review service implementations (`lib/services/`)
 3. Consult the InsForge documentation
-
-
-
-
-

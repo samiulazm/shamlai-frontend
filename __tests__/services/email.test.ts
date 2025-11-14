@@ -1,27 +1,42 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import {
-  sendOrderConfirmationEmail,
-  sendShipmentNotificationEmail,
-  sendWelcomeEmail,
-} from '@/lib/services/email';
-
 // Mock Resend
 jest.mock('resend', () => {
   return {
     Resend: jest.fn().mockImplementation(() => ({
       emails: {
-        send: jest.fn().mockResolvedValue({
+        send: jest.fn().mockImplementation(async () => ({
           data: { id: 'email_test_123' },
           error: null,
-        }),
+        })),
       },
     })),
   };
 });
 
+const {
+  sendOrderConfirmationEmail,
+  sendShipmentNotificationEmail,
+  sendWelcomeEmail,
+  __resetResendClientForTests,
+} = require('@/lib/services/email');
+const { Resend } = require('resend');
+
+const ORIGINAL_RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ORIGINAL_RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
+
 describe('Email Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.RESEND_API_KEY = 'test_resend_key';
+    process.env.RESEND_FROM_EMAIL = 'Test Sender <test@example.com>';
+    if (__resetResendClientForTests) {
+      __resetResendClientForTests();
+    }
+  });
+
+  afterAll(() => {
+    process.env.RESEND_API_KEY = ORIGINAL_RESEND_API_KEY;
+    process.env.RESEND_FROM_EMAIL = ORIGINAL_RESEND_FROM_EMAIL;
   });
 
   describe('sendOrderConfirmationEmail', () => {
@@ -52,7 +67,6 @@ describe('Email Service', () => {
       };
 
       const result = await sendOrderConfirmationEmail(params);
-
       expect(result.success).toBe(true);
       expect(result.data?.id).toBe('email_test_123');
     });
@@ -125,15 +139,17 @@ describe('Email Service', () => {
 
   describe('error handling', () => {
     it('should handle email sending errors gracefully', async () => {
-      const Resend = require('resend').Resend;
       Resend.mockImplementation(() => ({
         emails: {
-          send: jest.fn().mockResolvedValue({
+          send: jest.fn().mockImplementation(async () => ({
             data: null,
             error: new Error('Email service error'),
-          }),
+          })),
         },
       }));
+      if (__resetResendClientForTests) {
+        __resetResendClientForTests();
+      }
 
       const params = {
         to: 'customer@example.com',

@@ -1,10 +1,30 @@
 import { Resend } from 'resend';
 import { logger } from '@/lib/utils/logger';
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-load Resend client to support testing and avoid initialization errors
+let resendClient: Resend | null = null;
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Shamlai <noreply@shamlai.com>';
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+
+  return resendClient;
+}
+
+export function __resetResendClientForTests() {
+  if (process.env.NODE_ENV === 'test') {
+    resendClient = null;
+  }
+}
+
+function getFromEmail(): string {
+  return process.env.RESEND_FROM_EMAIL || 'Shamlai <noreply@shamlai.com>';
+}
 
 export interface OrderConfirmationEmailParams {
   to: string;
@@ -56,6 +76,15 @@ export interface WelcomeEmailParams {
  */
 export async function sendOrderConfirmationEmail(params: OrderConfirmationEmailParams) {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      const error = new Error('Email service not configured');
+      logger.warn('Resend client missing, skipping order confirmation email', error);
+      return { success: false, error };
+    }
+
+    const fromEmail = getFromEmail();
+
     const itemsHtml = params.items
       .map(
         (item) => `
@@ -169,14 +198,17 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationEmailP
     `;
 
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: params.to,
       subject: `Order Confirmation - ${params.orderNumber}`,
       html,
     });
 
     if (error) {
-      logger.error('Failed to send order confirmation email', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to send order confirmation email',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { success: false, error };
     }
 
@@ -193,6 +225,15 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationEmailP
  */
 export async function sendShipmentNotificationEmail(params: ShipmentNotificationParams) {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      const error = new Error('Email service not configured');
+      logger.warn('Resend client missing, skipping shipment notification email', error);
+      return { success: false, error };
+    }
+
+    const fromEmail = getFromEmail();
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -242,14 +283,17 @@ export async function sendShipmentNotificationEmail(params: ShipmentNotification
     `;
 
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: params.to,
       subject: `Your Order Has Shipped - ${params.orderNumber}`,
       html,
     });
 
     if (error) {
-      logger.error('Failed to send shipment notification email', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to send shipment notification email',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { success: false, error };
     }
 
@@ -266,6 +310,15 @@ export async function sendShipmentNotificationEmail(params: ShipmentNotification
  */
 export async function sendWelcomeEmail(params: WelcomeEmailParams) {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      const error = new Error('Email service not configured');
+      logger.warn('Resend client missing, skipping welcome email', error);
+      return { success: false, error };
+    }
+
+    const fromEmail = getFromEmail();
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -334,14 +387,17 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams) {
     `;
 
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: params.to,
       subject: `Welcome to Shamlai - ${params.shopName}`,
       html,
     });
 
     if (error) {
-      logger.error('Failed to send welcome email', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to send welcome email',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { success: false, error };
     }
 
@@ -358,6 +414,15 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams) {
  */
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      const error = new Error('Email service not configured');
+      logger.warn('Resend client missing, skipping password reset email', error);
+      return { success: false, error };
+    }
+
+    const fromEmail = getFromEmail();
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -393,14 +458,17 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     `;
 
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to,
       subject: 'Reset Your Password - Shamlai',
       html,
     });
 
     if (error) {
-      logger.error('Failed to send password reset email', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to send password reset email',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { success: false, error };
     }
 
