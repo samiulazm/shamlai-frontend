@@ -13,11 +13,13 @@ This guide will help you deploy the Shamlai Frontend to Heroku.
 ### Method 1: Using Heroku CLI (Recommended)
 
 1. **Login to Heroku**
+
    ```bash
    heroku login
    ```
 
 2. **Create a new Heroku app**
+
    ```bash
    heroku create your-app-name
    # Or let Heroku generate a name:
@@ -25,6 +27,7 @@ This guide will help you deploy the Shamlai Frontend to Heroku.
    ```
 
 3. **Set environment variables**
+
    ```bash
    # Required variables
    heroku config:set NODE_ENV=production
@@ -38,20 +41,18 @@ This guide will help you deploy the Shamlai Frontend to Heroku.
    ```
 
    **Optional but recommended:**
+
    ```bash
-   # Payment integrations
-   heroku config:set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-key
-   heroku config:set STRIPE_SECRET_KEY=your-stripe-secret
-   
    # Analytics
    heroku config:set NEXT_PUBLIC_GA_MEASUREMENT_ID=your-ga-id
-   
+
    # Email service
    heroku config:set SENDGRID_API_KEY=your-sendgrid-key
    heroku config:set SENDGRID_FROM_EMAIL=noreply@yourdomain.com
    ```
 
 4. **Deploy to Heroku**
+
    ```bash
    git push heroku main
    # If your branch is named 'master':
@@ -84,20 +85,21 @@ Click the button below to deploy directly to Heroku:
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NODE_ENV` | Node environment | `production` |
-| `NEXT_PUBLIC_APP_URL` | Your Heroku app URL | `https://your-app.herokuapp.com` |
-| `NEXT_PUBLIC_APP_NAME` | Application name | `Shamlai` |
-| `NEXT_PUBLIC_INSFORGE_URL` | InsForge backend URL | `https://your-instance.insforge.app` |
-| `INSFORGE_SERVICE_ROLE_KEY` | InsForge service key | Your service role key |
-| `NEXTAUTH_SECRET` | NextAuth secret | Generate with `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | App URL for auth | Same as `NEXT_PUBLIC_APP_URL` |
+| Variable                    | Description          | Example                                 |
+| --------------------------- | -------------------- | --------------------------------------- |
+| `NODE_ENV`                  | Node environment     | `production`                            |
+| `NEXT_PUBLIC_APP_URL`       | Your Heroku app URL  | `https://your-app.herokuapp.com`        |
+| `NEXT_PUBLIC_APP_NAME`      | Application name     | `Shamlai`                               |
+| `NEXT_PUBLIC_INSFORGE_URL`  | InsForge backend URL | `https://your-instance.insforge.app`    |
+| `INSFORGE_SERVICE_ROLE_KEY` | InsForge service key | Your service role key                   |
+| `NEXTAUTH_SECRET`           | NextAuth secret      | Generate with `openssl rand -base64 32` |
+| `NEXTAUTH_URL`              | App URL for auth     | Same as `NEXT_PUBLIC_APP_URL`           |
 
 ### Optional Variables
 
 Refer to `env.example.txt` for all available environment variables including:
-- Payment gateway integration (Stripe, PayPal)
+
+- Payment gateway integration (PayPal)
 - Delivery services (RedX, Pathao)
 - Email services (SendGrid, Resend)
 - Analytics (Google Analytics, Facebook Pixel)
@@ -107,22 +109,26 @@ Refer to `env.example.txt` for all available environment variables including:
 ## Post-Deployment Setup
 
 ### 1. Verify Deployment
+
 ```bash
 heroku logs --tail
 ```
 
 ### 2. Check App Status
+
 ```bash
 heroku ps
 ```
 
 ### 3. Run Database Migrations (if applicable)
+
 ```bash
 # If you need to seed the database
 heroku run npm run seed
 ```
 
 ### 4. Custom Domain (Optional)
+
 ```bash
 heroku domains:add www.yourdomain.com
 ```
@@ -132,6 +138,7 @@ Then update your DNS records with the provided DNS target.
 ## Scaling Your App
 
 ### Upgrade Dyno Type
+
 ```bash
 # Upgrade to hobby dyno ($7/month)
 heroku dyno:type hobby
@@ -141,6 +148,7 @@ heroku dyno:type standard-1x
 ```
 
 ### Scale Dynos
+
 ```bash
 # Scale to 2 web dynos
 heroku ps:scale web=2
@@ -149,6 +157,7 @@ heroku ps:scale web=2
 ## Monitoring & Maintenance
 
 ### View Logs
+
 ```bash
 # Tail logs
 heroku logs --tail
@@ -161,11 +170,13 @@ heroku logs --source app --tail
 ```
 
 ### Restart App
+
 ```bash
 heroku restart
 ```
 
 ### Run Commands
+
 ```bash
 heroku run bash
 heroku run npm run seed
@@ -174,16 +185,19 @@ heroku run npm run seed
 ### Add-ons (Optional)
 
 **Papertrail** (Log management):
+
 ```bash
 heroku addons:create papertrail:choklad
 ```
 
 **Heroku Redis** (Caching/Rate limiting):
+
 ```bash
 heroku addons:create heroku-redis:mini
 ```
 
 **New Relic** (Performance monitoring):
+
 ```bash
 heroku addons:create newrelic:wayne
 ```
@@ -193,6 +207,7 @@ heroku addons:create newrelic:wayne
 ### Build Failures
 
 1. **Check build logs**:
+
    ```bash
    heroku logs --tail
    ```
@@ -211,11 +226,13 @@ heroku addons:create newrelic:wayne
 ### Application Errors
 
 1. **Check error logs**:
+
    ```bash
    heroku logs --tail
    ```
 
 2. **Verify environment variables**:
+
    ```bash
    heroku config
    ```
@@ -229,26 +246,33 @@ heroku addons:create newrelic:wayne
 ### Common Issues
 
 **Issue**: Application not starting
+
 - **Solution**: Verify `Procfile` exists and contains `web: npm run start`
 
 **Issue**: Environment variables not working
+
 - **Solution**: Ensure variables are prefixed with `NEXT_PUBLIC_` for client-side access
 
 **Issue**: Build timeout
+
 - **Solution**: Upgrade to a higher dyno tier or optimize build process
 
 ## Performance Optimization
 
 ### Enable Compression
+
 Already configured in Next.js by default.
 
 ### CDN Setup
+
 Consider using a CDN for static assets:
+
 - CloudFlare
 - AWS CloudFront
 - Fastly
 
 ### Database Connection Pooling
+
 If using a database, configure connection pooling to handle multiple requests efficiently.
 
 ## Security Checklist
@@ -288,18 +312,18 @@ jobs:
       - uses: akhileshns/heroku-deploy@v3.12.14
         with:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "your-app-name"
-          heroku_email: "your-email@example.com"
+          heroku_app_name: 'your-app-name'
+          heroku_email: 'your-email@example.com'
 ```
 
 ## Cost Estimation
 
-| Tier | Price | Features |
-|------|-------|----------|
-| Free | $0/month | 550-1000 dyno hours/month |
-| Hobby | $7/month | Always-on, custom domains |
+| Tier        | Price     | Features                     |
+| ----------- | --------- | ---------------------------- |
+| Free        | $0/month  | 550-1000 dyno hours/month    |
+| Hobby       | $7/month  | Always-on, custom domains    |
 | Standard-1X | $25/month | More RAM, horizontal scaling |
-| Standard-2X | $50/month | 2X RAM, better performance |
+| Standard-2X | $50/month | 2X RAM, better performance   |
 
 ## Support & Resources
 
@@ -320,4 +344,3 @@ jobs:
 ---
 
 **Need Help?** Check the [Heroku documentation](https://devcenter.heroku.com/) or contact support.
-

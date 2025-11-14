@@ -8,7 +8,7 @@ import type {
   DiscountCode,
   ShippingMethod,
   PaymentMethod,
-  ShopSettings
+  ShopSettings,
 } from '../types/database';
 import { generateSlug } from './validation';
 
@@ -58,7 +58,7 @@ export async function seedShopSettings(shopId: string): Promise<ShopSettings> {
       meta_title: 'Demo E-Commerce Store - Quality Products',
       meta_description: 'Shop the best quality products at great prices',
       enable_reviews: true,
-      enable_guest_checkout: true
+      enable_guest_checkout: true,
     };
 
     // Check if shop settings already exist
@@ -110,15 +110,13 @@ const SAMPLE_CATEGORIES = [
   { name: 'Books', description: 'Books and reading materials' },
   { name: 'Toys & Games', description: 'Fun for all ages' },
   { name: 'Beauty & Health', description: 'Personal care and wellness' },
-  { name: 'Food & Beverages', description: 'Gourmet foods and drinks' }
+  { name: 'Food & Beverages', description: 'Gourmet foods and drinks' },
 ];
 
 export async function seedCategories(): Promise<Category[]> {
   try {
     // Check if categories already exist
-    const { data: existing } = await insforgeClient.database
-      .from('categories')
-      .select('*');
+    const { data: existing } = await insforgeClient.database.from('categories').select('*');
 
     if (existing && existing.length > 0) {
       console.log(`ℹ️  ${existing.length} categories already exist, skipping...`);
@@ -131,7 +129,7 @@ export async function seedCategories(): Promise<Category[]> {
       description: cat.description,
       is_active: true,
       sort_order: index,
-      parent_id: null
+      parent_id: null,
     }));
 
     const { data, error } = await insforgeClient.database
@@ -153,11 +151,15 @@ export async function seedCategories(): Promise<Category[]> {
 // ============================================================================
 
 const SAMPLE_PRODUCTS = [
-  { name: 'Wireless Bluetooth Headphones', category: 'Electronics', shortDesc: 'Premium sound quality' },
+  {
+    name: 'Wireless Bluetooth Headphones',
+    category: 'Electronics',
+    shortDesc: 'Premium sound quality',
+  },
   { name: 'Laptop Computer 15"', category: 'Electronics', shortDesc: 'Powerful and portable' },
   { name: 'Smart Watch', category: 'Electronics', shortDesc: 'Track your fitness' },
-  { name: 'Men\'s T-Shirt', category: 'Clothing', shortDesc: '100% cotton comfort' },
-  { name: 'Women\'s Yoga Pants', category: 'Clothing', shortDesc: 'Flexible and comfortable' },
+  { name: "Men's T-Shirt", category: 'Clothing', shortDesc: '100% cotton comfort' },
+  { name: "Women's Yoga Pants", category: 'Clothing', shortDesc: 'Flexible and comfortable' },
   { name: 'Designer Jeans', category: 'Clothing', shortDesc: 'Classic style' },
   { name: 'Coffee Maker', category: 'Home & Garden', shortDesc: 'Brew perfect coffee' },
   { name: 'Desk Lamp', category: 'Home & Garden', shortDesc: 'Adjustable LED light' },
@@ -172,13 +174,10 @@ const SAMPLE_PRODUCTS = [
   { name: 'Facial Cleanser', category: 'Beauty & Health', shortDesc: 'Gentle and effective' },
   { name: 'Protein Powder', category: 'Beauty & Health', shortDesc: 'Build muscle naturally' },
   { name: 'Organic Coffee Beans', category: 'Food & Beverages', shortDesc: 'Fair trade certified' },
-  { name: 'Gourmet Chocolate Box', category: 'Food & Beverages', shortDesc: 'Luxury assortment' }
+  { name: 'Gourmet Chocolate Box', category: 'Food & Beverages', shortDesc: 'Luxury assortment' },
 ];
 
-export async function seedProducts(
-  shopId: string,
-  categories: Category[]
-): Promise<Product[]> {
+export async function seedProducts(shopId: string, categories: Category[]): Promise<Product[]> {
   try {
     // Check if products already exist for this shop
     const { data: existing } = await insforgeClient.database
@@ -192,7 +191,7 @@ export async function seedProducts(
     }
 
     const products = SAMPLE_PRODUCTS.map((product) => {
-      const category = categories.find(c => c.name === product.category);
+      const category = categories.find((c) => c.name === product.category);
       const basePrice = randomPrice(10, 500);
 
       return {
@@ -215,7 +214,7 @@ export async function seedProducts(
         is_featured: Math.random() > 0.7,
         has_variants: Math.random() > 0.6,
         meta_title: product.name,
-        meta_description: product.shortDesc
+        meta_description: product.shortDesc,
       };
     });
 
@@ -252,7 +251,7 @@ export async function seedProductVariants(products: Product[]): Promise<ProductV
         for (const size of sizes) {
           for (const color of colors) {
             const priceModifier = 1 + (Math.random() * 0.2 - 0.1); // ±10%
-            
+
             allVariants.push({
               product_id: product.id,
               name: `${color} - ${size}`,
@@ -266,7 +265,7 @@ export async function seedProductVariants(products: Product[]): Promise<ProductV
               option1_value: color,
               option2_name: 'Size',
               option2_value: size,
-              is_active: true
+              is_active: true,
             });
           }
         }
@@ -313,7 +312,7 @@ export async function seedDiscountCodes(shopId: string): Promise<DiscountCode[]>
         usage_limit_per_customer: 1,
         expires_at: nextMonth.toISOString(),
         is_active: true,
-        applies_to: 'all' as const
+        applies_to: 'all' as const,
       },
       {
         shop_id: shopId,
@@ -326,7 +325,7 @@ export async function seedDiscountCodes(shopId: string): Promise<DiscountCode[]>
         usage_count: 0,
         expires_at: nextMonth.toISOString(),
         is_active: true,
-        applies_to: 'all' as const
+        applies_to: 'all' as const,
       },
       {
         shop_id: shopId,
@@ -338,8 +337,8 @@ export async function seedDiscountCodes(shopId: string): Promise<DiscountCode[]>
         usage_count: 0,
         expires_at: nextMonth.toISOString(),
         is_active: true,
-        applies_to: 'all' as const
-      }
+        applies_to: 'all' as const,
+      },
     ];
 
     const { data, error } = await insforgeClient.database
@@ -373,7 +372,7 @@ export async function seedShippingMethods(shopId: string): Promise<ShippingMetho
         estimated_days_min: 5,
         estimated_days_max: 7,
         is_active: true,
-        available_countries: ['United States', 'Canada']
+        available_countries: ['United States', 'Canada'],
       },
       {
         shop_id: shopId,
@@ -384,7 +383,7 @@ export async function seedShippingMethods(shopId: string): Promise<ShippingMetho
         estimated_days_min: 2,
         estimated_days_max: 3,
         is_active: true,
-        available_countries: ['United States', 'Canada']
+        available_countries: ['United States', 'Canada'],
       },
       {
         shop_id: shopId,
@@ -395,8 +394,8 @@ export async function seedShippingMethods(shopId: string): Promise<ShippingMetho
         estimated_days_min: 1,
         estimated_days_max: 1,
         is_active: true,
-        available_countries: ['United States']
-      }
+        available_countries: ['United States'],
+      },
     ];
 
     const { data, error } = await insforgeClient.database
@@ -422,30 +421,11 @@ export async function seedPaymentMethods(shopId: string): Promise<PaymentMethod[
     const methods = [
       {
         shop_id: shopId,
-        provider: 'stripe' as const,
-        name: 'Credit Card',
-        is_active: true,
-        settings: {
-          acceptedCards: ['visa', 'mastercard', 'amex'],
-          testMode: true
-        }
-      },
-      {
-        shop_id: shopId,
-        provider: 'paypal' as const,
-        name: 'PayPal',
-        is_active: true,
-        settings: {
-          testMode: true
-        }
-      },
-      {
-        shop_id: shopId,
         provider: 'cash_on_delivery' as const,
         name: 'Cash on Delivery',
         is_active: true,
-        settings: {}
-      }
+        settings: {},
+      },
     ];
 
     const { data, error } = await insforgeClient.database
@@ -530,14 +510,11 @@ export async function clearShopData(shopId: string): Promise<void> {
       'payment_methods',
       'shipping_methods',
       'tax_rates',
-      'shop_settings'
+      'shop_settings',
     ];
 
     for (const table of tables) {
-      const { error } = await insforgeClient.database
-        .from(table)
-        .delete()
-        .eq('shop_id', shopId);
+      const { error } = await insforgeClient.database.from(table).delete().eq('shop_id', shopId);
 
       if (error && error.code !== 'PGRST116') {
         console.warn(`Warning deleting from ${table}:`, error);
@@ -550,8 +527,3 @@ export async function clearShopData(shopId: string): Promise<void> {
     throw error;
   }
 }
-
-
-
-
-

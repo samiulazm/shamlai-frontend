@@ -7,15 +7,12 @@
   "env": {
     "NEXT_PUBLIC_APP_URL": "@app-url",
     "NEXT_PUBLIC_INSFORGE_URL": "@insforge-url",
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe-publishable-key",
     "NEXT_PUBLIC_GA_MEASUREMENT_ID": "@ga-measurement-id",
     "NEXT_PUBLIC_FB_PIXEL_ID": "@fb-pixel-id",
     "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn"
   },
   "build": {
     "env": {
-      "STRIPE_SECRET_KEY": "@stripe-secret-key",
-      "STRIPE_WEBHOOK_SECRET": "@stripe-webhook-secret",
       "RESEND_API_KEY": "@resend-api-key",
       "RESEND_FROM_EMAIL": "@resend-from-email",
       "TWILIO_ACCOUNT_SID": "@twilio-account-sid",

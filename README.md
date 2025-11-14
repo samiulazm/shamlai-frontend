@@ -10,18 +10,20 @@ A **production-ready**, full-featured Next.js 14 App Router e-commerce platform 
 ## ✨ Features
 
 ### 🎯 Core Features
+
 - **Merchant Dashboard** - Complete store management interface
 - **Product Management** - Full CRUD with variants, inventory, and images
 - **Order Management** - Order tracking, fulfillment, and history
 - **Customer Management** - Customer profiles and purchase history
 - **Multi-Store Support** - Manage multiple storefronts
-- **Payment Integration** - Stripe, PayPal, Cash on Delivery
+- **Payment Integration** - Cash on Delivery and PayPal workflows
 - **Delivery Integration** - RedX, Pathao (Bangladesh)
 - **AI Chatbot** - Automated customer support
 - **Marketing Tools** - Discount codes, promotions, email campaigns
 - **Analytics Dashboard** - Sales, traffic, and customer insights
 
 ### 🛡️ Production-Ready Features
+
 - ✅ **Comprehensive Testing** - Jest + React Testing Library
 - ✅ **CI/CD Pipeline** - GitHub Actions with automated deployment
 - ✅ **Error Handling** - Error boundaries and global error tracking
@@ -200,12 +202,14 @@ Detailed deployment guides for Netlify, AWS, DigitalOcean, Railway, and more in 
 ## 🎨 Tech Stack
 
 ### Core
+
 - **Next.js 14** - React framework with App Router
 - **TypeScript 5.6** - Type safety
 - **Tailwind CSS 3.4** - Styling
 - **React 18** - UI library
 
 ### Development
+
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
 - **Husky** - Git hooks
@@ -213,12 +217,14 @@ Detailed deployment guides for Netlify, AWS, DigitalOcean, Railway, and more in 
 - **React Testing Library** - Component testing
 
 ### Monitoring & Analytics
+
 - **Google Analytics** - Traffic analytics
 - **Facebook Pixel** - Marketing analytics
 - **Web Vitals** - Performance monitoring
 - **Sentry** - Error tracking (ready)
 
 ### Infrastructure
+
 - **Docker** - Containerization
 - **GitHub Actions** - CI/CD
 - **Vercel** - Deployment platform
@@ -226,12 +232,14 @@ Detailed deployment guides for Netlify, AWS, DigitalOcean, Railway, and more in 
 ## 📊 Performance
 
 Target metrics (Lighthouse):
+
 - **Performance**: 90+
 - **Accessibility**: 100
 - **Best Practices**: 100
 - **SEO**: 100
 
 Core Web Vitals:
+
 - **LCP**: < 2.5s
 - **FID**: < 100ms
 - **CLS**: < 0.1
@@ -239,6 +247,7 @@ Core Web Vitals:
 ## ♿ Accessibility
 
 WCAG 2.1 Level AA compliant:
+
 - Keyboard navigation
 - Screen reader support
 - Focus management

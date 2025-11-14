@@ -22,23 +22,27 @@ Complete setup guide for the Shamlai SaaS SME e-commerce MVP.
 ## Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-org/shamlai-frontend.git
    cd shamlai-frontend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Configure environment variables**
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your actual values
    ```
 
 4. **Run the development server**
+
    ```bash
    npm run dev
    ```
@@ -53,39 +57,34 @@ Complete setup guide for the Shamlai SaaS SME e-commerce MVP.
 ### Required Services
 
 #### 1. InsForge Backend (Required)
+
 ```env
 NEXT_PUBLIC_INSFORGE_URL=https://your-project.insforge.app
 ```
+
 - Sign up at [InsForge](https://insforge.com)
 - Create a new project
 - Copy your project URL
 
-#### 2. Stripe Payment Gateway (Required for payments)
-```env
-STRIPE_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-- Create account at [Stripe](https://stripe.com)
-- Get API keys from Dashboard > Developers > API keys
-- Set up webhook endpoint: `https://yourdomain.com/api/stripe/webhook`
-- Events to listen: `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`
+#### 2. Resend Email Service (Required for emails)
 
-#### 3. Resend Email Service (Required for emails)
 ```env
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=Shamlai <noreply@yourdomain.com>
 ```
+
 - Sign up at [Resend](https://resend.com)
 - Create API key
 - Verify your domain for production
 
-#### 4. Twilio SMS Service (Required for SMS)
+#### 3. Twilio SMS Service (Required for SMS)
+
 ```env
 TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_PHONE_NUMBER=+1234567890
 ```
+
 - Create account at [Twilio](https://twilio.com)
 - Get credentials from Console
 - Purchase a phone number
@@ -93,21 +92,25 @@ TWILIO_PHONE_NUMBER=+1234567890
 ### Optional Services
 
 #### Pathao Courier (Bangladesh delivery)
+
 ```env
 PATHAO_API_URL=https://api-hermes.pathao.com/api/v1
 PATHAO_CLIENT_ID=...
 PATHAO_CLIENT_SECRET=...
 PATHAO_STORE_ID=...
 ```
+
 - Register as merchant at [Pathao](https://pathao.com)
 - Request API access
 - Create a store
 
 #### RedX Courier (Bangladesh delivery)
+
 ```env
 REDX_API_URL=https://openapi.redx.com.bd/v1.0.0-beta
 REDX_API_KEY=...
 ```
+
 - Register as merchant at [RedX](https://redx.com.bd)
 - Request API access
 
@@ -127,27 +130,12 @@ The database schema is automatically managed by InsForge. Key tables:
 
 ### Payment Integration
 
-#### Stripe Checkout Flow:
-1. Customer adds items to cart
-2. Proceeds to checkout
-3. System creates Stripe checkout session
-4. Customer completes payment on Stripe
-5. Webhook updates order status
-6. Email/SMS confirmation sent
-
-#### Webhook Setup:
-```bash
-# For local development
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-
-# For production
-# Add webhook endpoint in Stripe Dashboard:
-https://yourdomain.com/api/stripe/webhook
-```
+Cash on Delivery is fully supported out of the box. If you want to record external payments (PayPal, bank transfer, etc.), update the payment method options in InsForge and mark orders as paid via the dashboard workflows. All automated payment processing hooks referencing third-party gateways have been removed for simplicity.
 
 ### Email Templates
 
 Pre-built templates for:
+
 - Order confirmation
 - Shipment notification
 - Welcome email
@@ -158,6 +146,7 @@ Customize in `lib/services/email.ts`
 ### SMS Notifications
 
 Automatic SMS for:
+
 - Order confirmation
 - Shipment tracking
 - Delivery confirmation
@@ -168,6 +157,7 @@ Configure in `lib/services/sms.ts`
 ### Courier Integration
 
 #### Creating a Shipment:
+
 ```typescript
 import { createShipment } from '@/lib/services/courier';
 
@@ -186,6 +176,7 @@ const result = await createShipment('pathao', {
 ```
 
 #### Tracking a Shipment:
+
 ```typescript
 import { trackShipment } from '@/lib/services/courier';
 
@@ -248,6 +239,7 @@ npm run seed
 ### Code Quality
 
 Pre-commit hooks automatically run:
+
 - ESLint
 - Prettier
 - Type checking
@@ -255,16 +247,19 @@ Pre-commit hooks automatically run:
 ## Testing
 
 ### Unit Tests
+
 ```bash
 npm test
 ```
 
 ### Integration Tests
+
 ```bash
 npm run test:ci
 ```
 
 ### Coverage Report
+
 ```bash
 npm run test:coverage
 ```
@@ -276,16 +271,19 @@ Target coverage: 70%+
 ### Vercel (Recommended)
 
 1. **Install Vercel CLI**
+
    ```bash
    npm i -g vercel
    ```
 
 2. **Login to Vercel**
+
    ```bash
    vercel login
    ```
 
 3. **Deploy**
+
    ```bash
    vercel
    ```
@@ -303,11 +301,13 @@ Target coverage: 70%+
 ### Docker Deployment
 
 1. **Build image**
+
    ```bash
    docker build -t shamlai-frontend .
    ```
 
 2. **Run container**
+
    ```bash
    docker run -p 3000:3000 --env-file .env.local shamlai-frontend
    ```
@@ -320,8 +320,9 @@ Target coverage: 70%+
 ### Environment-specific Configuration
 
 #### Production Checklist:
+
 - [ ] Set `NODE_ENV=production`
-- [ ] Use production API keys (Stripe, Twilio, etc.)
+- [ ] Use production API keys (SMS, email, analytics, etc.)
 - [ ] Configure production domain
 - [ ] Set up SSL certificate
 - [ ] Enable error tracking (Sentry)
@@ -336,6 +337,7 @@ Target coverage: 70%+
 ### Common Issues
 
 #### 1. **Build Errors**
+
 ```bash
 # Clear Next.js cache
 rm -rf .next
@@ -346,24 +348,25 @@ npm install
 ```
 
 #### 2. **Environment Variables Not Loading**
+
 - Ensure file is named `.env.local` (not `.env`)
 - Restart development server after changes
 - Variables starting with `NEXT_PUBLIC_` are exposed to browser
 
 #### 3. **Database Connection Issues**
+
 - Verify INSFORGE_URL is correct
 - Check InsForge project status
 - Ensure tables are created (run seed script)
 
-#### 4. **Payment Webhook Not Receiving Events**
-```bash
-# For local testing, use Stripe CLI:
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+#### 4. **Custom Payment Webhook Not Receiving Events**
 
-# Check webhook logs in Stripe Dashboard
-```
+- Verify your custom gateway is sending events to the correct URL
+- Inspect server logs for incoming requests
+- Re-deploy after changing any environment variables
 
 #### 5. **Email/SMS Not Sending**
+
 - Verify API keys are correct
 - Check service quotas/limits
 - Review logs for error messages
@@ -372,6 +375,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 ### Debug Mode
 
 Enable detailed logging:
+
 ```env
 NODE_ENV=development
 DEBUG=*

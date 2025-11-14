@@ -9,13 +9,16 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ## ✅ Completed Features
 
 ### 1. Authentication System (100% Complete)
+
 **Files Created:**
+
 - `middleware.ts` - Route protection and session management
 - `lib/context/AuthContext.tsx` - Global auth state management
 - `app/(auth)/reset-password/page.tsx` - Password reset request
 - `app/(auth)/update-password/page.tsx` - Password update flow
 
 **Features:**
+
 - ✅ Email/password authentication
 - ✅ OAuth (Google, GitHub)
 - ✅ Password reset workflow
@@ -26,44 +29,39 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 
 ---
 
-### 2. Payment Gateway Integration (100% Complete)
+### 2. Payment Workflow Integration (100% Complete)
+
 **Files Created:**
-- `lib/services/payment.ts` - Stripe payment service (384 lines)
-- `app/api/stripe/checkout/route.ts` - Checkout session creation
-- `app/api/stripe/webhook/route.ts` - Webhook event handler
-- `app/api/stripe/payment-intent/route.ts` - Direct payment processing
-- `app/api/stripe/refund/route.ts` - Refund management
+
+- `lib/services/order-workflows.ts` - Payment record + order workflow automation
+- `lib/utils/seed-data.ts` - Payment method seed data
+- `app/api/checkout/route.ts` - Checkout API endpoint
 
 **Features:**
-- ✅ Stripe checkout sessions
-- ✅ Payment intent processing
-- ✅ Webhook event handling
-  - checkout.session.completed
-  - payment_intent.succeeded
-  - payment_intent.payment_failed
-  - charge.refunded
-- ✅ Refund processing with authorization
-- ✅ Automatic order status updates
-- ✅ Payment record management
 
-**Webhook Events Supported:**
-- Payment confirmation → Order status: processing
-- Payment failure → Notification sent
-- Refund → Order status: refunded + inventory restored
+- ✅ COD checkout workflows
+- ✅ Manual/offline payment recording
+- ✅ Refund flagging (manual status updates)
+- ✅ Automatic order status updates when payments recorded
+- ✅ Payment record management
 
 ---
 
 ### 3. Email Service Integration (100% Complete)
+
 **Files Created:**
+
 - `lib/services/email.ts` - Resend email service (447 lines)
 
 **Email Templates:**
+
 - ✅ Order confirmation (with itemized receipt)
 - ✅ Shipment notification (with tracking)
 - ✅ Welcome email (onboarding guide)
 - ✅ Password reset
 
 **Features:**
+
 - Beautiful HTML templates
 - Responsive design
 - Brand customization
@@ -73,10 +71,13 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 4. SMS Service Integration (100% Complete)
+
 **Files Created:**
+
 - `lib/services/sms.ts` - Twilio SMS service (122 lines)
 
 **SMS Types:**
+
 - ✅ Order confirmation
 - ✅ Shipment notification with tracking
 - ✅ Delivery confirmation
@@ -85,6 +86,7 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - ✅ Promotional SMS (with opt-out)
 
 **Features:**
+
 - Phone number formatting
 - Template-based messages
 - Automatic sending on order events
@@ -93,10 +95,13 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 5. Order Processing Workflows (100% Complete)
+
 **Files Created:**
+
 - `lib/services/order-workflows.ts` - Complete workflow system (376 lines)
 
 **Workflows:**
+
 - ✅ `processNewOrder` - Full order creation with:
   - Inventory deduction
   - Payment record creation
@@ -119,6 +124,7 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
   - Old pending orders → Auto-cancel
 
 **Features:**
+
 - Complete order lifecycle management
 - Inventory tracking at every step
 - Multi-channel notifications
@@ -128,7 +134,9 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 6. API Endpoints (100% Complete)
+
 **Files Created:**
+
 - `app/api/checkout/route.ts` - Complete checkout (162 lines)
 - `app/api/cart/route.ts` - Cart management (217 lines)
 - `app/api/products/route.ts` - Product listing/creation
@@ -137,15 +145,17 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - `app/api/orders/[id]/route.ts` - Order details/updates
 
 **Checkout Endpoint Features:**
+
 - ✅ Discount code validation and application
 - ✅ Stock availability checking
 - ✅ Automatic tax calculation
 - ✅ Shipping cost calculation
 - ✅ Customer creation/lookup
 - ✅ Order creation with workflows
-- ✅ Payment method support (COD, Stripe, PayPal)
+- ✅ Payment method support (COD, PayPal)
 
 **Cart Endpoint Features:**
+
 - ✅ GET - Retrieve cart with product details
 - ✅ POST - Add items to cart
 - ✅ PATCH - Update quantities
@@ -154,6 +164,7 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - ✅ Stock validation
 
 **Product Endpoints:**
+
 - ✅ GET /api/products - Paginated listing with filters
 - ✅ POST /api/products - Create product
 - ✅ GET /api/products/[id] - Get details with variants
@@ -161,11 +172,13 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - ✅ DELETE /api/products/[id] - Soft delete
 
 **Order Endpoints:**
+
 - ✅ GET /api/orders - List with filters (status, date range, search)
 - ✅ GET /api/orders/[id] - Get details with items and customer
 - ✅ PATCH /api/orders/[id] - Update status with workflow
 
 **Security:**
+
 - All endpoints have authentication checks
 - Authorization verification (shop ownership)
 - Input validation
@@ -175,10 +188,13 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 7. Search Functionality (100% Complete)
+
 **Files Created:**
+
 - `app/api/search/route.ts` - Global search API
 
 **Features:**
+
 - ✅ Search products (name, SKU, barcode, description)
 - ✅ Search orders (order number, customer info)
 - ✅ Search customers (email, name, phone)
@@ -190,12 +206,15 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 8. Courier Integration (100% Complete)
+
 **Files Created:**
+
 - `lib/services/courier.ts` - Pathao & RedX integration (449 lines)
 - `app/api/courier/shipment/route.ts` - Create shipment
 - `app/api/courier/track/route.ts` - Track shipment
 
 **Pathao Integration:**
+
 - ✅ OAuth token management with auto-refresh
 - ✅ Create shipments
 - ✅ Track shipments
@@ -203,18 +222,21 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 - ✅ Area-based delivery
 
 **RedX Integration:**
+
 - ✅ API key authentication
 - ✅ Create parcels
 - ✅ Track delivery status
 - ✅ Weight-based pricing
 
 **Generic Interface:**
+
 - ✅ Extensible for additional couriers
 - ✅ Unified API across providers
 - ✅ Automatic tracking URL generation
 - ✅ Status history tracking
 
 **Workflow Integration:**
+
 - ✅ Auto-update order status to "shipped"
 - ✅ Send tracking notifications (Email + SMS)
 - ✅ Store tracking numbers in database
@@ -222,12 +244,15 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 ---
 
 ### 9. Documentation (100% Complete)
+
 **Files Created:**
+
 - `SETUP.md` - Comprehensive setup guide (350+ lines)
 - `.env.example` - Complete environment template
 - `MVP_SUMMARY.md` - This document
 
 **Documentation Includes:**
+
 - ✅ Quick start guide
 - ✅ Service integration tutorials
 - ✅ API usage examples
@@ -242,7 +267,6 @@ This document outlines the complete implementation of the Shamlai SaaS SME e-com
 
 ```json
 {
-  "stripe": "^17.5.0",
   "resend": "^4.0.1",
   "twilio": "^5.3.5"
 }
@@ -269,13 +293,11 @@ shamlai-frontend/
 │       ├── products/                ✅ NEW
 │       ├── orders/                  ✅ NEW
 │       ├── search/                  ✅ NEW
-│       ├── courier/                 ✅ NEW
-│       └── stripe/                  ✅ NEW
+│       └── courier/                 ✅ NEW
 ├── lib/
 │   ├── context/
 │   │   └── AuthContext.tsx          ✅ NEW
 │   ├── services/
-│   │   ├── payment.ts               ✅ NEW
 │   │   ├── email.ts                 ✅ NEW
 │   │   ├── sms.ts                   ✅ NEW
 │   │   ├── courier.ts               ✅ NEW
@@ -296,11 +318,12 @@ shamlai-frontend/
 ## 🚀 What's Ready to Use NOW
 
 ### Fully Functional:
+
 1. ✅ **User Registration & Login** - Complete with OAuth
 2. ✅ **Product Management** - Full CRUD via API
 3. ✅ **Shopping Cart** - Add, update, remove items
 4. ✅ **Checkout Process** - With discounts and tax
-5. ✅ **Payment Processing** - Stripe integration
+5. ✅ **Payment Processing** - COD/offline recording
 6. ✅ **Order Management** - Complete lifecycle
 7. ✅ **Email Notifications** - All order events
 8. ✅ **SMS Notifications** - Real-time updates
@@ -309,8 +332,9 @@ shamlai-frontend/
 11. ✅ **Inventory Management** - Auto-deduction/restoration
 
 ### Ready for Testing:
+
 - Complete checkout flow (guest & registered users)
-- Payment processing with webhooks
+- Payment processing with custom/manual workflows
 - Order status workflows
 - Shipment creation and tracking
 - Customer notifications (Email + SMS)
@@ -321,9 +345,11 @@ shamlai-frontend/
 ## 📋 Remaining Work (15%)
 
 ### 1. Customer Account Dashboard (Not Started)
+
 **Priority: HIGH**
 
 **Pages Needed:**
+
 - `/account/dashboard` - Order history, profile
 - `/account/orders` - Order listing
 - `/account/orders/[id]` - Order tracking page
@@ -333,12 +359,14 @@ shamlai-frontend/
 **Estimated Time: 4-6 hours**
 
 ### 2. Testing Coverage (Minimal)
+
 **Priority: HIGH**
 
 **Current Coverage: ~5%**
 **Target Coverage: 70%+**
 
 **Tests Needed:**
+
 - Unit tests for services (payment, email, SMS, courier)
 - Integration tests for API endpoints
 - E2E tests for critical flows (checkout, order processing)
@@ -346,9 +374,11 @@ shamlai-frontend/
 **Estimated Time: 1-2 weeks**
 
 ### 3. Error Tracking & Monitoring (Not Configured)
+
 **Priority: MEDIUM**
 
 **Setup Required:**
+
 - Sentry integration
 - Google Analytics configuration
 - Performance monitoring
@@ -357,9 +387,11 @@ shamlai-frontend/
 **Estimated Time: 2-3 hours**
 
 ### 4. Production Environment (Not Deployed)
+
 **Priority: HIGH (Before Launch)**
 
 **Tasks:**
+
 - Environment variable configuration
 - Domain setup
 - SSL certificate
@@ -373,21 +405,21 @@ shamlai-frontend/
 
 ## 📊 MVP Completion Metrics
 
-| Category | Status | Completion |
-|----------|--------|------------|
-| Authentication | ✅ Complete | 100% |
-| Payment Gateway | ✅ Complete | 100% |
-| Email Service | ✅ Complete | 100% |
-| SMS Service | ✅ Complete | 100% |
-| Order Workflows | ✅ Complete | 100% |
-| API Endpoints | ✅ Complete | 100% |
-| Search | ✅ Complete | 100% |
-| Courier Integration | ✅ Complete | 100% |
-| Documentation | ✅ Complete | 100% |
-| Customer Dashboard | ❌ Not Started | 0% |
-| Testing | ⚠️ Minimal | 5% |
-| Monitoring | ⚠️ Not Configured | 0% |
-| Deployment | ⚠️ Not Done | 0% |
+| Category            | Status            | Completion |
+| ------------------- | ----------------- | ---------- |
+| Authentication      | ✅ Complete       | 100%       |
+| Payment Gateway     | ✅ Complete       | 100%       |
+| Email Service       | ✅ Complete       | 100%       |
+| SMS Service         | ✅ Complete       | 100%       |
+| Order Workflows     | ✅ Complete       | 100%       |
+| API Endpoints       | ✅ Complete       | 100%       |
+| Search              | ✅ Complete       | 100%       |
+| Courier Integration | ✅ Complete       | 100%       |
+| Documentation       | ✅ Complete       | 100%       |
+| Customer Dashboard  | ❌ Not Started    | 0%         |
+| Testing             | ⚠️ Minimal        | 5%         |
+| Monitoring          | ⚠️ Not Configured | 0%         |
+| Deployment          | ⚠️ Not Done       | 0%         |
 
 **Overall Progress: 85% Complete**
 
@@ -396,18 +428,21 @@ shamlai-frontend/
 ## 🎯 Next Steps to 100%
 
 ### Week 1: Customer Dashboard
+
 - [ ] Design customer account pages
 - [ ] Implement order tracking interface
 - [ ] Add address management
 - [ ] Profile editing functionality
 
 ### Week 2: Testing
+
 - [ ] Write unit tests for all services
 - [ ] API integration tests
 - [ ] E2E test critical flows
 - [ ] Achieve 70% code coverage
 
 ### Week 3: Production Prep
+
 - [ ] Set up Sentry error tracking
 - [ ] Configure analytics
 - [ ] Deploy to Vercel/production
@@ -420,13 +455,14 @@ shamlai-frontend/
 ## 💰 Cost Estimates (Monthly)
 
 ### Required Services:
+
 - **InsForge**: $0 - $29/month (starts free)
-- **Stripe**: 2.9% + $0.30 per transaction
 - **Resend**: $0 - $20/month (50K emails free)
 - **Twilio**: ~$0.0075 per SMS
 - **Hosting (Vercel)**: $0 - $20/month (hobby free)
 
 ### Optional Services:
+
 - **Pathao**: Per delivery (varies)
 - **RedX**: Per delivery (varies)
 - **Sentry**: $0 - $26/month (starts free)
@@ -456,6 +492,7 @@ shamlai-frontend/
 ## 📈 Performance Optimizations
 
 **Already Implemented:**
+
 - Server-side rendering (Next.js)
 - API route optimization
 - Database query optimization
@@ -463,6 +500,7 @@ shamlai-frontend/
 - Code splitting (Next.js automatic)
 
 **Recommended for Production:**
+
 - CDN for static assets
 - Redis caching
 - Database connection pooling
@@ -473,14 +511,15 @@ shamlai-frontend/
 ## 🎓 Learning Resources
 
 ### For Developers:
+
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Stripe API Docs](https://stripe.com/docs/api)
 - [Resend Documentation](https://resend.com/docs)
 - [Twilio SMS Docs](https://www.twilio.com/docs/sms)
 - [Pathao API Docs](https://pathao.com/bn/developers/)
 - [RedX API Docs](https://redx.com.bd/api-documentation)
 
 ### For Merchants:
+
 - Setup guide: `SETUP.md`
 - Admin dashboard walkthrough (TBD)
 - Video tutorials (TBD)
@@ -492,8 +531,9 @@ shamlai-frontend/
 The Shamlai e-commerce platform MVP is **85% complete** with all core functionality operational:
 
 ✅ **Complete & Working:**
+
 - Authentication & authorization
-- Payment processing (Stripe)
+- Payment processing (manual/COD)
 - Order management with full workflows
 - Email & SMS notifications
 - Courier integrations (Pathao & RedX)
@@ -502,6 +542,7 @@ The Shamlai e-commerce platform MVP is **85% complete** with all core functional
 - Comprehensive documentation
 
 ⚠️ **Remaining Work:**
+
 - Customer account dashboard (4-6 hours)
 - Testing coverage (1-2 weeks)
 - Production deployment & monitoring (1-2 days)

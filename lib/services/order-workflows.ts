@@ -24,7 +24,7 @@ export async function processNewOrder(
   options?: {
     sendEmail?: boolean;
     sendSMS?: boolean;
-    paymentMethod?: 'stripe' | 'paypal' | 'cod';
+    paymentMethod?: 'paypal' | 'cod';
     paymentIntentId?: string;
   }
 ) {
@@ -65,10 +65,12 @@ export async function processNewOrder(
     // 5. Get order items with product details
     const { data: orderItems } = await insforgeClient.database
       .from('order_items')
-      .select(`
+      .select(
+        `
         *,
         product:products(name)
-      `)
+      `
+      )
       .eq('order_id', order.id);
 
     // 6. Send email confirmation
@@ -120,7 +122,10 @@ export async function processNewOrder(
 
     return { order, success: true };
   } catch (error) {
-    logger.error('Order processing failed', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Order processing failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }
@@ -241,7 +246,10 @@ export async function updateOrderWithWorkflow(
 
     return { order, success: true };
   } catch (error) {
-    logger.error('Order workflow update failed', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Order workflow update failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }
@@ -273,10 +281,31 @@ export async function cancelOrderWithWorkflow(
         .eq('order_id', orderId)
         .single();
 
-      if (payment && payment.payment_method === 'stripe' && payment.transaction_id) {
-        // Import payment service dynamically to avoid circular dependencies
-        const { createRefund } = await import('./payment');
-        await createRefund(orderId);
+      if (payment) {
+        await insforgeClient.database
+          .from('payments')
+          .update({
+            payment_status: 'refunded',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('order_id', orderId);
+
+        await insforgeClient.database
+          .from('orders')
+          .update({
+            payment_status: 'refunded',
+            status: 'refunded',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orderId);
+
+        await insforgeClient.database.from('order_status_history').insert({
+          order_id: orderId,
+          status: 'refunded',
+          notes: 'Refund processed manually',
+        });
+
+        logger.info('Marked order as refunded without online payment gateway', { orderId });
       }
     }
 
@@ -308,7 +337,10 @@ export async function cancelOrderWithWorkflow(
 
     return { order, success: true };
   } catch (error) {
-    logger.error('Order cancellation workflow failed', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Order cancellation workflow failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }
@@ -335,9 +367,13 @@ export async function batchUpdateOrderStatus(
       });
       results.push({ orderId, success: true, order: result.order });
     } catch (error) {
-      logger.error('Batch update failed for order', error instanceof Error ? error : new Error(String(error)), {
-        orderId,
-      });
+      logger.error(
+        'Batch update failed for order',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          orderId,
+        }
+      );
       results.push({ orderId, success: false, error });
     }
   }
@@ -386,10 +422,14 @@ export async function autoTransitionOrders(shopId: string) {
 
     if (oldPendingOrders && oldPendingOrders.length > 0) {
       for (const order of oldPendingOrders) {
-        await cancelOrderWithWorkflow(order.id, 'Auto-cancelled: Payment not received within 3 days', {
-          processRefund: false,
-          notifyCustomer: true,
-        });
+        await cancelOrderWithWorkflow(
+          order.id,
+          'Auto-cancelled: Payment not received within 3 days',
+          {
+            processRefund: false,
+            notifyCustomer: true,
+          }
+        );
       }
     }
 
@@ -401,7 +441,10 @@ export async function autoTransitionOrders(shopId: string) {
 
     return { success: true };
   } catch (error) {
-    logger.error('Auto-transition failed', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Auto-transition failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return { success: false, error };
   }
 }

@@ -12,18 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 
 **Core Features**
+
 - Complete e-commerce platform with merchant dashboard
 - Product management with variants, inventory tracking, and images
 - Order management with status tracking and fulfillment
 - Customer management and purchase history
 - Multi-store support with custom domains
-- Payment gateway integrations (Stripe, PayPal, Cash on Delivery)
+- Payment gateway integrations (PayPal, Cash on Delivery)
 - Delivery integrations (RedX, Pathao)
 - Marketing tools (discount codes, promotions)
 - AI-powered chatbot for customer support
 - Analytics dashboard with sales and traffic insights
 
 **Production-Ready Infrastructure**
+
 - Comprehensive error handling with error boundaries
 - Global error tracking and logging system
 - Rate limiting for API protection
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment-based configuration
 
 **Testing & Quality**
+
 - Jest testing framework setup
 - React Testing Library for component tests
 - 70%+ test coverage
@@ -41,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lint-staged for automated code quality
 
 **CI/CD & Deployment**
+
 - GitHub Actions workflows for CI/CD
 - Automated testing on pull requests
 - Automated deployment to staging and production
@@ -50,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deployment guides for multiple platforms
 
 **Performance & Optimization**
+
 - Next.js 14 with App Router
 - Code splitting and tree shaking
 - Image optimization (AVIF, WebP)
@@ -58,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance monitoring utilities
 
 **SEO & Accessibility**
+
 - Comprehensive meta tags and Open Graph support
 - Structured data (JSON-LD) for products and organization
 - Robots.txt and sitemap configuration
@@ -69,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Color contrast checking utilities
 
 **Analytics & Monitoring**
+
 - Google Analytics integration
 - Facebook Pixel integration
 - E-commerce event tracking
@@ -77,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User identification and session tracking
 
 **Progressive Web App**
+
 - Web app manifest
 - Offline support ready
 - Install prompts
@@ -84,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile-optimized experience
 
 **Developer Experience**
+
 - TypeScript 5.6 with strict mode
 - Comprehensive type definitions
 - Path aliases for clean imports
@@ -92,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code examples and tests
 
 #### Documentation
+
 - README.md with comprehensive setup guide
 - PRODUCTION_READY.md with deployment checklist
 - DEPLOYMENT.md with platform-specific guides
@@ -100,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Type documentation
 
 #### Security
+
 - Security headers implementation
 - Rate limiting system
 - Input validation and sanitization
@@ -110,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 **Dependencies**
+
 - Next.js 14.2.5
 - React 18.3.1
 - TypeScript 5.6.2
@@ -120,12 +132,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prettier 3.1.1
 
 **Browser Support**
+
 - Chrome (last 2 versions)
 - Firefox (last 2 versions)
 - Safari (last 2 versions)
 - Edge (last 2 versions)
 
 **Node.js Requirements**
+
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 
@@ -136,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [1.1.0] - Planned
 
 **Features**
+
 - Advanced analytics with custom reports
 - Bulk product import/export
 - Multi-language support (i18n)
@@ -144,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SMS notifications integration
 
 **Improvements**
+
 - Enhanced caching strategies
 - Performance optimizations
 - Extended test coverage (80%+)
@@ -152,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [1.2.0] - Planned
 
 **Features**
+
 - Mobile app (React Native)
 - Advanced SEO tools
 - Marketing automation
@@ -168,4 +185,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 For more information about upcoming features and bug fixes, see our [GitHub Issues](https://github.com/yourusername/shamlai-frontend/issues).
-

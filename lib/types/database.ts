@@ -256,7 +256,7 @@ export interface CartItem {
 export interface PaymentMethod {
   id: string;
   shop_id: string;
-  provider: 'stripe' | 'paypal' | 'square' | 'cash_on_delivery';
+  provider: 'cash_on_delivery';
   name: string;
   is_active: boolean;
   settings: Record<string, any>;
