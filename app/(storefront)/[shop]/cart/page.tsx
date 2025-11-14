@@ -1,10 +1,11 @@
 'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { insforgeClient, CartService } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { CartService } from '@/lib/insforge';
+import { logger } from '@/lib/utils/logger';
+import { getOrCreateCartSessionId, dispatchCartUpdatedEvent } from '@/lib/utils/cart';
 
 interface CartItem {
   id: string;
@@ -24,10 +25,10 @@ interface CartItem {
   };
 }
 
-export default function Cart(){
+export default function Cart() {
   const params = useParams();
   const shopId = params.shop as string;
-  
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
   const [shipping, setShipping] = useState(0);
@@ -44,12 +45,13 @@ export default function Cart(){
       setLoading(true);
       setError(null);
 
-      // Get or create cart (using session for guest checkout)
-      const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') || `session_${Date.now()}` : `session_${Date.now()}`;
-      if (typeof window !== 'undefined' && !localStorage.getItem('session_id')) {
-        localStorage.setItem('session_id', sessionId);
+      const sessionId = typeof window !== 'undefined' ? getOrCreateCartSessionId() : null;
+      if (!sessionId) {
+        setCartItems([]);
+        setSubtotal(0);
+        return;
       }
-      
+
       const cart = await CartService.getOrCreateCart(undefined, sessionId);
       const cartWithItems = await CartService.getCartWithItems(cart.id);
 
@@ -74,6 +76,7 @@ export default function Cart(){
       setUpdating(itemId);
       await CartService.updateCartItemQuantity(itemId, newQuantity);
       await fetchCart();
+      dispatchCartUpdatedEvent({ action: 'update-item' });
     } catch (err: any) {
       logger.error('Error updating cart item', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'Failed to update quantity');
@@ -87,6 +90,7 @@ export default function Cart(){
       setUpdating(itemId);
       await CartService.removeFromCart(itemId);
       await fetchCart();
+      dispatchCartUpdatedEvent({ action: 'remove-item' });
     } catch (err: any) {
       logger.error('Error removing cart item', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'Failed to remove item');
@@ -101,7 +105,7 @@ export default function Cart(){
 
   const getItemImage = (item: CartItem) => {
     const images = item.product.product_images || [];
-    const primaryImage = images.find(img => img.is_primary) || images[0];
+    const primaryImage = images.find((img) => img.is_primary) || images[0];
     return primaryImage?.image_url;
   };
 
@@ -110,7 +114,10 @@ export default function Cart(){
       <div className="container-responsive py-10">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--theme-primary)' }}></div>
+            <div
+              className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+              style={{ borderColor: 'var(--theme-primary)' }}
+            ></div>
             <p className="mt-4 text-gray-600">Loading cart...</p>
           </div>
         </div>
@@ -135,7 +142,9 @@ export default function Cart(){
               <div className="text-6xl mb-4">🛒</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h3>
               <p className="text-gray-600 mb-6">Add some products to get started!</p>
-              <Link href={`/${shopId}`} className="btn btn-primary">Continue Shopping</Link>
+              <Link href={`/${shopId}`} className="btn btn-primary">
+                Continue Shopping
+              </Link>
             </div>
           ) : (
             <div className="space-y-4">
@@ -143,9 +152,15 @@ export default function Cart(){
                 <div key={item.id} className="flex items-center gap-4 border-b pb-4 last:border-0">
                   <div className="h-16 w-16 rounded bg-gray-200 overflow-hidden flex-shrink-0">
                     {getItemImage(item) ? (
-                      <img src={getItemImage(item)!} alt={item.product.name} className="w-full h-full object-cover" />
+                      <img
+                        src={getItemImage(item)!}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                        No Image
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -153,12 +168,14 @@ export default function Cart(){
                     {item.variant && (
                       <div className="text-sm text-gray-600">{item.variant.name}</div>
                     )}
-                    <div className="text-sm font-semibold mt-1">৳{getItemPrice(item).toFixed(2)}</div>
+                    <div className="text-sm font-semibold mt-1">
+                      ৳{getItemPrice(item).toFixed(2)}
+                    </div>
                   </div>
                   <div className="w-24">
-                    <input 
-                      className="input text-center" 
-                      type="number" 
+                    <input
+                      className="input text-center"
+                      type="number"
                       value={item.quantity}
                       onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
                       min={1}

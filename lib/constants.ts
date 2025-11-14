@@ -31,8 +31,18 @@ export const PAGINATION_SIZES = [10, 20, 50, 100];
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 export const MAX_IMAGES_PER_PRODUCT = 10;
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-export const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+export const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
+export const ALLOWED_DOCUMENT_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 
 // ============================================================================
 // Validation
@@ -175,6 +185,13 @@ export const FEATURES = {
 } as const;
 
 // ============================================================================
+// Cart
+// ============================================================================
+
+export const CART_UPDATED_EVENT = 'cart:updated';
+export const CART_SESSION_STORAGE_KEY = 'session_id';
+
+// ============================================================================
 // Rate Limiting
 // ============================================================================
 
@@ -272,7 +289,8 @@ export const CONTACT = {
 export const SEO_DEFAULTS = {
   TITLE_TEMPLATE: '%s | Shamlai',
   DEFAULT_TITLE: 'Shamlai — Build Your Online Shop in 2 Clicks',
-  DEFAULT_DESCRIPTION: 'Complete e-commerce solution for modern businesses. Launch in minutes, not months.',
+  DEFAULT_DESCRIPTION:
+    'Complete e-commerce solution for modern businesses. Launch in minutes, not months.',
   DEFAULT_IMAGE: '/og-image.jpg',
   TWITTER_HANDLE: '@shamlai',
 };
@@ -287,4 +305,3 @@ export default {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
 };
-
