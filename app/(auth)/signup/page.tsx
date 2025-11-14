@@ -32,7 +32,7 @@ export default function Signup() {
         return;
       }
 
-      if (data) {
+      if (data?.user) {
         console.log('✅ Account created!', data.user);
 
         // Set up user profile
