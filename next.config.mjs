@@ -31,7 +31,7 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Security headers
+  // Security headers & Cache headers
   async headers() {
     return [
       {
@@ -64,6 +64,46 @@ const nextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300'
+          }
+        ],
+      },
+      {
+        source: '/api/products/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=600'
+          }
+        ],
+      },
+      {
+        source: '/api/shop/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=7200'
+          }
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ],
+      },
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
           }
         ],
       },
@@ -156,7 +196,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   eslint: {
-    // Disable ESLint during production builds (Heroku)
+    // Disable ESLint during production builds (Heroku/VPS)
     // Run linting in development and CI/CD pipelines instead
     ignoreDuringBuilds: true,
   },

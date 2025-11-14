@@ -12,9 +12,7 @@ import type { Cart, CartItem, Product, ProductVariant } from '../types/database'
  */
 export async function getOrCreateCart(userId?: string, sessionId?: string): Promise<Cart> {
   try {
-    let query = insforgeClient.database
-      .from('cart')
-      .select('*');
+    let query = insforgeClient.database.from('cart').select('*');
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -37,21 +35,27 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
 
     const { data: newCart, error } = await insforgeClient.database
       .from('cart')
-      .insert([{
-        user_id: userId,
-        session_id: sessionId,
-        expires_at: expiresAt.toISOString()
-      }])
+      .insert([
+        {
+          user_id: userId,
+          session_id: sessionId,
+          expires_at: expiresAt.toISOString(),
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
     return newCart;
   } catch (error: any) {
-    logger.error('Error getting or creating cart', error instanceof Error ? error : new Error(String(error)), {
-      userId,
-      sessionId,
-    });
+    logger.error(
+      'Error getting or creating cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        userId,
+        sessionId,
+      }
+    );
     throw error;
   }
 }
@@ -59,14 +63,16 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
 /**
  * Get cart with items and product details
  */
-export async function getCartWithItems(cartId: string): Promise<Cart & {
-  items: (CartItem & {
-    product: Product;
-    variant?: ProductVariant;
-  })[];
-  subtotal: number;
-  itemCount: number;
-}> {
+export async function getCartWithItems(cartId: string): Promise<
+  Cart & {
+    items: (CartItem & {
+      product: Product;
+      variant?: ProductVariant;
+    })[];
+    subtotal: number;
+    itemCount: number;
+  }
+> {
   try {
     // Get cart
     const { data: cart, error: cartError } = await insforgeClient.database
@@ -77,44 +83,35 @@ export async function getCartWithItems(cartId: string): Promise<Cart & {
 
     if (cartError) throw cartError;
 
-    // Get cart items
+    // Get cart items with product and variant details using joins (fixes N+1 query)
     const { data: items, error: itemsError } = await insforgeClient.database
       .from('cart_items')
-      .select('*')
+      .select(
+        `
+        *,
+        product:products(*),
+        variant:product_variants(*)
+      `
+      )
       .eq('cart_id', cartId);
 
     if (itemsError) throw itemsError;
 
-    // Fetch product and variant details for each item
-    const itemsWithDetails = await Promise.all(
-      (items || []).map(async (item) => {
-        const { data: product, error: productError } = await insforgeClient.database
-          .from('products')
-          .select('*')
-          .eq('id', item.product_id)
-          .single();
+    // Transform items to match expected structure
+    const itemsWithDetails = (items || []).map((item: any) => {
+      const product = item.product;
+      const variant = item.variant || undefined;
 
-        if (productError || !product) {
-          throw new Error(`Product ${item.product_id} not found or has been deleted`);
-        }
+      if (!product) {
+        throw new Error(`Product ${item.product_id} not found or has been deleted`);
+      }
 
-        let variant = undefined;
-        if (item.variant_id) {
-          const { data: variantData } = await insforgeClient.database
-            .from('product_variants')
-            .select('*')
-            .eq('id', item.variant_id)
-            .single();
-          variant = variantData;
-        }
-
-        return {
-          ...item,
-          product,
-          variant
-        };
-      })
-    );
+      return {
+        ...item,
+        product,
+        variant,
+      };
+    });
 
     const subtotal = itemsWithDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const itemCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
@@ -123,12 +120,16 @@ export async function getCartWithItems(cartId: string): Promise<Cart & {
       ...cart,
       items: itemsWithDetails,
       subtotal,
-      itemCount
+      itemCount,
     };
   } catch (error: any) {
-    logger.error('Error getting cart with items', error instanceof Error ? error : new Error(String(error)), {
-      cartId,
-    });
+    logger.error(
+      'Error getting cart with items',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        cartId,
+      }
+    );
     throw error;
   }
 }
@@ -211,7 +212,7 @@ export async function addToCart(
         .update({
           quantity: existingItem.quantity + quantity,
           price,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', existingItem.id)
         .select()
@@ -223,13 +224,15 @@ export async function addToCart(
       // Add new item
       const { data, error } = await insforgeClient.database
         .from('cart_items')
-        .insert([{
-          cart_id: cartId,
-          product_id: productId,
-          variant_id: variantId,
-          quantity,
-          price
-        }])
+        .insert([
+          {
+            cart_id: cartId,
+            product_id: productId,
+            variant_id: variantId,
+            quantity,
+            price,
+          },
+        ])
         .select()
         .single();
 
@@ -237,11 +240,15 @@ export async function addToCart(
       return data;
     }
   } catch (error: any) {
-    logger.error('Error adding to cart', error instanceof Error ? error : new Error(String(error)), {
-      cartId,
-      productId,
-      variantId,
-    });
+    logger.error(
+      'Error adding to cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        cartId,
+        productId,
+        variantId,
+      }
+    );
     throw error;
   }
 }
@@ -249,10 +256,7 @@ export async function addToCart(
 /**
  * Update cart item quantity
  */
-export async function updateCartItemQuantity(
-  itemId: string,
-  quantity: number
-): Promise<CartItem> {
+export async function updateCartItemQuantity(itemId: string, quantity: number): Promise<CartItem> {
   try {
     if (quantity <= 0) {
       // Remove item if quantity is 0 or negative
@@ -263,7 +267,7 @@ export async function updateCartItemQuantity(
       .from('cart_items')
       .update({
         quantity,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', itemId)
       .select()
@@ -272,10 +276,14 @@ export async function updateCartItemQuantity(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating cart item quantity', error instanceof Error ? error : new Error(String(error)), {
-      itemId,
-      quantity,
-    });
+    logger.error(
+      'Error updating cart item quantity',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        itemId,
+        quantity,
+      }
+    );
     throw error;
   }
 }
@@ -295,9 +303,13 @@ export async function removeFromCart(itemId: string): Promise<CartItem> {
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error removing from cart', error instanceof Error ? error : new Error(String(error)), {
-      itemId,
-    });
+    logger.error(
+      'Error removing from cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        itemId,
+      }
+    );
     throw error;
   }
 }
@@ -324,10 +336,7 @@ export async function clearCart(cartId: string): Promise<void> {
 /**
  * Merge guest cart with user cart after login
  */
-export async function mergeGuestCart(
-  guestSessionId: string,
-  userId: string
-): Promise<Cart> {
+export async function mergeGuestCart(guestSessionId: string, userId: string): Promise<Cart> {
   try {
     // Get or create user cart
     const userCart = await getOrCreateCart(userId);
@@ -357,17 +366,18 @@ export async function mergeGuestCart(
     }
 
     // Delete guest cart
-    await insforgeClient.database
-      .from('cart')
-      .delete()
-      .eq('id', guestCart.id);
+    await insforgeClient.database.from('cart').delete().eq('id', guestCart.id);
 
     return userCart;
   } catch (error: any) {
-    logger.error('Error merging guest cart', error instanceof Error ? error : new Error(String(error)), {
-      userId,
-      guestSessionId,
-    });
+    logger.error(
+      'Error merging guest cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        userId,
+        guestSessionId,
+      }
+    );
     throw error;
   }
 }
@@ -393,7 +403,7 @@ export async function validateCart(cartId: string): Promise<{
         issues.push({
           itemId: item.id,
           productName: item.product.name,
-          issue: 'Product is no longer available'
+          issue: 'Product is no longer available',
         });
         continue;
       }
@@ -407,32 +417,34 @@ export async function validateCart(cartId: string): Promise<{
         issues.push({
           itemId: item.id,
           productName: item.product.name,
-          issue: `Only ${availableQuantity} items available`
+          issue: `Only ${availableQuantity} items available`,
         });
       }
 
       // Check if price has changed
-      const currentPrice = item.variant
-        ? item.variant.price
-        : item.product.base_price;
+      const currentPrice = item.variant ? item.variant.price : item.product.base_price;
 
       if (currentPrice !== item.price) {
         issues.push({
           itemId: item.id,
           productName: item.product.name,
-          issue: `Price has changed from $${item.price} to $${currentPrice}`
+          issue: `Price has changed from $${item.price} to $${currentPrice}`,
         });
       }
     }
 
     return {
       isValid: issues.length === 0,
-      issues
+      issues,
     };
   } catch (error: any) {
-    logger.error('Error validating cart', error instanceof Error ? error : new Error(String(error)), {
-      cartId,
-    });
+    logger.error(
+      'Error validating cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        cartId,
+      }
+    );
     throw error;
   }
 }
@@ -453,7 +465,7 @@ export async function calculateCartTotals(
 }> {
   try {
     const cart = await getCartWithItems(cartId);
-    let subtotal = cart.subtotal;
+    const subtotal = cart.subtotal;
     let discountAmount = 0;
     let shippingCost = 0;
     let taxAmount = 0;
@@ -531,17 +543,16 @@ export async function calculateCartTotals(
       discountAmount,
       shippingCost,
       taxAmount,
-      total
+      total,
     };
   } catch (error: any) {
-    logger.error('Error calculating cart totals', error instanceof Error ? error : new Error(String(error)), {
-      cartId,
-    });
+    logger.error(
+      'Error calculating cart totals',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        cartId,
+      }
+    );
     throw error;
   }
 }
-
-
-
-
-

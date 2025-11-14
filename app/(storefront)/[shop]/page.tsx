@@ -26,34 +26,29 @@ export default function StoreHome() {
     try {
       setLoading(true);
 
-      // Fetch shop settings
-      const { data: settings } = await insforgeClient.database
-        .from('shop_settings')
-        .select('*')
-        .eq('shop_id', shopId)
-        .single();
-
-      setShopSettings(settings);
-
-      // Fetch products with images
-      const { data: productsData } = await insforgeClient.database
-        .from('products')
-        .select(
+      // Fetch shop settings and products in parallel (performance optimization)
+      const [settingsResult, productsResult] = await Promise.all([
+        insforgeClient.database.from('shop_settings').select('*').eq('shop_id', shopId).single(),
+        insforgeClient.database
+          .from('products')
+          .select(
+            `
+            *,
+            product_images (
+              id,
+              image_url,
+              is_primary,
+              sort_order
+            )
           `
-          *,
-          product_images (
-            id,
-            image_url,
-            is_primary,
-            sort_order
           )
-        `
-        )
-        .eq('shop_id', shopId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+          .eq('shop_id', shopId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      setProducts(productsData || []);
+      setShopSettings(settingsResult.data);
+      setProducts(productsResult.data || []);
     } catch (error) {
       logger.error(
         'Error fetching shop data',

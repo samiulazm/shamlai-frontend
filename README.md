@@ -154,17 +154,7 @@ See [PRODUCTION_READY.md](PRODUCTION_READY.md) for complete security checklist.
 
 ## 📦 Deployment
 
-### Vercel (Recommended)
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
-```
-
-### Heroku
+### Current: Heroku
 
 Deploy to Heroku in minutes with our automated scripts:
 
@@ -183,9 +173,25 @@ heroku config:set NEXT_PUBLIC_INSFORGE_URL=your-backend-url
 git push heroku main
 ```
 
-See [HEROKU_DEPLOYMENT.md](HEROKU_DEPLOYMENT.md) for complete guide.
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for complete Heroku guide.
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+### Future: VPS Deployment
+
+Complete VPS deployment guide with Nginx, PM2, and SSL:
+
+```bash
+# Follow VPS_DEPLOYMENT.md for step-by-step instructions
+# Quick overview:
+# 1. Setup server (Node.js, Nginx, PM2)
+# 2. Clone repository
+# 3. Build application
+# 4. Configure Nginx
+# 5. Setup SSL with Let's Encrypt
+```
+
+See [VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md) for complete VPS guide.
 
 ### Docker
 
@@ -195,9 +201,7 @@ npm run docker:build
 npm run docker:run
 ```
 
-### Other Platforms
-
-Detailed deployment guides for Netlify, AWS, DigitalOcean, Railway, and more in [DEPLOYMENT.md](DEPLOYMENT.md).
+**Note**: Docker works on both Heroku (via heroku.yml) and VPS.
 
 ## 🎨 Tech Stack
 
@@ -227,7 +231,9 @@ Detailed deployment guides for Netlify, AWS, DigitalOcean, Railway, and more in 
 
 - **Docker** - Containerization
 - **GitHub Actions** - CI/CD
-- **Vercel** - Deployment platform
+- **Heroku** - Current deployment platform
+- **VPS** - Future deployment option
+- **InsForge** - Backend-as-a-Service
 
 ## 📊 Performance
 
@@ -265,10 +271,12 @@ WCAG 2.1 Level AA compliant:
 ## 📚 Documentation
 
 - [Production Ready Checklist](PRODUCTION_READY.md)
-- [Deployment Guide](DEPLOYMENT.md)
-- [Heroku Deployment Guide](HEROKU_DEPLOYMENT.md)
-- [Backend Integration](BACKEND_INTEGRATION.md)
-- [Demo Setup](DEMO_SETUP.md)
+- [Deployment Guide](DEPLOYMENT.md) - Heroku & VPS
+- [Performance Guide](PERFORMANCE.md) - Optimizations & fixes
+- [Backend Integration](BACKEND_INTEGRATION.md) - InsForge setup
+- [Setup Guide](SETUP.md) - Development setup
+- [Security Guide](SECURITY.md) - Security best practices
+- [Demo Setup](DEMO_SETUP.md) - Demo configuration
 
 ## 🤝 Contributing
 
@@ -293,9 +301,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [Next.js](https://nextjs.org/)
-- [Vercel](https://vercel.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
+- [Heroku](https://heroku.com/)
 - [InsForge](https://insforge.app/)
+- [Tailwind CSS](https://tailwindcss.com/)
 
 ## 📞 Support
 
