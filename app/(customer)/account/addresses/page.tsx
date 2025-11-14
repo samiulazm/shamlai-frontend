@@ -119,12 +119,12 @@ export default function AddressesPage() {
       }
 
       // If set as default, unset other defaults
-      if (formData.is_default) {
+      if (formData.is_default && editingId) {
         await insforgeClient.database
           .from('addresses')
           .update({ is_default: false })
           .eq('customer_id', customer.id)
-          .neq('id', editingId || '');
+          .neq('id', editingId);
       }
 
       await loadAddresses();
