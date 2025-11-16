@@ -63,7 +63,8 @@ export async function generateUniqueSubdomain(preferredBase: string): Promise<st
 }
 
 /**
- * Generate a random shop ID (8-10 digits).
+ * Generate a random shop ID with 8, 9, or 10 digits.
+ * The generated number will not have leading zeros.
  */
 export function generateRandomShopId(): string {
   // Random length between 8 and 10
@@ -99,8 +100,9 @@ export async function isShopIdAvailable(shopId: string): Promise<boolean> {
 }
 
 /**
- * Generate a unique shop ID (8-10 digit random number).
- * Keeps generating until a unique one is found.
+ * Generate a unique shop ID with 8, 9, or 10 digits.
+ * Keeps generating until a unique one is found (up to 100 attempts).
+ * @throws {Error} If unable to generate a unique ID after maximum attempts
  */
 export async function generateUniqueShopId(): Promise<string> {
   let attempts = 0;
