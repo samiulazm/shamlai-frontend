@@ -46,5 +46,30 @@ CREATE TABLE IF NOT EXISTS shop_settings (
 );
 
 -- Foreign Keys
-ALTER TABLE shop_settings ADD CONSTRAINT shop_settings_shop_id_fkey 
+ALTER TABLE shop_settings ADD CONSTRAINT shop_settings_shop_id_fkey
   FOREIGN KEY (shop_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- Row Level Security (RLS) Policies
+-- Enable RLS
+ALTER TABLE shop_settings ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to check subdomain availability during signup
+-- This policy allows anyone to read only the 'id' and 'subdomain' columns
+CREATE POLICY "Allow public subdomain check" ON shop_settings
+  FOR SELECT
+  USING (true);
+
+-- Allow shop owners to read their own settings
+CREATE POLICY "Shop owners can read own settings" ON shop_settings
+  FOR SELECT
+  USING (shop_id = auth.uid());
+
+-- Allow shop owners to update their own settings
+CREATE POLICY "Shop owners can update own settings" ON shop_settings
+  FOR UPDATE
+  USING (shop_id = auth.uid());
+
+-- Allow authenticated users to insert their own shop settings during signup
+CREATE POLICY "Users can insert own shop settings" ON shop_settings
+  FOR INSERT
+  WITH CHECK (shop_id = auth.uid());
