@@ -16,6 +16,7 @@
     "test:coverage": "jest --coverage",
     "seed": "tsx scripts/seed-database.ts",
     "migrate": "tsx scripts/run-migrations.ts",
+    "test:redis": "tsx scripts/test-redis-connection.ts",
     "docker:build": "docker build -t shamlai-frontend .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
