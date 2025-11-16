@@ -325,8 +325,8 @@ export default function Checkout() {
 
   if (loading) {
     return (
-      <div className="container-responsive py-10">
-        <div className="flex items-center justify-center h-64">
+      <div className="container-responsive py-4 sm:py-6 md:py-10">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <div
               className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
@@ -343,267 +343,397 @@ export default function Checkout() {
   const currencySymbol = '৳';
 
   return (
-    <div className="container-responsive py-10 grid gap-6 md:grid-cols-3">
-      <div className="md:col-span-2 grid gap-4">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+    <div className="container-responsive py-4 sm:py-6 md:py-10">
+      {/* Mobile: Show progress indicator */}
+      <div className="mb-4 md:hidden">
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+          <span className="font-medium text-gray-900">Checkout</span>
+          <span>{cartItems.length} item(s)</span>
+        </div>
+        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 w-2/3 transition-all duration-300"></div>
+        </div>
+      </div>
 
-        <div className="card">
-          <div className="card-pad grid gap-3">
-            <div className="text-lg font-semibold">Delivery Address</div>
-            <div className="grid md:grid-cols-2 gap-3">
-              <div>
-                <label className="label">First name *</label>
-                <input
-                  className="input"
-                  name="firstName"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  required
-                />
-                {formErrors.firstName && (
-                  <p className="text-sm text-red-600 mt-1" data-testid="error-firstName">
-                    {formErrors.firstName}
-                  </p>
-                )}
+      <div className="grid gap-4 sm:gap-5 md:gap-6 lg:grid-cols-3">
+        {/* Main form section - Mobile first, then 2 cols on desktop */}
+        <div className="lg:col-span-2 grid gap-3 sm:gap-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Delivery Address Card */}
+          <div className="card">
+            <div className="p-4 sm:p-5 md:p-6 grid gap-3 sm:gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl font-semibold">Delivery Address</span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Required</span>
               </div>
-              <div>
-                <label className="label">Last name</label>
-                <input
-                  className="input"
-                  name="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                />
+              {/* Mobile-first: Single column, then 2 columns on SM+ */}
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="label">First name *</label>
+                  <input
+                    className="input input-mobile"
+                    name="firstName"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    required
+                    autoComplete="given-name"
+                  />
+                  {formErrors.firstName && (
+                    <p className="text-xs sm:text-sm text-red-600 mt-1" data-testid="error-firstName">
+                      {formErrors.firstName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="label">Last name</label>
+                  <input
+                    className="input input-mobile"
+                    name="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    autoComplete="family-name"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="label">Phone *</label>
-                <input
-                  className="input"
-                  type="tel"
-                  name="phone"
-                  placeholder="+8801XXXXXXXXX"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  required
-                />
-                {formErrors.phone && (
-                  <p className="text-sm text-red-600 mt-1">{formErrors.phone}</p>
-                )}
+
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="label">Phone *</label>
+                  <input
+                    className="input input-mobile"
+                    type="tel"
+                    inputMode="tel"
+                    name="phone"
+                    placeholder="+8801XXXXXXXXX"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    required
+                    autoComplete="tel"
+                  />
+                  {formErrors.phone && (
+                    <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.phone}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="label">Email *</label>
+                  <input
+                    className="input input-mobile"
+                    type="email"
+                    inputMode="email"
+                    name="email"
+                    placeholder="customer@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                  {formErrors.email && (
+                    <p className="text-xs sm:text-sm text-red-600 mt-1" data-testid="error-email">
+                      {formErrors.email}
+                    </p>
+                  )}
+                </div>
               </div>
+
               <div>
-                <label className="label">Email *</label>
-                <input
-                  className="input"
-                  type="email"
-                  name="email"
-                  placeholder="customer@example.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  required
-                />
-                {formErrors.email && (
-                  <p className="text-sm text-red-600 mt-1" data-testid="error-email">
-                    {formErrors.email}
-                  </p>
-                )}
-              </div>
-              <div className="md:col-span-2">
                 <label className="label">Address *</label>
                 <input
-                  className="input"
+                  className="input input-mobile"
                   name="street"
                   placeholder="Street address"
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   required
+                  autoComplete="street-address"
                 />
                 {formErrors.address && (
-                  <p className="text-sm text-red-600 mt-1">{formErrors.address}</p>
+                  <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.address}</p>
                 )}
               </div>
-              <div>
-                <label className="label">City *</label>
-                <input
-                  className="input"
-                  name="city"
-                  placeholder="Dhaka"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  required
-                />
-                {formErrors.city && <p className="text-sm text-red-600 mt-1">{formErrors.city}</p>}
+
+              <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
+                <div>
+                  <label className="label">City *</label>
+                  <input
+                    className="input input-mobile"
+                    name="city"
+                    placeholder="Dhaka"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    required
+                    autoComplete="address-level2"
+                  />
+                  {formErrors.city && <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.city}</p>}
+                </div>
+                <div>
+                  <label className="label">State</label>
+                  <input
+                    className="input input-mobile"
+                    name="state"
+                    placeholder="Division"
+                    value={formData.state || ''}
+                    onChange={(e) => handleInputChange('state', e.target.value)}
+                    autoComplete="address-level1"
+                  />
+                </div>
+                <div>
+                  <label className="label">Postcode</label>
+                  <input
+                    className="input input-mobile"
+                    type="text"
+                    inputMode="numeric"
+                    name="zip"
+                    placeholder="1000"
+                    value={formData.postalCode}
+                    onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                    autoComplete="postal-code"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="label">State</label>
-                <input
-                  className="input"
-                  name="state"
-                  placeholder="Division"
-                  value={formData.state || ''}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                />
+            </div>
+          </div>
+
+          {/* Payment Card */}
+          <div className="card">
+            <div className="p-4 sm:p-5 md:p-6 grid gap-3 sm:gap-4">
+              <div className="text-lg sm:text-xl font-semibold">Payment Method</div>
+              <div className="grid gap-2.5 sm:gap-3">
+                <label className="flex items-center gap-3 p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                  <input
+                    type="radio"
+                    name="pay"
+                    value="cod"
+                    checked={formData.paymentMethod === 'cod'}
+                    onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                    data-testid="payment-cod"
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm sm:text-base">Cash on Delivery</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Pay when you receive</div>
+                  </div>
+                  <span className="text-2xl">💵</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                  <input
+                    type="radio"
+                    name="pay"
+                    value="online"
+                    checked={formData.paymentMethod === 'online'}
+                    onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm sm:text-base">Online Payment</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Pay now (Test mode)</div>
+                  </div>
+                  <span className="text-2xl">💳</span>
+                </label>
               </div>
-              <div>
-                <label className="label">Postcode</label>
-                <input
-                  className="input"
-                  name="zip"
-                  placeholder="1000"
-                  value={formData.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                />
+            </div>
+          </div>
+          {/* Shipping Method Card */}
+          <div className="card">
+            <div className="p-4 sm:p-5 md:p-6 grid gap-3 sm:gap-4">
+              <div className="text-lg sm:text-xl font-semibold">Shipping Method</div>
+              <div className="grid gap-2.5 sm:gap-3">
+                {shippingMethods.length === 0 ? (
+                  <div className="p-3 sm:p-4 border-2 border-gray-300 rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm sm:text-base">Standard Shipping</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">3-5 business days</p>
+                      </div>
+                      <p className="font-semibold text-sm sm:text-base">৳{shipping.toFixed(2)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  shippingMethods.map((method) => (
+                    <label
+                      key={method.id}
+                      className="flex items-center gap-3 p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50/50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50"
+                    >
+                      <input
+                        type="radio"
+                        name="shippingMethod"
+                        value={method.id}
+                        checked={selectedShippingMethod === method.id}
+                        onChange={() => handleShippingSelect(method.id)}
+                        data-testid="shipping-method"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm sm:text-base">{method.name}</p>
+                        {method.description && (
+                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{method.description}</p>
+                        )}
+                      </div>
+                      <p className="font-semibold text-sm sm:text-base">
+                        ৳{parseFloat(method.cost?.toString() || '0').toFixed(2)}
+                      </p>
+                    </label>
+                  ))
+                )}
+                {formErrors.shippingMethod && (
+                  <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.shippingMethod}</p>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-pad grid gap-3">
-            <div className="text-lg font-semibold">Payment</div>
-            <div className="grid gap-2">
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pay"
-                  value="cod"
-                  checked={formData.paymentMethod === 'cod'}
-                  onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                  data-testid="payment-cod"
-                />
-                Cash on Delivery
-              </label>
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="pay"
-                  value="online"
-                  checked={formData.paymentMethod === 'online'}
-                  onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                />
-                Online Payment (Test)
-              </label>
-            </div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-pad grid gap-3">
-            <div className="text-lg font-semibold">Shipping Method</div>
-            <div className="grid gap-2">
-              {shippingMethods.length === 0 ? (
-                <div className="text-sm text-gray-600">
-                  Standard Shipping - ৳{shipping.toFixed(2)}
-                </div>
-              ) : (
-                shippingMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="inline-flex items-center gap-3 cursor-pointer border rounded-lg p-3"
-                  >
-                    <input
-                      type="radio"
-                      name="shippingMethod"
-                      value={method.id}
-                      checked={selectedShippingMethod === method.id}
-                      onChange={() => handleShippingSelect(method.id)}
-                      data-testid="shipping-method"
-                    />
-                    <div>
-                      <p className="font-medium">{method.name}</p>
-                      <p className="text-sm text-gray-500">
-                        ৳{parseFloat(method.cost?.toString() || '0').toFixed(2)}
-                      </p>
-                      {method.description && (
-                        <p className="text-xs text-gray-400">{method.description}</p>
-                      )}
+        {/* Order Summary - Sticky on desktop, regular on mobile */}
+        <div className="lg:sticky lg:top-20 lg:self-start">
+          <div className="card">
+            <div className="p-4 sm:p-5 md:p-6">
+              <div className="font-semibold text-lg sm:text-xl mb-3 sm:mb-4">Order Summary</div>
+
+              {/* Cart items preview on mobile */}
+              <div className="mb-3 pb-3 border-b lg:hidden">
+                <div className="text-xs text-gray-500 mb-2">{cartItems.length} item(s) in cart</div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {cartItems.slice(0, 3).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between text-xs">
+                      <span className="truncate flex-1">{item.product.name}</span>
+                      <span className="ml-2 text-gray-600">×{item.quantity}</span>
                     </div>
-                  </label>
-                ))
-              )}
-              {formErrors.shippingMethod && (
-                <p className="text-sm text-red-600 mt-1">{formErrors.shippingMethod}</p>
-              )}
+                  ))}
+                  {cartItems.length > 3 && (
+                    <div className="text-xs text-gray-500">+{cartItems.length - 3} more items</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 sm:space-y-2.5 text-sm sm:text-base">
+                <div className="flex justify-between text-gray-600">
+                  <span>Subtotal</span>
+                  <span className="font-medium">
+                    {currencySymbol}
+                    {subtotal.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery</span>
+                  <span className="font-medium">
+                    {currencySymbol}
+                    {shipping.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Discount</span>
+                  <span className="font-medium text-green-600" data-testid="discount-amount">
+                    -{currencySymbol}
+                    {discountAmount.toFixed(2)}
+                  </span>
+                </div>
+                <div className="border-t pt-2 sm:pt-3 mt-2 flex justify-between font-bold text-base sm:text-lg">
+                  <span>Total</span>
+                  <span style={{ color: 'var(--theme-primary)' }}>
+                    {currencySymbol}
+                    {total.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 sm:mt-5 space-y-2 sm:space-y-2.5">
+                <label className="label text-xs sm:text-sm">Discount code</label>
+                <div className="flex gap-2">
+                  <input
+                    className="input input-mobile flex-1 text-sm"
+                    placeholder="SAVE10"
+                    value={discountCodeInput}
+                    onChange={(e) => setDiscountCodeInput(e.target.value)}
+                    data-testid="discount-code"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline text-xs sm:text-sm px-3 sm:px-4"
+                    onClick={handleApplyDiscount}
+                    disabled={applyingDiscount || !discountCodeInput.trim()}
+                    data-testid="apply-discount"
+                  >
+                    {applyingDiscount ? 'Applying...' : 'Apply'}
+                  </button>
+                </div>
+                {discountError && <p className="text-xs sm:text-sm text-red-600">{discountError}</p>}
+                {appliedDiscountCode && !discountError && (
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-emerald-600">
+                    <span>✓</span>
+                    <span>Code {appliedDiscountCode} applied</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop: Show buttons normally */}
+              <div className="hidden lg:block mt-5 space-y-2.5">
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={placingOrder || cartItems.length === 0}
+                  className="btn btn-primary w-full text-sm sm:text-base font-semibold py-3 sm:py-3.5"
+                  data-testid="place-order"
+                >
+                  {placingOrder ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Placing Order...
+                    </span>
+                  ) : (
+                    'Place Order'
+                  )}
+                </button>
+                <Link href={`/${shopId}/cart`} className="btn btn-outline w-full text-center text-sm">
+                  Back to Cart
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-pad">
-          <div className="font-semibold mb-4">Order Summary</div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between text-gray-600">
-              <span>Subtotal</span>
-              <span>
-                {currencySymbol}
-                {subtotal.toFixed(2)}
-              </span>
+      {/* Mobile: Sticky bottom bar with Place Order button */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 safe-area-bottom">
+        <div className="container-responsive py-3 sm:py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="text-xs text-gray-500">Total Amount</div>
+              <div className="font-bold text-lg" style={{ color: 'var(--theme-primary)' }}>
+                {currencySymbol}{total.toFixed(2)}
+              </div>
             </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Delivery</span>
-              <span>
-                {currencySymbol}
-                {shipping.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Discount</span>
-              <span data-testid="discount-amount">
-                {currencySymbol}
-                {discountAmount.toFixed(2)}
-              </span>
-            </div>
-            <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
-              <span>Total</span>
-              <span>
-                {currencySymbol}
-                {total.toFixed(2)}
-              </span>
-            </div>
+            <button
+              onClick={handlePlaceOrder}
+              disabled={placingOrder || cartItems.length === 0}
+              className="btn btn-primary px-6 py-3 text-sm sm:text-base font-semibold min-w-[140px] shadow-lg"
+              data-testid="place-order-mobile"
+            >
+              {placingOrder ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span className="hidden sm:inline">Placing...</span>
+                </span>
+              ) : (
+                'Place Order'
+              )}
+            </button>
           </div>
-          <div className="mt-4 space-y-2">
-            <label className="label">Discount code</label>
-            <div className="flex gap-2">
-              <input
-                className="input flex-1"
-                placeholder="SAVE10"
-                value={discountCodeInput}
-                onChange={(e) => setDiscountCodeInput(e.target.value)}
-                data-testid="discount-code"
-              />
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={handleApplyDiscount}
-                disabled={applyingDiscount || !discountCodeInput.trim()}
-                data-testid="apply-discount"
-              >
-                {applyingDiscount ? 'Applying...' : 'Apply'}
-              </button>
-            </div>
-            {discountError && <p className="text-sm text-red-600">{discountError}</p>}
-            {appliedDiscountCode && !discountError && (
-              <p className="text-sm text-emerald-600">Code {appliedDiscountCode} applied.</p>
-            )}
-          </div>
-          <button
-            onClick={handlePlaceOrder}
-            disabled={placingOrder || cartItems.length === 0}
-            className="btn btn-primary mt-4 w-full"
-            data-testid="place-order"
+          <Link
+            href={`/${shopId}/cart`}
+            className="block text-center text-xs sm:text-sm text-gray-600 hover:text-gray-900 mt-2"
           >
-            {placingOrder ? 'Placing Order...' : 'Place Order'}
-          </button>
-          <Link href={`/${shopId}/cart`} className="btn btn-outline mt-2 w-full text-center">
-            Back to Cart
+            ← Back to Cart
           </Link>
         </div>
       </div>
+
+      {/* Mobile: Add padding at bottom to prevent content being hidden by sticky bar */}
+      <div className="lg:hidden h-32"></div>
     </div>
   );
 }

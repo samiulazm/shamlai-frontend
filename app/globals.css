@@ -161,19 +161,46 @@ body {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   @media (min-width: 640px) {
     .container-responsive {
       padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
-  
+
   @media (min-width: 1024px) {
     .container-responsive {
       padding-left: 2rem;
       padding-right: 2rem;
     }
+  }
+
+  /* Mobile-optimized input */
+  .input-mobile {
+    -webkit-tap-highlight-color: transparent;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  @media (min-width: 640px) {
+    .input-mobile {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Touch-friendly button class */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe area support for notched devices */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
   }
   
   /* Focus visible styles for accessibility */
@@ -227,7 +254,7 @@ body {
    ============================================================================ */
 
 @layer components {
-  /* Button base styles */
+  /* Button base styles - Mobile optimized */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -240,37 +267,59 @@ body {
     cursor: pointer;
     border: 1px solid transparent;
     white-space: nowrap;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* iOS touch target minimum */
   }
-  
+
+  @media (max-width: 640px) {
+    .btn {
+      min-height: 48px; /* Larger touch targets on mobile */
+    }
+  }
+
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   .btn-primary {
     background-color: var(--theme-primary);
     color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 
   .btn-primary:hover:not(:disabled) {
     background-color: var(--theme-primary-hover);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
   }
-  
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
   .btn-outline {
     background-color: white;
     color: #374151;
     border: 1px solid #D1D5DB;
   }
-  
+
   .btn-outline:hover:not(:disabled) {
     background-color: #F9FAFB;
+    border-color: #9CA3AF;
   }
-  
+
+  .btn-outline:active:not(:disabled) {
+    background-color: #F3F4F6;
+  }
+
   .btn-secondary {
     background-color: #6B7280;
     color: white;
   }
-  
+
   .btn-secondary:hover:not(:disabled) {
     background-color: #4B5563;
   }
@@ -322,7 +371,7 @@ body {
     background-color: #F9FAFB;
   }
   
-  /* Input base styles */
+  /* Input base styles - Mobile optimized */
   .input {
     width: 100%;
     padding: 0.625rem 0.875rem;
@@ -330,17 +379,30 @@ body {
     border-radius: 0.375rem;
     font-size: 0.875rem;
     transition: all 150ms;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: white;
   }
-  
+
+  @media (max-width: 640px) {
+    .input {
+      padding: 0.75rem 1rem;
+      font-size: 16px; /* Prevents zoom on iOS */
+      min-height: 48px;
+    }
+  }
+
   .input:focus {
     outline: none;
     border-color: var(--theme-primary);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 10%, transparent);
   }
-  
+
   .input:disabled {
     background-color: #F3F4F6;
     cursor: not-allowed;
+    opacity: 0.6;
   }
   
   /* Badge styles */
@@ -480,6 +542,26 @@ body {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn var(--transition-base);
 }
@@ -492,8 +574,16 @@ body {
   animation: slideDown var(--transition-base);
 }
 
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
 }
 
 /* ============================================================================
