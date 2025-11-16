@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { insforgeClient } from '@/lib/insforge';
 import { logger } from '@/lib/utils/logger';
-import { isSubdomainAvailable, normalizeSubdomain } from '@/lib/services/shop';
+import { normalizeSubdomain } from '@/lib/services/shop';
 
 export default function Signup() {
   const router = useRouter();
@@ -30,12 +30,29 @@ export default function Signup() {
       return false;
     }
     setSubdomainStatus('checking');
-    const available = await isSubdomainAvailable(normalized);
-    setSubdomainStatus(available ? 'available' : 'unavailable');
-    if (!available) {
-      setSubdomainError('This subdomain is taken. Please choose another.');
+
+    try {
+      const response = await fetch(`/api/subdomain/check?subdomain=${encodeURIComponent(normalized)}`);
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setSubdomainError(data.error || 'Failed to check subdomain availability');
+        setSubdomainStatus('idle');
+        return false;
+      }
+
+      const available = data.available;
+      setSubdomainStatus(available ? 'available' : 'unavailable');
+      if (!available) {
+        setSubdomainError('This subdomain is taken. Please choose another.');
+      }
+      return available;
+    } catch (error) {
+      logger.error('Subdomain validation error', error instanceof Error ? error : new Error(String(error)));
+      setSubdomainError('Failed to check subdomain availability. Please try again.');
+      setSubdomainStatus('idle');
+      return false;
     }
-    return available;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
