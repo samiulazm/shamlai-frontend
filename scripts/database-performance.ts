@@ -79,12 +79,36 @@ async function getTableStats(): Promise<void> {
       'inventory_logs',
     ];
 
-    for (const table of tables) {
-      const { count, error } = await client.database.from(table).select('*', { count: 'exact', head: true });
+    // Use pg_class to get estimated row counts for all tables in one query
+    const tableList = tables.map(t => `'${t}'`).join(',');
+    const rowCountQuery = `
+      SELECT relname AS tablename, reltuples::bigint AS estimated_count
+      FROM pg_class
+      WHERE relname IN (${tableList})
+    `;
 
-      if (!error) {
-        console.log(`${table.padEnd(20)} ${String(count).padStart(10)} rows`);
+    try {
+      // Attempt to run the raw SQL query for estimated row counts
+      const { data, error } = await client.database.rpc('run_sql', { sql: rowCountQuery });
+      if (!error && Array.isArray(data)) {
+        for (const table of tables) {
+          const row = data.find((r: any) => r.tablename === table);
+          const count = row ? row.estimated_count : 'N/A';
+          console.log(`${table.padEnd(20)} ${String(count).padStart(10)} est. rows`);
+        }
+      } else {
+        // Fallback: If raw SQL is not supported, try estimated count via select
+        for (const table of tables) {
+          const { count, error } = await client.database.from(table).select('*', { count: 'estimated', head: true });
+          if (!error) {
+            console.log(`${table.padEnd(20)} ${String(count).padStart(10)} est. rows`);
+          } else {
+            console.log(`${table.padEnd(20)} N/A`);
+          }
+        }
       }
+    } catch (err) {
+      console.error('Error fetching estimated row counts:', err);
     }
   } catch (error) {
     console.error('Error fetching table stats:', error);
