@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS shop_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   shop_id UUID UNIQUE,
   shop_name VARCHAR(255) NOT NULL,
+  subdomain VARCHAR(50) UNIQUE,
   shop_description TEXT,
   shop_email VARCHAR(255),
   shop_phone VARCHAR(50),

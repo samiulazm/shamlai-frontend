@@ -7,12 +7,77 @@ import type {
   Page,
   PaymentMethod,
   ShippingMethod,
-  TaxRate
+  TaxRate,
 } from '../types/database';
 
 // ============================================================================
 // Shop Settings
 // ============================================================================
+
+/**
+ * Turn a name/email local-part into a DNS-safe subdomain slug.
+ */
+export function normalizeSubdomain(source: string): string {
+  return (
+    (source || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumerics with hyphen
+      .replace(/^-+|-+$/g, '') // trim hyphens
+      .slice(0, 50) || // enforce max length
+    'shop'
+  );
+}
+
+/**
+ * Check if a subdomain exists.
+ */
+export async function isSubdomainAvailable(subdomain: string): Promise<boolean> {
+  const normalized = normalizeSubdomain(subdomain);
+  const { data, error } = await insforgeClient.database
+    .from('shop_settings')
+    .select('id')
+    .eq('subdomain', normalized)
+    .limit(1);
+  if (error) {
+    logger.warn('Failed checking subdomain existence', error);
+    // On error, treat as unavailable to avoid duplicates
+    return false;
+  }
+  return (data || []).length === 0;
+}
+
+/**
+ * Generate a unique subdomain based on a preferred base.
+ * If taken, appends -1, -2, ... until free.
+ */
+export async function generateUniqueSubdomain(preferredBase: string): Promise<string> {
+  const base = normalizeSubdomain(preferredBase);
+  if (await isSubdomainAvailable(base)) return base;
+  for (let i = 1; i < 1000; i++) {
+    const candidate = `${base}-${i}`;
+    if (await isSubdomainAvailable(candidate)) return candidate;
+  }
+  // Extremely unlikely fallback
+  return `${base}-${Date.now()}`;
+}
+
+/**
+ * Resolve a shop ID by subdomain.
+ */
+export async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
+  try {
+    const { data, error } = await insforgeClient.database
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('subdomain', subdomain)
+      .single();
+    if (error) return null;
+    return data?.shop_id || null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get shop settings
@@ -35,9 +100,13 @@ export async function getShopSettings(shopId: string): Promise<ShopSettings | nu
 
     return data;
   } catch (error: any) {
-    logger.error('Error fetching shop settings', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching shop settings',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -52,14 +121,14 @@ export async function upsertShopSettings(
   try {
     // First, try to get existing settings
     const existingSettings = await getShopSettings(shopId);
-    
+
     if (existingSettings) {
       // Update existing settings
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
         .update({
           ...settings,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('shop_id', shopId)
         .select()
@@ -71,12 +140,14 @@ export async function upsertShopSettings(
       // Create new settings
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
-        .insert([{
-          shop_id: shopId,
-          ...settings,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([
+          {
+            shop_id: shopId,
+            ...settings,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
         .select()
         .single();
 
@@ -84,9 +155,13 @@ export async function upsertShopSettings(
       return data;
     }
   } catch (error: any) {
-    logger.error('Error upserting shop settings', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error upserting shop settings',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -94,13 +169,10 @@ export async function upsertShopSettings(
 /**
  * Upload shop logo
  */
-export async function uploadShopLogo(
-  shopId: string,
-  file: File
-): Promise<string> {
+export async function uploadShopLogo(shopId: string, file: File): Promise<string> {
   try {
     const fileName = `logo-${shopId}-${Date.now()}.${file.name.split('.').pop()}`;
-    
+
     const { data, error } = await insforgeClient.storage
       .from(STORAGE_BUCKETS.SHOP_ASSETS)
       .upload(fileName, file);
@@ -112,9 +184,13 @@ export async function uploadShopLogo(
 
     return data.url;
   } catch (error: any) {
-    logger.error('Error uploading shop logo', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error uploading shop logo',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -144,9 +220,13 @@ export async function getActiveTheme(shopId: string): Promise<Theme | null> {
 
     return data;
   } catch (error: any) {
-    logger.error('Error fetching active theme', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching active theme',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -169,14 +249,14 @@ export async function upsertTheme(
 
     // Check if there's already an active theme
     const existingTheme = await getActiveTheme(shopId);
-    
+
     if (existingTheme) {
       // Update existing theme
       const { data, error } = await insforgeClient.database
         .from('themes')
         .update({
           ...themeData,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', existingTheme.id)
         .select()
@@ -188,12 +268,14 @@ export async function upsertTheme(
       // Create new theme
       const { data, error } = await insforgeClient.database
         .from('themes')
-        .insert([{
-          shop_id: shopId,
-          ...themeData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([
+          {
+            shop_id: shopId,
+            ...themeData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
         .select()
         .single();
 
@@ -201,9 +283,13 @@ export async function upsertTheme(
       return data;
     }
   } catch (error: any) {
-    logger.error('Error upserting theme', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error upserting theme',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -217,10 +303,7 @@ export async function upsertTheme(
  */
 export async function getPages(shopId: string, isPublished?: boolean): Promise<Page[]> {
   try {
-    let query = insforgeClient.database
-      .from('pages')
-      .select('*')
-      .eq('shop_id', shopId);
+    let query = insforgeClient.database.from('pages').select('*').eq('shop_id', shopId);
 
     if (isPublished !== undefined) {
       query = query.eq('is_published', isPublished);
@@ -233,9 +316,13 @@ export async function getPages(shopId: string, isPublished?: boolean): Promise<P
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching pages', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching pages',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -243,10 +330,7 @@ export async function getPages(shopId: string, isPublished?: boolean): Promise<P
 /**
  * Get page by slug
  */
-export async function getPageBySlug(
-  shopId: string,
-  slug: string
-): Promise<Page | null> {
+export async function getPageBySlug(shopId: string, slug: string): Promise<Page | null> {
   try {
     const { data, error } = await insforgeClient.database
       .from('pages')
@@ -265,10 +349,14 @@ export async function getPageBySlug(
 
     return data;
   } catch (error: any) {
-    logger.error('Error fetching page by slug', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      slug,
-    });
+    logger.error(
+      'Error fetching page by slug',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        slug,
+      }
+    );
     throw error;
   }
 }
@@ -299,10 +387,7 @@ export async function createPage(
 /**
  * Update page
  */
-export async function updatePage(
-  pageId: string,
-  updates: Partial<Page>
-): Promise<Page> {
+export async function updatePage(pageId: string, updates: Partial<Page>): Promise<Page> {
   try {
     const { data, error } = await insforgeClient.database
       .from('pages')
@@ -326,10 +411,7 @@ export async function updatePage(
  */
 export async function deletePage(pageId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database
-      .from('pages')
-      .delete()
-      .eq('id', pageId);
+    const { error } = await insforgeClient.database.from('pages').delete().eq('id', pageId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -358,9 +440,13 @@ export async function getPaymentMethods(shopId: string): Promise<PaymentMethod[]
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching payment methods', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching payment methods',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -381,9 +467,13 @@ export async function createPaymentMethod(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating payment method', error instanceof Error ? error : new Error(String(error)), {
-      shopId: methodData.shop_id,
-    });
+    logger.error(
+      'Error creating payment method',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId: methodData.shop_id,
+      }
+    );
     throw error;
   }
 }
@@ -406,9 +496,13 @@ export async function updatePaymentMethod(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating payment method', error instanceof Error ? error : new Error(String(error)), {
-      methodId,
-    });
+    logger.error(
+      'Error updating payment method',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        methodId,
+      }
+    );
     throw error;
   }
 }
@@ -431,9 +525,13 @@ export async function getShippingMethods(shopId: string): Promise<ShippingMethod
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching shipping methods', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching shipping methods',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -454,9 +552,13 @@ export async function createShippingMethod(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating shipping method', error instanceof Error ? error : new Error(String(error)), {
-      shopId: methodData.shop_id,
-    });
+    logger.error(
+      'Error creating shipping method',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId: methodData.shop_id,
+      }
+    );
     throw error;
   }
 }
@@ -479,9 +581,13 @@ export async function updateShippingMethod(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating shipping method', error instanceof Error ? error : new Error(String(error)), {
-      methodId,
-    });
+    logger.error(
+      'Error updating shipping method',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        methodId,
+      }
+    );
     throw error;
   }
 }
@@ -504,9 +610,13 @@ export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching tax rates', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-    });
+    logger.error(
+      'Error fetching tax rates',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -527,9 +637,13 @@ export async function createTaxRate(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating tax rate', error instanceof Error ? error : new Error(String(error)), {
-      shopId: rateData.shop_id,
-    });
+    logger.error(
+      'Error creating tax rate',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId: rateData.shop_id,
+      }
+    );
     throw error;
   }
 }
@@ -537,10 +651,7 @@ export async function createTaxRate(
 /**
  * Update tax rate
  */
-export async function updateTaxRate(
-  rateId: string,
-  updates: Partial<TaxRate>
-): Promise<TaxRate> {
+export async function updateTaxRate(rateId: string, updates: Partial<TaxRate>): Promise<TaxRate> {
   try {
     const { data, error } = await insforgeClient.database
       .from('tax_rates')
@@ -552,9 +663,13 @@ export async function updateTaxRate(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating tax rate', error instanceof Error ? error : new Error(String(error)), {
-      rateId,
-    });
+    logger.error(
+      'Error updating tax rate',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        rateId,
+      }
+    );
     throw error;
   }
 }
@@ -570,7 +685,7 @@ export async function calculateTax(
   postalCode?: string
 ): Promise<number> {
   try {
-    let query = insforgeClient.database
+    const query = insforgeClient.database
       .from('tax_rates')
       .select('rate')
       .eq('shop_id', shopId)
@@ -613,14 +728,17 @@ export async function calculateTax(
 
     return countryMatch?.rate || 0;
   } catch (error: any) {
-    logger.error('Error calculating tax', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      country,
-      state,
-      city,
-      postalCode,
-    });
+    logger.error(
+      'Error calculating tax',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        country,
+        state,
+        city,
+        postalCode,
+      }
+    );
     return 0; // Default to 0 if error
   }
 }
-

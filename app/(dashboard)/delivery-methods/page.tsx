@@ -38,7 +38,18 @@ export default function DeliveryMethods() {
       if (!user?.user?.id) return;
 
       setShopId(user.user.id);
-      setMethods([]);
+      // Fetch delivery methods for this shop
+      const { data, error } = await insforgeClient.database
+        .from('delivery_methods')
+        .select('*')
+        .eq('shop_id', user.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setMethods((data || []) as DeliveryMethod[]);
     } catch (error) {
       logger.error(
         'Error fetching delivery methods',
@@ -55,8 +66,33 @@ export default function DeliveryMethods() {
     try {
       if (editingMethod) {
         // Update method
+        const { error } = await insforgeClient.database
+          .from('delivery_methods')
+          .update({
+            name: formData.name,
+            type: formData.type,
+            api_key: formData.api_key || null,
+            is_active: formData.is_active,
+          })
+          .eq('id', editingMethod.id)
+          .eq('shop_id', shopId);
+
+        if (error) {
+          throw error;
+        }
       } else {
         // Create method
+        const { error } = await insforgeClient.database.from('delivery_methods').insert({
+          shop_id: shopId,
+          name: formData.name,
+          type: formData.type,
+          api_key: formData.api_key || null,
+          is_active: formData.is_active,
+        });
+
+        if (error) {
+          throw error;
+        }
       }
 
       await fetchMethods();
@@ -230,10 +266,51 @@ export default function DeliveryMethods() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <button className="text-blue-600 hover:text-blue-700">
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => {
+                            setEditingMethod(method);
+                            setFormData({
+                              name: method.name,
+                              type: method.type,
+                              api_key: method.api_key || '',
+                              is_active: method.is_active,
+                            });
+                            setShowForm(true);
+                          }}
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-700">
+                        <button
+                          type="button"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={async () => {
+                            if (!confirm('Are you sure you want to delete this delivery method?')) {
+                              return;
+                            }
+
+                            try {
+                              const { error } = await insforgeClient.database
+                                .from('delivery_methods')
+                                .delete()
+                                .eq('id', method.id)
+                                .eq('shop_id', shopId);
+
+                              if (error) {
+                                throw error;
+                              }
+
+                              await fetchMethods();
+                            } catch (error) {
+                              logger.error(
+                                'Error deleting delivery method',
+                                error instanceof Error ? error : new Error(String(error))
+                              );
+                              alert('Error deleting delivery method');
+                            }
+                          }}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

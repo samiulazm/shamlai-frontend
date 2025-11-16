@@ -128,9 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Create shop settings
         try {
+          // Generate a unique subdomain for the shop
+          const { generateUniqueSubdomain } = await import('@/lib/services/shop');
+          const preferred = (shopName || email.split('@')[0] || 'shop').toString();
+          const subdomain = await generateUniqueSubdomain(preferred);
+
           await insforgeClient.database.from('shop_settings').insert({
             shop_id: data.user.id,
             shop_name: shopName || 'My Shop',
+            subdomain,
             shop_email: email,
             currency: 'USD',
             timezone: 'UTC',
