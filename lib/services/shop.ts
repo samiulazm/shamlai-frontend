@@ -63,7 +63,8 @@ export async function generateUniqueSubdomain(preferredBase: string): Promise<st
 }
 
 /**
- * Generate a random shop ID (8-10 digits).
+ * Generate a random shop ID with 8, 9, or 10 digits.
+ * The generated number will not have leading zeros.
  */
 export function generateRandomShopId(): string {
   // Random length between 8 and 10
