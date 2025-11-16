@@ -27,5 +27,11 @@ CREATE TABLE IF NOT EXISTS product_variants (
 );
 
 -- Foreign Keys
-ALTER TABLE product_variants ADD CONSTRAINT product_variants_product_id_fkey 
+ALTER TABLE product_variants ADD CONSTRAINT product_variants_product_id_fkey
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+-- Indexes (added 2025-11-16)
+CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product_active ON product_variants(product_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON product_variants(sku) WHERE sku IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_product_variants_is_active ON product_variants(is_active) WHERE is_active = true;

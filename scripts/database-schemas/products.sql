@@ -43,3 +43,14 @@ CREATE INDEX IF NOT EXISTS idx_products_is_active ON products(is_active);
 CREATE INDEX IF NOT EXISTS idx_products_shop_active ON products(shop_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id) WHERE category_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_products_featured ON products(is_featured) WHERE is_featured = true;
+
+-- Performance Indexes (added 2025-11-16)
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_base_price ON products(base_price);
+CREATE INDEX IF NOT EXISTS idx_products_shop_price ON products(shop_id, base_price) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku) WHERE sku IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_products_shop_created ON products(shop_id, created_at DESC) WHERE is_active = true;
+
+-- Full-text search indexes (requires pg_trgm extension)
+CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products USING gin(name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_products_description_trgm ON products USING gin(description gin_trgm_ops);
