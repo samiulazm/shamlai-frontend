@@ -33,9 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Note: @insforge/sdk doesn't have onAuthStateChange yet
     // Polling for session changes every 5 minutes as a workaround
-    const interval = setInterval(() => {
-      checkUser();
-    }, 5 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        checkUser();
+      },
+      5 * 60 * 1000
+    );
 
     return () => {
       clearInterval(interval);
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: data.user.id,
           email: data.user.email || '',
-          nickname: data.profile?.nickname || data.user.name || '',
+          nickname: data.profile?.nickname || '',
           role: data.profile?.role || 'merchant',
           shop_id: data.user.id, // Using user ID as shop ID
         });
@@ -83,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: data.user.id,
           email: data.user.email || '',
-          nickname: userProfile.data?.profile?.nickname || data.user.name || '',
+          nickname: userProfile.data?.profile?.nickname || '',
           role: userProfile.data?.profile?.role || 'merchant',
           shop_id: data.user.id,
         });
@@ -117,26 +120,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'merchant',
           });
         } catch (profileError) {
-          logger.warn('Failed to set user profile', profileError instanceof Error ? profileError : new Error(String(profileError)));
+          logger.warn(
+            'Failed to set user profile',
+            profileError instanceof Error ? profileError : new Error(String(profileError))
+          );
         }
 
         // Create shop settings
         try {
-          await insforgeClient.database
-            .from('shop_settings')
-            .insert({
-              shop_id: data.user.id,
-              shop_name: shopName || 'My Shop',
-              shop_email: email,
-              currency: 'USD',
-              timezone: 'UTC',
-              weight_unit: 'kg',
-              enable_reviews: true,
-              enable_wishlists: true,
-              enable_guest_checkout: true,
-            });
+          await insforgeClient.database.from('shop_settings').insert({
+            shop_id: data.user.id,
+            shop_name: shopName || 'My Shop',
+            shop_email: email,
+            currency: 'USD',
+            timezone: 'UTC',
+            weight_unit: 'kg',
+            enable_reviews: true,
+            enable_wishlists: true,
+            enable_guest_checkout: true,
+          });
         } catch (shopError) {
-          logger.warn('Failed to create shop settings', shopError instanceof Error ? shopError : new Error(String(shopError)));
+          logger.warn(
+            'Failed to create shop settings',
+            shopError instanceof Error ? shopError : new Error(String(shopError))
+          );
         }
 
         setUser({

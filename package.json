@@ -22,7 +22,7 @@
     "prepare": "husky install || true"
   },
   "dependencies": {
-    "@insforge/sdk": "^0.0.59",
+    "@insforge/sdk": "^1.0.0",
     "@sentry/nextjs": "^10.25.0",
     "clsx": "2.1.1",
     "framer-motion": "11.3.31",
