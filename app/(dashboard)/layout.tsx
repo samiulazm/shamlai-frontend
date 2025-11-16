@@ -1,22 +1,53 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import Topbar from "@/components/Topbar";
-import { insforgeClient, ShopService } from "@/lib";
-import { logger } from "@/lib/utils/logger";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Sidebar from '@/components/Sidebar';
+import Topbar from '@/components/Topbar';
+import { insforgeClient, ShopService } from '@/lib';
+import { logger } from '@/lib/utils/logger';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }){
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [shopName, setShopName] = useState<string>("Shamlai");
-  const [shopId, setShopId] = useState<string>("");
+  const [shopName, setShopName] = useState<string>('Shamlai');
+  const [shopId, setShopId] = useState<string>('');
 
   useEffect(() => {
     checkAuth();
+    // Run migrations on dashboard load (only once)
+    runMigrationsOnce();
   }, [router]);
+
+  const runMigrationsOnce = async () => {
+    try {
+      // Check if migrations have been run before (using sessionStorage)
+      const migrationsRun = sessionStorage.getItem('migrations_run');
+      if (migrationsRun === 'true') {
+        return; // Already run in this session
+      }
+
+      // Call migration API
+      const response = await fetch('/api/migrations', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.migrationsRun > 0) {
+          console.log(`✅ Ran ${result.migrationsRun} migration(s)`);
+        }
+        sessionStorage.setItem('migrations_run', 'true');
+      }
+    } catch (error) {
+      // Silently fail - migrations can be run manually
+      console.warn('Migration check failed:', error);
+    }
+  };
 
   const checkAuth = async () => {
     try {
@@ -30,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setUser(data);
       const currentShopId = data.user.id;
       setShopId(currentShopId);
-      
+
       // Fetch shop settings to get shop name
       try {
         const shopSettings = await ShopService.getShopSettings(currentShopId);
@@ -40,12 +71,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           document.title = `${shopSettings.shop_name} - Dashboard`;
         }
       } catch (shopErr) {
-        logger.error('Error fetching shop settings', shopErr instanceof Error ? shopErr : new Error(String(shopErr)), {
-          shopId: user?.user?.id,
-        });
+        logger.error(
+          'Error fetching shop settings',
+          shopErr instanceof Error ? shopErr : new Error(String(shopErr)),
+          {
+            shopId: user?.user?.id,
+          }
+        );
         // Continue with default name
       }
-      
+
       setLoading(false);
     } catch (err) {
       logger.error('Auth check error', err instanceof Error ? err : new Error(String(err)));

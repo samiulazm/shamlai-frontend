@@ -15,13 +15,14 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "test:coverage": "jest --coverage",
     "seed": "tsx scripts/seed-database.ts",
+    "migrate": "tsx scripts/run-migrations.ts",
     "docker:build": "docker build -t shamlai-frontend .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
     "prepare": "husky install || true"
   },
   "dependencies": {
-    "@insforge/sdk": "^0.0.56",
+    "@insforge/sdk": "^0.0.59",
     "@sentry/nextjs": "^10.25.0",
     "clsx": "2.1.1",
     "framer-motion": "11.3.31",
