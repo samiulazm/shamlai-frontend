@@ -1,6 +1,7 @@
 // Shop Service - Shop settings and configuration
 import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
 import { logger } from '../utils/logger';
+import { cacheAside, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type {
   ShopSettings,
   Theme,
@@ -64,16 +65,25 @@ export async function generateUniqueSubdomain(preferredBase: string): Promise<st
 
 /**
  * Resolve a shop ID by subdomain.
+ * Cached for 1 hour (subdomains rarely change)
  */
 export async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
   try {
-    const { data, error } = await insforgeClient.database
-      .from('shop_settings')
-      .select('shop_id')
-      .eq('subdomain', subdomain)
-      .single();
-    if (error) return null;
-    return data?.shop_id || null;
+    const cacheKey = REDIS_KEYS.SHOP_BY_SUBDOMAIN(subdomain);
+
+    return await cacheAside(
+      cacheKey,
+      async () => {
+        const { data, error } = await insforgeClient.database
+          .from('shop_settings')
+          .select('shop_id')
+          .eq('subdomain', subdomain)
+          .single();
+        if (error) return null;
+        return data?.shop_id || null;
+      },
+      CACHE_TTL.SHOP_SUBDOMAIN
+    );
   } catch {
     return null;
   }
@@ -81,24 +91,33 @@ export async function getShopIdBySubdomain(subdomain: string): Promise<string | 
 
 /**
  * Get shop settings
+ * Cached for 1 hour (settings change infrequently)
  */
 export async function getShopSettings(shopId: string): Promise<ShopSettings | null> {
   try {
-    const { data, error } = await insforgeClient.database
-      .from('shop_settings')
-      .select('*')
-      .eq('shop_id', shopId)
-      .single();
+    const cacheKey = REDIS_KEYS.SHOP(shopId);
 
-    if (error) {
-      // If no settings exist, return null
-      if (error?.code === 'PGRST116') {
-        return null;
-      }
-      throw error;
-    }
+    return await cacheAside(
+      cacheKey,
+      async () => {
+        const { data, error } = await insforgeClient.database
+          .from('shop_settings')
+          .select('*')
+          .eq('shop_id', shopId)
+          .single();
 
-    return data;
+        if (error) {
+          // If no settings exist, return null
+          if (error?.code === 'PGRST116') {
+            return null;
+          }
+          throw error;
+        }
+
+        return data;
+      },
+      CACHE_TTL.SHOP
+    );
   } catch (error: any) {
     logger.error(
       'Error fetching shop settings',
@@ -119,10 +138,16 @@ export async function upsertShopSettings(
   settings: Partial<Omit<ShopSettings, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>
 ): Promise<ShopSettings> {
   try {
-    // First, try to get existing settings
-    const existingSettings = await getShopSettings(shopId);
+    // First, try to get existing settings (bypass cache for latest data)
+    const { data: existingSettings } = await insforgeClient.database
+      .from('shop_settings')
+      .select('*')
+      .eq('shop_id', shopId)
+      .limit(1);
 
-    if (existingSettings) {
+    let result: ShopSettings;
+
+    if (existingSettings && existingSettings.length > 0) {
       // Update existing settings
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
@@ -135,7 +160,7 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     } else {
       // Create new settings
       const { data, error } = await insforgeClient.database
@@ -152,8 +177,16 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     }
+
+    // Invalidate caches
+    await Promise.all([
+      invalidateCache.shop(shopId),
+      result.subdomain ? invalidateCache.shopBySubdomain(result.subdomain) : Promise.resolve(),
+    ]);
+
+    return result;
   } catch (error: any) {
     logger.error(
       'Error upserting shop settings',

@@ -1,6 +1,7 @@
 // Product Service - Comprehensive product management functions
 import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
 import { logger } from '../utils/logger';
+import { cacheAside, getCached, setCached, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type {
   Product,
   ProductInsert,
@@ -20,6 +21,7 @@ import type {
 
 /**
  * Get all products with optional filtering and pagination
+ * Cached for 3 minutes per page
  */
 export async function getProducts(
   shopId: string,
@@ -34,52 +36,21 @@ export async function getProducts(
   try {
     const page = filters?.page || 1;
     const pageSize = filters?.pageSize || 20;
-    const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
-      .from('products')
-      .select('*', { count: 'exact' })
-      .eq('shop_id', shopId);
+    // Only cache simple queries (no complex filters)
+    const canCache = !filters?.search && !filters?.minPrice && !filters?.maxPrice;
+    const cacheKey = REDIS_KEYS.PRODUCT_LIST(shopId, page);
 
-    // Apply filters
-    if (filters?.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    if (filters?.isActive !== undefined) {
-      query = query.eq('is_active', filters.isActive);
-    }
-    if (filters?.isFeatured !== undefined) {
-      query = query.eq('is_featured', filters.isFeatured);
-    }
-    if (filters?.minPrice) {
-      query = query.gte('base_price', filters.minPrice);
-    }
-    if (filters?.maxPrice) {
-      query = query.lte('base_price', filters.maxPrice);
-    }
-    if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    if (canCache) {
+      return await cacheAside(
+        cacheKey,
+        async () => await fetchProducts(shopId, filters, page, pageSize),
+        CACHE_TTL.PRODUCT_LIST
+      );
     }
 
-    // Sorting
-    const sortBy = filters?.sortBy || 'created_at';
-    const sortOrder = filters?.sortOrder === 'asc' ? { ascending: true } : { ascending: false };
-    query = query.order(sortBy, sortOrder);
-
-    // Pagination
-    query = query.range(offset, offset + pageSize - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) throw error;
-
-    return {
-      data: data || [],
-      total: count || 0,
-      page,
-      pageSize,
-      hasMore: (count || 0) > offset + pageSize
-    };
+    // Complex queries - no cache
+    return await fetchProducts(shopId, filters, page, pageSize);
   } catch (error: any) {
     logger.error('Error fetching products', error instanceof Error ? error : new Error(String(error)), {
       shopId,
@@ -90,7 +61,65 @@ export async function getProducts(
 }
 
 /**
+ * Internal function to fetch products from database
+ */
+async function fetchProducts(
+  shopId: string,
+  filters: any,
+  page: number,
+  pageSize: number
+): Promise<PaginatedResponse<Product>> {
+  const offset = (page - 1) * pageSize;
+
+  let query = insforgeClient.database
+    .from('products')
+    .select('*', { count: 'exact' })
+    .eq('shop_id', shopId);
+
+  // Apply filters
+  if (filters?.categoryId) {
+    query = query.eq('category_id', filters.categoryId);
+  }
+  if (filters?.isActive !== undefined) {
+    query = query.eq('is_active', filters.isActive);
+  }
+  if (filters?.isFeatured !== undefined) {
+    query = query.eq('is_featured', filters.isFeatured);
+  }
+  if (filters?.minPrice) {
+    query = query.gte('base_price', filters.minPrice);
+  }
+  if (filters?.maxPrice) {
+    query = query.lte('base_price', filters.maxPrice);
+  }
+  if (filters?.search) {
+    query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+  }
+
+  // Sorting
+  const sortBy = filters?.sortBy || 'created_at';
+  const sortOrder = filters?.sortOrder === 'asc' ? { ascending: true } : { ascending: false };
+  query = query.order(sortBy, sortOrder);
+
+  // Pagination
+  query = query.range(offset, offset + pageSize - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  return {
+    data: data || [],
+    total: count || 0,
+    page,
+    pageSize,
+    hasMore: (count || 0) > offset + pageSize
+  };
+}
+
+/**
  * Get a single product by ID with images and variants
+ * Cached for 5 minutes
  */
 export async function getProductById(productId: string): Promise<Product & {
   images?: ProductImage[];
@@ -98,44 +127,52 @@ export async function getProductById(productId: string): Promise<Product & {
   category?: Category;
 }> {
   try {
-    const { data: product, error } = await insforgeClient.database
-      .from('products')
-      .select('*')
-      .eq('id', productId)
-      .single();
+    const cacheKey = REDIS_KEYS.PRODUCT(productId);
 
-    if (error) throw error;
-    if (!product) throw new Error('Product not found');
+    return await cacheAside(
+      cacheKey,
+      async () => {
+        const { data: product, error } = await insforgeClient.database
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single();
 
-    // Fetch related data
-    const [imagesResult, variantsResult, categoryResult] = await Promise.all([
-      insforgeClient.database
-        .from('product_images')
-        .select('*')
-        .eq('product_id', productId)
-        .order('sort_order', { ascending: true }),
-      
-      insforgeClient.database
-        .from('product_variants')
-        .select('*')
-        .eq('product_id', productId)
-        .eq('is_active', true),
-      
-      product.category_id
-        ? insforgeClient.database
-            .from('categories')
+        if (error) throw error;
+        if (!product) throw new Error('Product not found');
+
+        // Fetch related data in parallel
+        const [imagesResult, variantsResult, categoryResult] = await Promise.all([
+          insforgeClient.database
+            .from('product_images')
             .select('*')
-            .eq('id', product.category_id)
-            .single()
-        : Promise.resolve({ data: null, error: null })
-    ]);
+            .eq('product_id', productId)
+            .order('sort_order', { ascending: true }),
 
-    return {
-      ...product,
-      images: imagesResult.data || [],
-      variants: variantsResult.data || [],
-      category: categoryResult.data || undefined
-    };
+          insforgeClient.database
+            .from('product_variants')
+            .select('*')
+            .eq('product_id', productId)
+            .eq('is_active', true),
+
+          product.category_id
+            ? insforgeClient.database
+                .from('categories')
+                .select('*')
+                .eq('id', product.category_id)
+                .single()
+            : Promise.resolve({ data: null, error: null })
+        ]);
+
+        return {
+          ...product,
+          images: imagesResult.data || [],
+          variants: variantsResult.data || [],
+          category: categoryResult.data || undefined
+        };
+      },
+      CACHE_TTL.PRODUCT
+    );
   } catch (error: any) {
     logger.error('Error fetching product', error instanceof Error ? error : new Error(String(error)), {
       productId,
@@ -197,6 +234,9 @@ export async function createProduct(
       await addProductImages(product.id, images);
     }
 
+    // Invalidate product list cache for this shop
+    await invalidateCache.productList(productData.shop_id);
+
     return product;
   } catch (error: any) {
     logger.error('Error creating product', error instanceof Error ? error : new Error(String(error)), {
@@ -222,6 +262,13 @@ export async function updateProduct(
       .single();
 
     if (error) throw error;
+
+    // Invalidate caches
+    await Promise.all([
+      invalidateCache.product(productId),
+      invalidateCache.productList(data.shop_id),
+    ]);
+
     return data;
   } catch (error: any) {
     logger.error('Error updating product', error instanceof Error ? error : new Error(String(error)), {
@@ -236,12 +283,27 @@ export async function updateProduct(
  */
 export async function deleteProduct(productId: string): Promise<void> {
   try {
+    // Get product info first to invalidate shop cache
+    const { data: product } = await insforgeClient.database
+      .from('products')
+      .select('shop_id')
+      .eq('id', productId)
+      .single();
+
     const { error } = await insforgeClient.database
       .from('products')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', productId);
 
     if (error) throw error;
+
+    // Invalidate caches
+    if (product?.shop_id) {
+      await Promise.all([
+        invalidateCache.product(productId),
+        invalidateCache.productList(product.shop_id),
+      ]);
+    }
   } catch (error: any) {
     logger.error('Error deleting product', error instanceof Error ? error : new Error(String(error)), {
       productId,
