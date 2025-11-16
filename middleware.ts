@@ -66,6 +66,11 @@ export async function middleware(request: NextRequest) {
           const url = nextUrl.clone();
           url.pathname = rewritePath;
           return NextResponse.rewrite(url);
+        } else if (rootDomain) {
+          // If a subdomain is present but no matching shop exists in the database,
+          // redirect the visitor back to the main marketing site on the root domain.
+          const url = new URL(`https://${rootDomain}${pathname}`);
+          return NextResponse.redirect(url);
         }
       }
     }

@@ -21,13 +21,13 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const validateSubdomain = async (value: string) => {
+  const validateSubdomain = async (value: string): Promise<boolean> => {
     const normalized = normalizeSubdomain(value);
     setSubdomainNormalized(normalized);
     setSubdomainError('');
     if (!normalized) {
       setSubdomainStatus('idle');
-      return;
+      return false;
     }
     setSubdomainStatus('checking');
     const available = await isSubdomainAvailable(normalized);
@@ -35,6 +35,7 @@ export default function Signup() {
     if (!available) {
       setSubdomainError('This subdomain is taken. Please choose another.');
     }
+    return available;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,8 +45,8 @@ export default function Signup() {
 
     // Guard: require subdomain and availability
     const normalized = normalizeSubdomain(subdomain || shopName || email.split('@')[0] || 'shop');
-    await validateSubdomain(normalized);
-    if (subdomainStatus === 'unavailable') {
+    const available = await validateSubdomain(normalized);
+    if (!available) {
       setLoading(false);
       return;
     }
