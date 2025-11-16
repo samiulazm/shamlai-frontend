@@ -28,49 +28,6 @@ function extractSubdomain(hostname: string, rootDomain: string): string | null {
   return normalizeSubdomain(sub);
 }
 
-export async function middleware(request: NextRequest) {
-  const { nextUrl } = request;
-  const { pathname, hostname } = nextUrl;
-
-  // Bypass internal and reserved paths
-  if (isReservedPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Configure your root domain via env. Example: "yourdomain.com"
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
-  const sub = extractSubdomain(hostname, rootDomain);
-  if (!sub) {
-    return NextResponse.next();
-  }
-
-  // Avoid loops if already rewritten to /<shopId>
-  const alreadyShopRouted = /^\/[0-9a-fA-F-]{36}(?:\/|$)/.test(pathname);
-  if (alreadyShopRouted) {
-    return NextResponse.next();
-  }
-
-  const shopId = await getShopIdBySubdomain(sub);
-  if (!shopId) {
-    // Optional: return 404 response or fallthrough
-    return NextResponse.next();
-  }
-
-  // Rewrite to the storefront route structure: /(storefront)/[shop]/*
-  const rewritePath = pathname === '/' ? `/${shopId}` : `/${shopId}${pathname}`;
-  const url = nextUrl.clone();
-  url.pathname = rewritePath;
-  return NextResponse.rewrite(url);
-}
-
-export const config = {
-  // Apply to all paths except static files (Next.js also optimizes by default)
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api).*)'],
-};
-
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
 // Routes that don't require authentication
 const publicRoutes = [
   '/',
@@ -89,32 +46,57 @@ const protectedRoutes = ['/dashboard'];
 // Storefront routes pattern
 const storefrontPattern = /^\/[a-zA-Z0-9_-]+(?:\/(?:product|cart|checkout|order)(?:\/[^\/]+)?)?$/;
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  const { nextUrl } = request;
+  const { pathname, hostname } = nextUrl;
+
+  // --- Subdomain routing for storefronts ---
+  if (!isReservedPath(pathname)) {
+    // Configure your root domain via env. Example: "yourdomain.com"
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
+    const sub = extractSubdomain(hostname, rootDomain);
+
+    if (sub) {
+      // Avoid loops if already rewritten to /<shopId>
+      const alreadyShopRouted = /^\/[0-9a-fA-F-]{36}(?:\/|$)/.test(pathname);
+      if (!alreadyShopRouted) {
+        const shopId = await getShopIdBySubdomain(sub);
+        if (shopId) {
+          const rewritePath = pathname === '/' ? `/${shopId}` : `/${shopId}${pathname}`;
+          const url = nextUrl.clone();
+          url.pathname = rewritePath;
+          return NextResponse.rewrite(url);
+        }
+      }
+    }
+  }
+
+  const { pathname: finalPathname } = request.nextUrl;
+
+  // --- Public storefront and auth routing ---
 
   // Check if it's a storefront route (public)
-  if (storefrontPattern.test(pathname)) {
+  if (storefrontPattern.test(finalPathname)) {
     return NextResponse.next();
   }
 
   // Allow public routes
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (publicRoutes.some((route) => finalPathname.startsWith(route))) {
     return NextResponse.next();
   }
 
   // Check for auth token in cookies
   const authToken = request.cookies.get('sb-access-token');
-  const refreshToken = request.cookies.get('sb-refresh-token');
 
   // Redirect to login if trying to access protected route without auth
-  if (protectedRoutes.some((route) => pathname.startsWith(route)) && !authToken) {
+  if (protectedRoutes.some((route) => finalPathname.startsWith(route)) && !authToken) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    loginUrl.searchParams.set('redirect', finalPathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Redirect to dashboard if trying to access auth pages while logged in
-  if ((pathname.startsWith('/login') || pathname.startsWith('/signup')) && authToken) {
+  if ((finalPathname.startsWith('/login') || finalPathname.startsWith('/signup')) && authToken) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -129,8 +111,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - robots.txt / sitemap.xml
+     * - public folder and other static assets
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*|public).*)',
   ],
 };
