@@ -89,11 +89,14 @@ BEGIN
       attempt_count := attempt_count + 1;
     END LOOP;
 
-    -- Update the record with the new shop ID
-    UPDATE shop_settings
-      SET shop_id_new = new_shop_id
-      WHERE id = shop_record.id;
-  END LOOP;
+    -- Update the record with the new shop ID, or raise an error if not unique
+    IF is_unique THEN
+      UPDATE shop_settings
+        SET shop_id_new = new_shop_id
+        WHERE id = shop_record.id;
+    ELSE
+      RAISE EXCEPTION 'Failed to generate unique shop ID for record % after 100 attempts', shop_record.id;
+    END IF;
 END $$;
 
 -- Step 12: Drop the old shop_id column
