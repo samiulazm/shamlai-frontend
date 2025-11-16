@@ -68,7 +68,7 @@ WHERE customer_id IS NOT NULL;
 -- Index for order archival (orders older than 2 years)
 CREATE INDEX IF NOT EXISTS idx_orders_archival
 ON orders(created_at)
-WHERE created_at < (now() - INTERVAL '2 years');
+WHERE created_at < (CURRENT_DATE - INTERVAL '2 years');
 
 -- Composite index for shop analytics queries
 CREATE INDEX IF NOT EXISTS idx_orders_shop_status_created
