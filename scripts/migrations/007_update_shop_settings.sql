@@ -70,11 +70,16 @@ BEGIN
 
     WHILE NOT is_unique AND attempt_count < 100 LOOP
       -- Generate random 8-10 digit number
-      new_shop_id := LPAD(
-        FLOOR(RANDOM() * (POWER(10, FLOOR(RANDOM() * 3 + 8)::INTEGER) - POWER(10, FLOOR(RANDOM() * 3 + 7)::INTEGER)) + POWER(10, FLOOR(RANDOM() * 3 + 7)::INTEGER))::BIGINT::TEXT,
-        8,
-        '0'
-      );
+      DECLARE
+        target_length INTEGER;
+      BEGIN
+        target_length := FLOOR(RANDOM() * 3)::INTEGER + 8;
+        new_shop_id := LPAD(
+          FLOOR(RANDOM() * (POWER(10, target_length) - POWER(10, target_length - 1)) + POWER(10, target_length - 1))::BIGINT::TEXT,
+          8,
+          '0'
+        );
+      END;
 
       -- Check if this ID is already used
       SELECT NOT EXISTS (
