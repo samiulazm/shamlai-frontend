@@ -420,8 +420,11 @@ export interface Notification {
 
 export interface ShopSettings {
   id: string;
+  user_id: string;
   shop_id: string;
   shop_name: string;
+  shop_username: string;
+  subdomain: string;
   shop_description?: string;
   shop_email: string;
   shop_phone?: string;

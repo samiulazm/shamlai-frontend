@@ -5,9 +5,11 @@
 
 CREATE TABLE IF NOT EXISTS shop_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id UUID UNIQUE,
+  user_id UUID NOT NULL,
+  shop_id VARCHAR(10) UNIQUE NOT NULL,
   shop_name VARCHAR(255) NOT NULL,
-  subdomain VARCHAR(50) UNIQUE,
+  shop_username VARCHAR(50) UNIQUE NOT NULL,
+  subdomain VARCHAR(50) UNIQUE NOT NULL,
   shop_description TEXT,
   shop_email VARCHAR(255),
   shop_phone VARCHAR(50),
@@ -46,5 +48,5 @@ CREATE TABLE IF NOT EXISTS shop_settings (
 );
 
 -- Foreign Keys
-ALTER TABLE shop_settings ADD CONSTRAINT shop_settings_shop_id_fkey 
-  FOREIGN KEY (shop_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE shop_settings ADD CONSTRAINT shop_settings_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
