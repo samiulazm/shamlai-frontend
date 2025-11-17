@@ -14,6 +14,7 @@
     "test": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "test:coverage": "jest --coverage",
+    "test:redis": "tsx scripts/test-redis.ts",
     "seed": "tsx scripts/seed-database.ts",
     "migrate": "tsx scripts/run-migrations.ts",
     "docker:build": "docker build -t shamlai-frontend .",
