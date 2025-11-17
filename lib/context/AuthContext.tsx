@@ -183,11 +183,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             shop_id: shopId,
           });
         } catch (shopError) {
-          logger.warn(
-            'Failed to create shop settings',
-            shopError instanceof Error ? shopError : new Error(String(shopError))
-          );
-
+          const errorMessage = shopError instanceof Error && shopError.message.includes('Unable to generate unique shop ID')
+            ? 'Unable to generate a unique shop ID. Please try again later.'
+            : 'Failed to create shop settings';
+          
+          logger.warn(errorMessage, shopError instanceof Error ? shopError : new Error(String(shopError)));
+          
           // Set user even if shop creation failed
           setUser({
             id: data.user.id,
