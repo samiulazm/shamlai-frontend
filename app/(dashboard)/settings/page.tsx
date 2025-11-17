@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient, ShopService } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { ShopSettings } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { insforgeClient } from '@/lib/insforge';
+import * as ShopService from '@/lib/services/shop';
+import { logger } from '@/lib/utils/logger';
+import type { ShopSettings } from '@/lib/types/database';
 
-export default function Settings(){
+export default function Settings() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -15,7 +16,7 @@ export default function Settings(){
   const [formData, setFormData] = useState({
     timezone: 'Asia/Dhaka',
     currency: 'BDT',
-    language: 'en'
+    language: 'en',
   });
 
   useEffect(() => {
@@ -34,13 +35,13 @@ export default function Settings(){
       }
 
       const shopSettings = await ShopService.getShopSettings(user.user.id);
-      
+
       if (shopSettings) {
         setSettings(shopSettings);
         setFormData({
           timezone: shopSettings.timezone || 'Asia/Dhaka',
           currency: shopSettings.currency || 'BDT',
-          language: shopSettings.language || 'en'
+          language: shopSettings.language || 'en',
         });
       }
     } catch (err: any) {
@@ -53,7 +54,7 @@ export default function Settings(){
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
@@ -69,12 +70,12 @@ export default function Settings(){
       const updatedSettings = await ShopService.upsertShopSettings(user.user.id, {
         timezone: formData.timezone,
         currency: formData.currency,
-        language: formData.language
+        language: formData.language,
       });
-      
+
       setSettings(updatedSettings);
       setSuccess('Settings saved successfully!');
-      
+
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       logger.error('Error saving settings', err instanceof Error ? err : new Error(String(err)));
@@ -98,7 +99,7 @@ export default function Settings(){
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Settings</h1>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
@@ -117,10 +118,10 @@ export default function Settings(){
             <div className="grid md:grid-cols-3 gap-3">
               <div>
                 <label className="label">Timezone</label>
-                <select 
+                <select
                   className="input"
                   value={formData.timezone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, timezone: e.target.value }))}
                   disabled={saving}
                 >
                   <option value="Asia/Dhaka">Asia/Dhaka</option>
@@ -131,10 +132,10 @@ export default function Settings(){
               </div>
               <div>
                 <label className="label">Currency</label>
-                <select 
+                <select
                   className="input"
                   value={formData.currency}
-                  onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, currency: e.target.value }))}
                   disabled={saving}
                 >
                   <option value="BDT">BDT (৳)</option>
@@ -145,10 +146,10 @@ export default function Settings(){
               </div>
               <div>
                 <label className="label">Language</label>
-                <select 
+                <select
                   className="input"
                   value={formData.language}
-                  onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, language: e.target.value }))}
                   disabled={saving}
                 >
                   <option value="en">English</option>
@@ -156,11 +157,7 @@ export default function Settings(){
                 </select>
               </div>
             </div>
-            <button 
-              type="submit"
-              className="btn btn-primary w-full md:w-auto"
-              disabled={saving}
-            >
+            <button type="submit" className="btn btn-primary w-full md:w-auto" disabled={saving}>
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>

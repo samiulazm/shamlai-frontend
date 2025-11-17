@@ -6,7 +6,7 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
     serverActions: {
-      allowedOrigins: process.env.NODE_ENV === 'production' 
+      allowedOrigins: process.env.NODE_ENV === 'production'
         ? process.env.ALLOWED_ORIGINS?.split(',') || []
         : ['localhost:3000', '127.0.0.1:3000']
     }
@@ -155,6 +155,18 @@ const nextConfig = {
 
   // Webpack configuration
   webpack: (config, { dev, isServer }) => {
+    // Exclude server-only Node.js modules from client bundles
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
+      };
+    }
+
     // Production optimizations
     if (!dev && !isServer) {
       config.optimization = {

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient, CartService } from '@/lib/insforge';
+import { insforgeClient } from '@/lib/insforge';
+import * as CartService from '@/lib/services/cart';
 import { getActiveTheme } from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -179,7 +180,10 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-4 lg:gap-6">
-              <Link href={`/${shopId}`} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <Link
+                href={`/${shopId}`}
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
                 Home
               </Link>
               <Link
@@ -188,7 +192,10 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
               >
                 Products
               </Link>
-              <Link href={`/${shopId}/cart`} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <Link
+                href={`/${shopId}/cart`}
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
                 View Cart
               </Link>
               <button
@@ -254,9 +261,19 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {isMobileMenuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
                   )}
                 </svg>
               </button>
@@ -340,7 +357,12 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                   aria-label="Close cart"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -348,9 +370,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                 {cartLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div
-                        className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-blue-600 mx-auto"
-                      ></div>
+                      <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-blue-600 mx-auto"></div>
                       <p className="mt-3 text-sm text-gray-500">Loading cart...</p>
                     </div>
                   </div>
@@ -359,10 +379,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                     <div className="text-center">
                       <div className="text-5xl mb-3">🛒</div>
                       <p className="text-gray-500">Your cart is empty</p>
-                      <button
-                        onClick={closeCartDrawer}
-                        className="btn btn-primary mt-4"
-                      >
+                      <button onClick={closeCartDrawer} className="btn btn-primary mt-4">
                         Start Shopping
                       </button>
                     </div>
@@ -370,12 +387,17 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                 ) : (
                   <div className="divide-y">
                     {cartItems.map((item) => (
-                      <div key={item.id} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors" data-testid="cart-item">
+                      <div
+                        key={item.id}
+                        className="p-3 sm:p-4 hover:bg-gray-50 transition-colors"
+                        data-testid="cart-item"
+                      >
                         <div className="flex gap-3">
                           <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
                             {(() => {
                               const images = item.product?.product_images;
-                              const primaryImage = images?.find((img) => img.is_primary) || images?.[0];
+                              const primaryImage =
+                                images?.find((img) => img.is_primary) || images?.[0];
                               return primaryImage?.image_url ? (
                                 <img
                                   src={primaryImage.image_url}
@@ -390,13 +412,22 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                             })()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm sm:text-base line-clamp-2">{item.product?.name || 'Product'}</p>
+                            <p className="font-medium text-sm sm:text-base line-clamp-2">
+                              {item.product?.name || 'Product'}
+                            </p>
                             {item.variant?.name && (
-                              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{item.variant.name}</p>
+                              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                                {item.variant.name}
+                              </p>
                             )}
                             <div className="flex items-center justify-between mt-2">
-                              <p className="text-xs sm:text-sm text-gray-600">Qty: {item.quantity}</p>
-                              <p className="font-bold text-sm sm:text-base" style={{ color: 'var(--theme-primary)' }}>
+                              <p className="text-xs sm:text-sm text-gray-600">
+                                Qty: {item.quantity}
+                              </p>
+                              <p
+                                className="font-bold text-sm sm:text-base"
+                                style={{ color: 'var(--theme-primary)' }}
+                              >
                                 ৳{(item.price * item.quantity).toFixed(2)}
                               </p>
                             </div>

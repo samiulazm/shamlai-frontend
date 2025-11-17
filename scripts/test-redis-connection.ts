@@ -26,7 +26,7 @@ async function testRedisConnection() {
   console.log('✅ Redis configuration found\n');
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
 
     // Test 1: Basic connectivity
     console.log('Step 2: Testing basic connectivity (PING)...');
@@ -35,10 +35,14 @@ async function testRedisConnection() {
 
     // Test 2: Write operation
     console.log('Step 3: Testing write operation (SET)...');
-    await setCached('test:connection', {
-      message: 'Shamlai Redis is working!',
-      timestamp: new Date().toISOString()
-    }, 60);
+    await setCached(
+      'test:connection',
+      {
+        message: 'Shamlai Redis is working!',
+        timestamp: new Date().toISOString(),
+      },
+      60
+    );
     console.log('✅ Write successful\n');
 
     // Test 3: Read operation
@@ -70,7 +74,7 @@ async function testRedisConnection() {
       id: 'prod_123',
       name: 'Sample Product',
       price: 99.99,
-      inventory: 50
+      inventory: 50,
     };
     await setCached('cache:product:prod_123', mockProduct, 300);
     const cachedProduct = await getCached<any>('cache:product:prod_123');
@@ -109,7 +113,6 @@ async function testRedisConnection() {
     console.log('   2. Visit a product page twice (2nd visit = cached!)');
     console.log('   3. Monitor Redis usage in Upstash dashboard');
     console.log('   4. See docs/SCALING.md for more optimization tips\n');
-
   } catch (error: any) {
     console.error('\n❌ Redis test failed!\n');
     console.error('Error:', error.message);

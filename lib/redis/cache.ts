@@ -14,7 +14,7 @@ export async function getCached<T>(key: string): Promise<T | null> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const cached = await redis.get(key);
 
     if (!cached) {
@@ -38,7 +38,7 @@ export async function setCached(key: string, value: any, ttlSeconds?: number): P
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const serialized = JSON.stringify(value);
 
     if (ttlSeconds) {
@@ -63,7 +63,7 @@ export async function deleteCached(key: string): Promise<boolean> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     await redis.del(key);
     return true;
   } catch (error) {
@@ -81,7 +81,7 @@ export async function deleteCachedPattern(pattern: string): Promise<number> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const keys = await redis.keys(pattern);
 
     if (keys.length === 0) {
@@ -130,7 +130,7 @@ export async function getCachedMultiple<T>(keys: string[]): Promise<(T | null)[]
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const values = await redis.mget(...keys);
 
     return values.map((val) => {
@@ -156,7 +156,7 @@ export async function incrementCounter(key: string, ttlSeconds?: number): Promis
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const newValue = await redis.incr(key);
 
     // Set TTL on first increment
@@ -180,7 +180,7 @@ export async function existsInCache(key: string): Promise<boolean> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const exists = await redis.exists(key);
     return exists > 0;
   } catch (error) {
@@ -198,7 +198,7 @@ export async function getTTL(key: string): Promise<number> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const ttl = await redis.ttl(key);
     return typeof ttl === 'number' ? ttl : parseInt(String(ttl));
   } catch (error) {

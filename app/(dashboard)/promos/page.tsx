@@ -1,17 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient, MarketingService } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { DiscountCode } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { insforgeClient } from '@/lib/insforge';
+import * as MarketingService from '@/lib/services/marketing';
+import { logger } from '@/lib/utils/logger';
+import type { DiscountCode } from '@/lib/types/database';
 
-export default function Promos(){
+export default function Promos() {
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     code: '',
     discount_type: 'percentage' as 'percentage' | 'fixed_amount' | 'free_shipping',
@@ -20,7 +21,7 @@ export default function Promos(){
     minimum_purchase: 0,
     usage_limit: 0,
     starts_at: '',
-    expires_at: ''
+    expires_at: '',
   });
 
   useEffect(() => {
@@ -40,12 +41,15 @@ export default function Promos(){
 
       const response = await MarketingService.getDiscountCodes(user.user.id, {
         page: 1,
-        pageSize: 50
+        pageSize: 50,
       });
 
       setDiscountCodes(response.data || []);
     } catch (err: any) {
-      logger.error('Error fetching discount codes', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching discount codes',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch discount codes');
     } finally {
       setLoading(false);
@@ -54,7 +58,7 @@ export default function Promos(){
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.code || formData.discount_value <= 0) {
       setError('Please fill in code and discount value');
       return;
@@ -82,7 +86,7 @@ export default function Promos(){
         starts_at: formData.starts_at || undefined,
         expires_at: formData.expires_at || undefined,
         is_active: true,
-        applies_to: 'all' // Default to apply to all products
+        applies_to: 'all', // Default to apply to all products
       });
 
       // Reset form and refresh
@@ -94,12 +98,15 @@ export default function Promos(){
         minimum_purchase: 0,
         usage_limit: 0,
         starts_at: '',
-        expires_at: ''
+        expires_at: '',
       });
       setShowForm(false);
       await fetchDiscountCodes();
     } catch (err: any) {
-      logger.error('Error creating discount code', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error creating discount code',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to create discount code');
     } finally {
       setCreating(false);
@@ -109,11 +116,14 @@ export default function Promos(){
   const toggleActive = async (codeId: string, currentStatus: boolean) => {
     try {
       await MarketingService.updateDiscountCode(codeId, {
-        is_active: !currentStatus
+        is_active: !currentStatus,
       });
       await fetchDiscountCodes();
     } catch (err: any) {
-      logger.error('Error updating discount code', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error updating discount code',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to update discount code');
     }
   };
@@ -133,10 +143,7 @@ export default function Promos(){
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Promo Codes</h1>
-        <button 
-          onClick={() => setShowForm(!showForm)}
-          className="btn btn-primary"
-        >
+        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           {showForm ? 'Cancel' : '+ Create Promo Code'}
         </button>
       </div>
@@ -155,21 +162,25 @@ export default function Promos(){
               <div className="grid md:grid-cols-4 gap-3">
                 <div>
                   <label className="label">Code *</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     placeholder="FEST20"
                     value={formData.code}
-                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))
+                    }
                     required
                     disabled={creating}
                   />
                 </div>
                 <div>
                   <label className="label">Type *</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.discount_type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as any }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, discount_type: e.target.value as any }))
+                    }
                     disabled={creating}
                   >
                     <option value="percentage">Percentage</option>
@@ -179,22 +190,23 @@ export default function Promos(){
                 </div>
                 <div>
                   <label className="label">Value *</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="number"
                     placeholder="20"
                     value={formData.discount_value}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discount_value: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        discount_value: parseFloat(e.target.value) || 0,
+                      }))
+                    }
                     required
                     disabled={creating}
                   />
                 </div>
                 <div className="flex items-end">
-                  <button 
-                    type="submit"
-                    className="btn btn-primary w-full"
-                    disabled={creating}
-                  >
+                  <button type="submit" className="btn btn-primary w-full" disabled={creating}>
                     {creating ? 'Creating...' : 'Create'}
                   </button>
                 </div>
@@ -202,43 +214,57 @@ export default function Promos(){
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
                   <label className="label">Description</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     placeholder="Holiday special discount"
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
                     disabled={creating}
                   />
                 </div>
                 <div>
                   <label className="label">Minimum Purchase</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="number"
                     placeholder="0"
                     value={formData.minimum_purchase}
-                    onChange={(e) => setFormData(prev => ({ ...prev, minimum_purchase: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        minimum_purchase: parseFloat(e.target.value) || 0,
+                      }))
+                    }
                     disabled={creating}
                   />
                 </div>
                 <div>
                   <label className="label">Usage Limit</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="number"
                     placeholder="Unlimited"
                     value={formData.usage_limit}
-                    onChange={(e) => setFormData(prev => ({ ...prev, usage_limit: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        usage_limit: parseInt(e.target.value) || 0,
+                      }))
+                    }
                     disabled={creating}
                   />
                 </div>
                 <div>
                   <label className="label">Expires At</label>
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="datetime-local"
                     value={formData.expires_at}
-                    onChange={(e) => setFormData(prev => ({ ...prev, expires_at: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, expires_at: e.target.value }))
+                    }
                     disabled={creating}
                   />
                 </div>
@@ -253,20 +279,25 @@ export default function Promos(){
           {discountCodes.length > 0 ? (
             <div className="space-y-3">
               {discountCodes.map((code) => (
-                <div key={code.id} className="flex items-center justify-between rounded-xl border p-4">
+                <div
+                  key={code.id}
+                  className="flex items-center justify-between rounded-xl border p-4"
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <div className="font-semibold text-lg">{code.code}</div>
-                      <span className={`badge ${code.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      <span
+                        className={`badge ${code.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                      >
                         {code.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
-                      {code.discount_type === 'percentage' 
+                      {code.discount_type === 'percentage'
                         ? `${code.discount_value}% off`
                         : code.discount_type === 'fixed_amount'
-                        ? `৳${code.discount_value} off`
-                        : 'Free Shipping'}
+                          ? `৳${code.discount_value} off`
+                          : 'Free Shipping'}
                       {code.description && ` - ${code.description}`}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">

@@ -100,7 +100,7 @@ export async function checkRateLimit(
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const key = REDIS_KEYS.RATE_LIMIT(identifier);
 
     // Increment the counter
@@ -164,7 +164,7 @@ export async function getRateLimitInfo(identifier: string): Promise<{
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const key = REDIS_KEYS.RATE_LIMIT(identifier);
 
     const current = await redis.get(key);
@@ -189,7 +189,7 @@ export async function resetRateLimit(identifier: string): Promise<boolean> {
   }
 
   try {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     const key = REDIS_KEYS.RATE_LIMIT(identifier);
     await redis.del(key);
     return true;

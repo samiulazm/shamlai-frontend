@@ -1,17 +1,18 @@
 'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { insforgeClient, OrderService } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { Order, OrderItem } from "@/lib/types/database";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { insforgeClient } from '@/lib/insforge';
+import * as OrderService from '@/lib/services/orders';
+import { logger } from '@/lib/utils/logger';
+import type { Order, OrderItem } from '@/lib/types/database';
 
-export default function OrderConfirmation({ params }: { params: { id: string } }){
+export default function OrderConfirmation({ params }: { params: { id: string } }) {
   const routerParams = useParams();
   const shopId = routerParams.shop as string;
   const orderId = params.id;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,10 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
       <div className="container-responsive py-16">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--theme-primary)' }}></div>
+            <div
+              className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto"
+              style={{ borderColor: 'var(--theme-primary)' }}
+            ></div>
             <p className="mt-4 text-gray-600">Loading order...</p>
           </div>
         </div>
@@ -61,8 +65,12 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
     return (
       <div className="container-responsive py-16 text-center">
         <div className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</div>
-        <p className="text-gray-600 mb-4">{error || 'This order does not exist or is no longer available.'}</p>
-        <Link href={`/${shopId}`} className="btn btn-outline">Back to Shop</Link>
+        <p className="text-gray-600 mb-4">
+          {error || 'This order does not exist or is no longer available.'}
+        </p>
+        <Link href={`/${shopId}`} className="btn btn-outline">
+          Back to Shop
+        </Link>
       </div>
     );
   }
@@ -74,11 +82,13 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
       shipped: 'bg-purple-100 text-purple-800',
       delivered: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
-      refunded: 'bg-gray-100 text-gray-800'
+      refunded: 'bg-gray-100 text-gray-800',
     };
 
     return (
-      <span className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -89,8 +99,18 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Thank you!</h1>
@@ -117,7 +137,7 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
                   {new Date(order.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
                   })}
                 </div>
               </div>
@@ -131,7 +151,10 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
               <h2 className="text-lg font-semibold mb-4">Order Items</h2>
               <div className="space-y-3">
                 {orderItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
                     <div className="flex-1">
                       <div className="font-medium">{item.product_name}</div>
                       {item.variant_name && (
@@ -154,10 +177,14 @@ export default function OrderConfirmation({ params }: { params: { id: string } }
           <div className="card-pad">
             <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
             <div className="text-gray-700">
-              <div className="font-medium">{order.shipping_first_name} {order.shipping_last_name}</div>
+              <div className="font-medium">
+                {order.shipping_first_name} {order.shipping_last_name}
+              </div>
               <div>{order.shipping_address1}</div>
               {order.shipping_address2 && <div>{order.shipping_address2}</div>}
-              <div>{order.shipping_city}, {order.shipping_postal_code}</div>
+              <div>
+                {order.shipping_city}, {order.shipping_postal_code}
+              </div>
               <div>{order.shipping_country}</div>
               {order.shipping_phone && (
                 <div className="mt-2 text-sm text-gray-600">Phone: {order.shipping_phone}</div>

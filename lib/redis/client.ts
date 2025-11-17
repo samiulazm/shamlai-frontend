@@ -1,10 +1,13 @@
 /**
  * Redis Client Configuration
  * Supports both Upstash Redis (serverless) and standard Redis
+ *
+ * IMPORTANT: This module uses dynamic imports to prevent server-only
+ * packages (ioredis) from being bundled in client-side code.
  */
 
-import { Redis } from '@upstash/redis';
-import IORedis from 'ioredis';
+import type { Redis } from '@upstash/redis';
+import type IORedis from 'ioredis';
 
 // Redis client instance (singleton)
 let redisClient: Redis | IORedis | null = null;
@@ -12,15 +15,24 @@ let redisClient: Redis | IORedis | null = null;
 /**
  * Get or create Redis client
  * Automatically detects Upstash vs standard Redis based on env vars
+ *
+ * NOTE: This function uses dynamic imports to avoid importing ioredis
+ * at the module level, which would break client-side builds.
  */
-export function getRedisClient(): Redis | IORedis {
+export async function getRedisClient(): Promise<Redis | IORedis> {
+  // Only run on server-side
+  if (typeof window !== 'undefined') {
+    throw new Error('Redis client cannot be used on the client side');
+  }
+
   if (redisClient) {
     return redisClient;
   }
 
   // Option 1: Upstash Redis (recommended for serverless/Vercel)
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    redisClient = new Redis({
+    const { Redis: UpstashRedis } = await import('@upstash/redis');
+    redisClient = new UpstashRedis({
       url: process.env.UPSTASH_REDIS_REST_URL,
       token: process.env.UPSTASH_REDIS_REST_TOKEN,
     });
@@ -30,7 +42,10 @@ export function getRedisClient(): Redis | IORedis {
 
   // Option 2: Standard Redis connection string
   if (process.env.REDIS_URL) {
-    redisClient = new IORedis(process.env.REDIS_URL, {
+    const IORedisModule = await import('ioredis');
+    const IORedisConstructor = IORedisModule.default;
+
+    redisClient = new IORedisConstructor(process.env.REDIS_URL, {
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
@@ -119,10 +134,7 @@ function createMockRedisClient(): any {
  * Check if Redis is available
  */
 export function isRedisAvailable(): boolean {
-  return !!(
-    process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.REDIS_URL
-  );
+  return !!(process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL);
 }
 
 /**

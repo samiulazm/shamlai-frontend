@@ -1,17 +1,18 @@
 'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { insforgeClient, OrderService } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { Order, OrderItem } from "@/lib/types/database";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { insforgeClient } from '@/lib/insforge';
+import * as OrderService from '@/lib/services/orders';
+import { logger } from '@/lib/utils/logger';
+import type { Order, OrderItem } from '@/lib/types/database';
 
-export default function OrderDetail(){
+export default function OrderDetail() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +62,13 @@ export default function OrderDetail(){
       shipped: 'bg-purple-100 text-purple-800',
       delivered: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
-      refunded: 'bg-gray-100 text-gray-800'
+      refunded: 'bg-gray-100 text-gray-800',
     };
 
     return (
-      <span className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -76,11 +79,13 @@ export default function OrderDetail(){
       paid: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
       failed: 'bg-red-100 text-red-800',
-      refunded: 'bg-gray-100 text-gray-800'
+      refunded: 'bg-gray-100 text-gray-800',
     };
 
     return (
-      <span className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -102,13 +107,17 @@ export default function OrderDetail(){
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Order Details</h1>
-          <Link href="/orders" className="btn btn-outline">Back to Orders</Link>
+          <Link href="/orders" className="btn btn-outline">
+            Back to Orders
+          </Link>
         </div>
         <div className="card">
           <div className="card-pad">
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error: {error || 'Order not found'}</p>
-              <Link href="/orders" className="btn btn-outline">Back to Orders</Link>
+              <Link href="/orders" className="btn btn-outline">
+                Back to Orders
+              </Link>
             </div>
           </div>
         </div>
@@ -122,16 +131,19 @@ export default function OrderDetail(){
         <div>
           <h1 className="text-2xl font-bold">Order #{order.order_number}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Placed on {new Date(order.created_at).toLocaleDateString('en-US', {
+            Placed on{' '}
+            {new Date(order.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
               hour: '2-digit',
-              minute: '2-digit'
+              minute: '2-digit',
             })}
           </p>
         </div>
-        <Link href="/orders" className="btn btn-outline">Back to Orders</Link>
+        <Link href="/orders" className="btn btn-outline">
+          Back to Orders
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -157,7 +169,12 @@ export default function OrderDetail(){
                   <div className="text-sm text-gray-500 mb-1">Tracking Number</div>
                   <div className="font-mono text-sm">{order.tracking_number}</div>
                   {order.tracking_url && (
-                    <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-brand-indigo text-sm hover:underline">
+                    <a
+                      href={order.tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-indigo text-sm hover:underline"
+                    >
                       Track Package
                     </a>
                   )}
@@ -174,7 +191,9 @@ export default function OrderDetail(){
             <div className="space-y-2 text-sm">
               <div>
                 <div className="text-gray-500">Name</div>
-                <div className="font-medium">{order.shipping_first_name} {order.shipping_last_name}</div>
+                <div className="font-medium">
+                  {order.shipping_first_name} {order.shipping_last_name}
+                </div>
               </div>
               <div>
                 <div className="text-gray-500">Email</div>
@@ -232,10 +251,14 @@ export default function OrderDetail(){
           <div className="card-pad">
             <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
             <div className="text-gray-700 text-sm">
-              <div className="font-medium">{order.shipping_first_name} {order.shipping_last_name}</div>
+              <div className="font-medium">
+                {order.shipping_first_name} {order.shipping_last_name}
+              </div>
               <div>{order.shipping_address1}</div>
               {order.shipping_address2 && <div>{order.shipping_address2}</div>}
-              <div>{order.shipping_city}, {order.shipping_state} {order.shipping_postal_code}</div>
+              <div>
+                {order.shipping_city}, {order.shipping_state} {order.shipping_postal_code}
+              </div>
               <div>{order.shipping_country}</div>
             </div>
           </div>
@@ -246,10 +269,14 @@ export default function OrderDetail(){
           <div className="card-pad">
             <h2 className="text-lg font-semibold mb-4">Billing Address</h2>
             <div className="text-gray-700 text-sm">
-              <div className="font-medium">{order.billing_first_name} {order.billing_last_name}</div>
+              <div className="font-medium">
+                {order.billing_first_name} {order.billing_last_name}
+              </div>
               <div>{order.billing_address1}</div>
               {order.billing_address2 && <div>{order.billing_address2}</div>}
-              <div>{order.billing_city}, {order.billing_state} {order.billing_postal_code}</div>
+              <div>
+                {order.billing_city}, {order.billing_state} {order.billing_postal_code}
+              </div>
               <div>{order.billing_country}</div>
             </div>
           </div>
@@ -300,4 +327,3 @@ export default function OrderDetail(){
     </div>
   );
 }
-

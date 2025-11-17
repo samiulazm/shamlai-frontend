@@ -2,13 +2,18 @@ import { createClient } from '@insforge/sdk';
 import { logger } from './utils/logger';
 
 // InsForge Backend Configuration
-// Validate environment variables in production
-if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_INSFORGE_URL) {
-  throw new Error('NEXT_PUBLIC_INSFORGE_URL environment variable is required in production');
-}
-
+// Note: Validation happens at runtime, not during build time
 const INSFORGE_URL =
   process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
+
+// Validate environment variable at runtime (not during build)
+if (
+  typeof window !== 'undefined' &&
+  process.env.NODE_ENV === 'production' &&
+  !process.env.NEXT_PUBLIC_INSFORGE_URL
+) {
+  console.warn('NEXT_PUBLIC_INSFORGE_URL environment variable is not set in production');
+}
 
 // Create and export the InsForge client
 export const insforgeClient = createClient({
@@ -129,23 +134,24 @@ export const DISCOUNT_TYPES = {
 
 export default insforgeClient;
 
-// Export all services
-export * as ProductService from './services/products';
-export * as OrderService from './services/orders';
-export * as CartService from './services/cart';
-export * as MarketingService from './services/marketing';
-export * as ShopService from './services/shop';
+// NOTE: Services are NOT auto-exported to prevent importing server-only code (Redis, ioredis) in client components
+// Import services directly when needed:
+// import * as ProductService from '@/lib/services/products';
+// import * as OrderService from '@/lib/services/orders';
+// import * as CartService from '@/lib/services/cart';
+// import * as MarketingService from '@/lib/services/marketing';
+// import * as ShopService from '@/lib/services/shop';
 
-// Export all types
+// Export all types (safe for client)
 export * from './types/database';
 
-// Export validation utilities
+// Export validation utilities (safe for client)
 export * as Validation from './utils/validation';
 
-// Export seed data utilities
+// Export seed data utilities (safe for client)
 export * as SeedData from './utils/seed-data';
 
-// Export React hooks
+// Export React hooks (safe for client)
 export * from './hooks/useProducts';
 export * from './hooks/useOrders';
 export * from './hooks/useCart';

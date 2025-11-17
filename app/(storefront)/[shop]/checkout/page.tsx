@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { insforgeClient, CartService, OrderService } from '@/lib/insforge';
+import { insforgeClient } from '@/lib/insforge';
+import * as CartService from '@/lib/services/cart';
+import * as OrderService from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
 import { getOrCreateCartSessionId, dispatchCartUpdatedEvent } from '@/lib/utils/cart';
 
@@ -369,7 +371,9 @@ export default function Checkout() {
             <div className="p-4 sm:p-5 md:p-6 grid gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-lg sm:text-xl font-semibold">Delivery Address</span>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Required</span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  Required
+                </span>
               </div>
               {/* Mobile-first: Single column, then 2 columns on SM+ */}
               <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
@@ -385,7 +389,10 @@ export default function Checkout() {
                     autoComplete="given-name"
                   />
                   {formErrors.firstName && (
-                    <p className="text-xs sm:text-sm text-red-600 mt-1" data-testid="error-firstName">
+                    <p
+                      className="text-xs sm:text-sm text-red-600 mt-1"
+                      data-testid="error-firstName"
+                    >
                       {formErrors.firstName}
                     </p>
                   )}
@@ -470,7 +477,9 @@ export default function Checkout() {
                     required
                     autoComplete="address-level2"
                   />
-                  {formErrors.city && <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.city}</p>}
+                  {formErrors.city && (
+                    <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.city}</p>
+                  )}
                 </div>
                 <div>
                   <label className="label">State</label>
@@ -517,7 +526,9 @@ export default function Checkout() {
                   />
                   <div className="flex-1">
                     <div className="font-medium text-sm sm:text-base">Cash on Delivery</div>
-                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Pay when you receive</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                      Pay when you receive
+                    </div>
                   </div>
                   <span className="text-2xl">💵</span>
                 </label>
@@ -532,7 +543,9 @@ export default function Checkout() {
                   />
                   <div className="flex-1">
                     <div className="font-medium text-sm sm:text-base">Online Payment</div>
-                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Pay now (Test mode)</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                      Pay now (Test mode)
+                    </div>
                   </div>
                   <span className="text-2xl">💳</span>
                 </label>
@@ -572,7 +585,9 @@ export default function Checkout() {
                       <div className="flex-1">
                         <p className="font-medium text-sm sm:text-base">{method.name}</p>
                         {method.description && (
-                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{method.description}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                            {method.description}
+                          </p>
                         )}
                       </div>
                       <p className="font-semibold text-sm sm:text-base">
@@ -582,7 +597,9 @@ export default function Checkout() {
                   ))
                 )}
                 {formErrors.shippingMethod && (
-                  <p className="text-xs sm:text-sm text-red-600 mt-1">{formErrors.shippingMethod}</p>
+                  <p className="text-xs sm:text-sm text-red-600 mt-1">
+                    {formErrors.shippingMethod}
+                  </p>
                 )}
               </div>
             </div>
@@ -662,7 +679,9 @@ export default function Checkout() {
                     {applyingDiscount ? 'Applying...' : 'Apply'}
                   </button>
                 </div>
-                {discountError && <p className="text-xs sm:text-sm text-red-600">{discountError}</p>}
+                {discountError && (
+                  <p className="text-xs sm:text-sm text-red-600">{discountError}</p>
+                )}
                 {appliedDiscountCode && !discountError && (
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-emerald-600">
                     <span>✓</span>
@@ -688,7 +707,10 @@ export default function Checkout() {
                     'Place Order'
                   )}
                 </button>
-                <Link href={`/${shopId}/cart`} className="btn btn-outline w-full text-center text-sm">
+                <Link
+                  href={`/${shopId}/cart`}
+                  className="btn btn-outline w-full text-center text-sm"
+                >
                   Back to Cart
                 </Link>
               </div>
@@ -704,7 +726,8 @@ export default function Checkout() {
             <div className="flex-1">
               <div className="text-xs text-gray-500">Total Amount</div>
               <div className="font-bold text-lg" style={{ color: 'var(--theme-primary)' }}>
-                {currencySymbol}{total.toFixed(2)}
+                {currencySymbol}
+                {total.toFixed(2)}
               </div>
             </div>
             <button

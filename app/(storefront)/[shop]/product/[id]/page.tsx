@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient, CartService } from '@/lib/insforge';
+import { insforgeClient } from '@/lib/insforge';
+import * as CartService from '@/lib/services/cart';
 import { logger } from '@/lib/utils/logger';
 import type { Product, ProductVariant, ProductImage } from '@/lib/types/database';
 import { getOrCreateCartSessionId, dispatchCartUpdatedEvent } from '@/lib/utils/cart';
