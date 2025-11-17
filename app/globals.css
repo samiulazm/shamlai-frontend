@@ -551,6 +551,176 @@ body {
 }
 
 /* ============================================================================
+   Mobile-First Utilities (Bangladesh Market Optimization)
+   ============================================================================ */
+
+@layer utilities {
+  /* Thumb-zone safe areas (optimized for one-handed mobile use) */
+  .thumb-zone-safe {
+    @apply pb-20 md:pb-4;
+  }
+
+  /* Large touch targets (minimum 44px as per mobile UX guidelines) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile-optimized scrolling */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Prevent zoom on input focus (iOS Safari) */
+  .no-zoom {
+    font-size: 16px !important;
+  }
+
+  /* Mobile-friendly grid */
+  .mobile-grid {
+    @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5;
+  }
+
+  /* Safe area insets for notched devices */
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Mobile-optimized text */
+  .mobile-heading {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold;
+  }
+
+  .mobile-subheading {
+    @apply text-lg sm:text-xl md:text-2xl font-semibold;
+  }
+
+  .mobile-body {
+    @apply text-base sm:text-lg leading-relaxed;
+  }
+
+  /* Mobile card shadows (lighter for better performance) */
+  .mobile-card-shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+
+  .mobile-card-shadow-lg {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+}
+
+/* ============================================================================
+   iOS Safari Specific Fixes
+   ============================================================================ */
+
+@supports (-webkit-touch-callout: none) {
+  /* iOS safe area bottom padding */
+  .safe-area-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+
+  /* Fix iOS input zoom */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Fix iOS button appearance */
+  button,
+  input[type="button"],
+  input[type="submit"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+/* ============================================================================
+   Android Chrome Specific Fixes
+   ============================================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Larger tap targets on touch devices */
+  button,
+  a {
+    min-height: 44px;
+  }
+
+  /* Improve touch scrolling */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active state for better feedback */
+  button:active,
+  a:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-in-out;
+  }
+}
+
+/* ============================================================================
+   Progressive Web App (PWA) Support
+   ============================================================================ */
+
+@media (display-mode: standalone) {
+  /* Remove safe area when in PWA mode */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Hide elements that are redundant in PWA */
+  .hide-in-pwa {
+    display: none !important;
+  }
+}
+
+/* ============================================================================
+   Mobile Performance Optimizations
+   ============================================================================ */
+
+/* Hardware acceleration for smooth animations on mobile */
+.mobile-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Lazy loading placeholder */
+.lazy-placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================================================
    Reduced Motion (Accessibility)
    ============================================================================ */
 

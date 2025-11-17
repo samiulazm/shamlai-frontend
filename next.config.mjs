@@ -6,10 +6,14 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
     serverActions: {
-      allowedOrigins: process.env.NODE_ENV === 'production' 
+      allowedOrigins: process.env.NODE_ENV === 'production'
         ? process.env.ALLOWED_ORIGINS?.split(',') || []
         : ['localhost:3000', '127.0.0.1:3000']
-    }
+    },
+    // Optimize CSS for mobile
+    optimizeCss: true,
+    // Optimize package imports for faster loading
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
   },
 
   // Production optimizations
@@ -17,7 +21,7 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  // Image optimization
+  // Image optimization (Mobile-first)
   images: {
     domains: [
       'insforge.app',
@@ -25,6 +29,8 @@ const nextConfig = {
       'localhost',
     ],
     formats: ['image/avif', 'image/webp'],
+    deviceSizes: [320, 420, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
