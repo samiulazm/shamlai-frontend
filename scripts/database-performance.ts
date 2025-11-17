@@ -79,32 +79,16 @@ async function getTableStats(): Promise<void> {
       'inventory_logs',
     ];
 
-    // Use pg_class to get estimated row counts for all tables in one query
-    const tableList = tables.map(t => `'${t}'`).join(',');
-    const rowCountQuery = `
-      SELECT relname AS tablename, reltuples::bigint AS estimated_count
-      FROM pg_class
-      WHERE relname IN (${tableList})
-    `;
-
+    // Get estimated row counts using the select API
     try {
-      // Attempt to run the raw SQL query for estimated row counts
-      const { data, error } = await client.database.rpc('run_sql', { sql: rowCountQuery });
-      if (!error && Array.isArray(data)) {
-        for (const table of tables) {
-          const row = data.find((r: any) => r.tablename === table);
-          const count = row ? row.estimated_count : 'N/A';
+      for (const table of tables) {
+        const { count, error } = await client.database
+          .from(table)
+          .select('*', { count: 'estimated', head: true });
+        if (!error && count !== null) {
           console.log(`${table.padEnd(20)} ${String(count).padStart(10)} est. rows`);
-        }
-      } else {
-        // Fallback: If raw SQL is not supported, try estimated count via select
-        for (const table of tables) {
-          const { count, error } = await client.database.from(table).select('*', { count: 'estimated', head: true });
-          if (!error) {
-            console.log(`${table.padEnd(20)} ${String(count).padStart(10)} est. rows`);
-          } else {
-            console.log(`${table.padEnd(20)} N/A`);
-          }
+        } else {
+          console.log(`${table.padEnd(20)} N/A`);
         }
       }
     } catch (err) {
@@ -166,7 +150,10 @@ async function checkMissingIndexes(): Promise<void> {
     },
     {
       table: 'product_variants',
-      indexes: ['idx_product_variants_product_id (for joins)', 'idx_product_variants_sku (for lookups)'],
+      indexes: [
+        'idx_product_variants_product_id (for joins)',
+        'idx_product_variants_sku (for lookups)',
+      ],
     },
     {
       table: 'customers',

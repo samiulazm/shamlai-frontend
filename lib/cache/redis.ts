@@ -49,7 +49,7 @@ export function initializeRedis(): void {
 
     redisClient = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
+      retryStrategy: (times: number) => {
         if (times > 3) {
           console.error('Redis connection failed after 3 retries');
           return null; // Stop retrying
@@ -65,7 +65,7 @@ export function initializeRedis(): void {
       isRedisAvailable = true;
     });
 
-    redisClient.on('error', (error) => {
+    redisClient.on('error', (error: Error) => {
       console.error('Redis error:', error.message);
       isRedisAvailable = false;
       stats.errors++;
@@ -77,7 +77,7 @@ export function initializeRedis(): void {
     });
 
     // Connect to Redis
-    redisClient.connect().catch((error) => {
+    redisClient.connect().catch((error: Error) => {
       console.error('Failed to connect to Redis:', error.message);
     });
   } catch (error) {
@@ -98,10 +98,7 @@ function getCacheKey(key: string, prefix?: string): string {
 /**
  * Get value from cache
  */
-export async function cacheGet<T>(
-  key: string,
-  options?: CacheOptions
-): Promise<T | null> {
+export async function cacheGet<T>(key: string, options?: CacheOptions): Promise<T | null> {
   if (!redisClient || !isRedisAvailable) {
     stats.misses++;
     return null;
@@ -129,11 +126,7 @@ export async function cacheGet<T>(
 /**
  * Set value in cache
  */
-export async function cacheSet<T>(
-  key: string,
-  value: T,
-  options?: CacheOptions
-): Promise<boolean> {
+export async function cacheSet<T>(key: string, value: T, options?: CacheOptions): Promise<boolean> {
   if (!redisClient || !isRedisAvailable) {
     return false;
   }
@@ -155,10 +148,7 @@ export async function cacheSet<T>(
 /**
  * Delete value from cache
  */
-export async function cacheDelete(
-  key: string,
-  options?: CacheOptions
-): Promise<boolean> {
+export async function cacheDelete(key: string, options?: CacheOptions): Promise<boolean> {
   if (!redisClient || !isRedisAvailable) {
     return false;
   }
@@ -177,10 +167,7 @@ export async function cacheDelete(
 /**
  * Delete multiple cache keys by pattern
  */
-export async function cacheDeletePattern(
-  pattern: string,
-  options?: CacheOptions
-): Promise<number> {
+export async function cacheDeletePattern(pattern: string, options?: CacheOptions): Promise<number> {
   if (!redisClient || !isRedisAvailable) {
     return 0;
   }
