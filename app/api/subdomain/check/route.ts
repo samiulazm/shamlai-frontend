@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getInsforgeServerClient } from '@/lib/insforge';
 import { normalizeSubdomain } from '@/lib/services/shop';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
       .limit(1);
 
     if (error) {
-      console.error('Error checking subdomain:', error);
+      logger.error('Error checking subdomain', error);
       return NextResponse.json(
         { error: 'Failed to check subdomain availability' },
         { status: 500 }
@@ -44,7 +45,10 @@ export async function GET(request: Request) {
       normalized,
     });
   } catch (error) {
-    console.error('Subdomain check error:', error);
+    logger.error(
+      'Subdomain check error',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

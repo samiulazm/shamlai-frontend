@@ -17,17 +17,17 @@ DROP POLICY IF EXISTS "Users can insert own shop settings" ON shop_settings;
 -- Allow shop owners to read their own settings
 CREATE POLICY "Shop owners can read own settings" ON shop_settings
   FOR SELECT
-  USING (shop_id = auth.uid());
+  USING (user_id = auth.uid());
 
 -- Allow shop owners to update their own settings
 CREATE POLICY "Shop owners can update own settings" ON shop_settings
   FOR UPDATE
-  USING (shop_id = auth.uid());
+  USING (user_id = auth.uid());
 
 -- Allow authenticated users to insert their own shop settings during signup
 CREATE POLICY "Users can insert own shop settings" ON shop_settings
   FOR INSERT
-  WITH CHECK (shop_id = auth.uid());
+  WITH CHECK (user_id = auth.uid());
 
--- Add comment explaining the policy
-COMMENT ON TABLE shop_settings IS 'Shop configuration and settings. RLS enabled to protect sensitive data. Subdomain availability checks are performed server-side using service role credentials.';
+-- Add comment explaining the RLS setup
+COMMENT ON TABLE shop_settings IS 'Shop configuration and settings. RLS enabled to protect sensitive shop data. Subdomain availability is checked via the /api/subdomain/check endpoint using service role credentials.';
