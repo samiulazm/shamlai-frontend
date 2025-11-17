@@ -15,6 +15,29 @@ export const insforgeClient = createClient({
   baseUrl: INSFORGE_URL,
 });
 
+// Create a server-side client with service role for operations that bypass RLS
+// This should ONLY be used in server-side code (API routes, server components)
+// NEVER expose this client to the browser
+let _insforgeServerClient: ReturnType<typeof createClient> | null = null;
+
+export const getInsforgeServerClient = () => {
+  if (!_insforgeServerClient) {
+    if (!process.env.INSFORGE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        'INSFORGE_SERVICE_ROLE_KEY is required for server-side operations. ' +
+        'Please add it to your .env.local file.'
+      );
+    }
+    
+    _insforgeServerClient = createClient({
+      baseUrl: INSFORGE_URL,
+      serviceRoleKey: process.env.INSFORGE_SERVICE_ROLE_KEY,
+    });
+  }
+  
+  return _insforgeServerClient;
+};
+
 // Export types for TypeScript usage
 export type InsforgeClient = typeof insforgeClient;
 
