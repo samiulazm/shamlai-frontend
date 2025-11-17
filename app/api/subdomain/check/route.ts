@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { getInsforgeServerClient } from '@/lib/insforge';
 import { normalizeSubdomain } from '@/lib/services/shop';
 
 export async function GET(request: Request) {
@@ -8,10 +8,7 @@ export async function GET(request: Request) {
     const subdomain = searchParams.get('subdomain');
 
     if (!subdomain) {
-      return NextResponse.json(
-        { error: 'Subdomain parameter is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Subdomain parameter is required' }, { status: 400 });
     }
 
     const normalized = normalizeSubdomain(subdomain);
@@ -23,8 +20,10 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check if subdomain exists in the database
-    const { data, error } = await insforgeClient.database
+    // Use server client with service role to check subdomain availability
+    // This bypasses RLS policies and allows checking without authentication
+    const serverClient = getInsforgeServerClient();
+    const { data, error } = await serverClient.database
       .from('shop_settings')
       .select('id')
       .eq('subdomain', normalized)
@@ -46,9 +45,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Subdomain check error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
