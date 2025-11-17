@@ -14,7 +14,10 @@
       "Bash(npm run build:*)",
       "Bash(git pull:*)",
       "Bash(git merge:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(node fix-imports.js:*)",
+      "Bash(del:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
