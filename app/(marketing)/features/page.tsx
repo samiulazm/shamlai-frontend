@@ -1,7 +1,7 @@
 'use client';
 
-import Link from "next/link";
-import { useState } from "react";
+import Link from 'next/link';
+import { useState } from 'react';
 import {
   Store,
   Zap,
@@ -17,261 +17,298 @@ import {
   Sparkles,
   Smartphone,
   Truck,
-  DollarSign,
   Globe,
   Video,
   MessageCircle,
   Target,
   Send,
-  Shield
-} from "lucide-react";
+  Banknote,
+  Phone,
+} from 'lucide-react';
 
 export default function FeaturesPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [expandedFeature, setExpandedFeature] = useState<number | null>(null);
 
   const categories = [
-    { id: "all", name: "All Features", icon: Sparkles },
-    { id: "bangladesh", name: "🇧🇩 Bangladesh", icon: Globe },
-    { id: "facebook-live", name: "📱 Facebook Live", icon: Video },
-    { id: "ecommerce", name: "E-commerce", icon: ShoppingCart },
-    { id: "analytics", name: "Analytics", icon: BarChart3 },
-    { id: "automation", name: "Automation", icon: Bot },
+    { id: 'all', name: 'All Features', icon: Sparkles },
+    { id: 'bangladesh', name: '🇧🇩 Bangladesh', icon: Globe },
+    { id: 'facebook-live', name: '📱 Facebook Live', icon: Video },
+    { id: 'ecommerce', name: 'E-commerce', icon: ShoppingCart },
+    { id: 'analytics', name: 'Analytics', icon: BarChart3 },
+    { id: 'automation', name: 'Automation', icon: Bot },
   ];
 
   const features = [
     // Bangladesh-Specific Features
     {
       id: 1,
-      category: "bangladesh",
-      title: "বিকাশ, নগদ, রকেট পেমেন্ট",
-      titleEn: "bKash, Nagad & Rocket Payment",
-      description: "বাংলাদেশের সবচেয়ে জনপ্রিয় মোবাইল ফিন্যান্সিয়াল সার্ভিস ইন্টিগ্রেশন",
-      descriptionEn: "Bangladesh's most popular mobile financial service integrations with auto-verification",
+      category: 'bangladesh',
+      title: 'বিকাশ, নগদ, রকেট পেমেন্ট',
+      titleEn: 'bKash, Nagad & Rocket Payment',
+      description: 'বাংলাদেশের সবচেয়ে জনপ্রিয় মোবাইল ফিন্যান্সিয়াল সার্ভিস ইন্টিগ্রেশন',
+      descriptionEn:
+        "Bangladesh's most popular mobile financial service integrations with auto-verification",
       icon: Smartphone,
-      color: "from-pink-500 to-rose-600",
+      color: 'from-pink-500 to-rose-600',
       benefits: [
-        "bKash Payment Gateway (Checkout & Tokenized)",
-        "Nagad & Rocket mobile banking integration",
-        "Auto payment verification & refunds",
-        "৳ BDT currency support"
-      ]
+        'bKash Payment Gateway (Checkout & Tokenized)',
+        'Nagad & Rocket mobile banking integration',
+        'Auto payment verification & refunds',
+        '৳ BDT currency support',
+        'Real-time transaction alerts',
+      ],
     },
     {
       id: 2,
-      category: "bangladesh",
-      title: "পাঠাও, রেডেক্স, স্টেডফাস্ট",
-      titleEn: "Pathao, Redx & Steadfast Delivery",
-      description: "স্বয়ংক্রিয় কুরিয়ার বুকিং এবং ট্র্যাকিং সিস্টেম",
-      descriptionEn: "Automated courier booking and tracking with all major Bangladesh delivery services",
+      category: 'bangladesh',
+      title: 'পাঠাও, রেডেক্স, স্টেডফাস্ট',
+      titleEn: 'Pathao, Redx & Steadfast Delivery',
+      description: 'স্বয়ংক্রিয় কুরিয়ার বুকিং এবং ট্র্যাকিং সিস্টেম',
+      descriptionEn:
+        'Automated courier booking and tracking with all major Bangladesh delivery services',
       icon: Truck,
-      color: "from-blue-500 to-indigo-600",
+      color: 'from-blue-500 to-indigo-600',
       benefits: [
-        "Pathao, Redx, eCourier, Steadfast integration",
-        "Auto courier booking & tracking",
-        "Bulk order processing (100+ orders)",
-        "Inside/Outside Dhaka detection"
-      ]
+        'Pathao, Redx, eCourier, Steadfast integration',
+        'Auto courier booking & tracking',
+        'Bulk order processing (100+ orders)',
+        'Real-time tracking with customer SMS',
+        'Auto shipping cost calculator',
+        'Inside/Outside Dhaka detection',
+      ],
     },
     {
       id: 3,
-      category: "bangladesh",
-      title: "ক্যাশ অন ডেলিভারি (COD)",
-      titleEn: "Cash on Delivery (COD)",
-      description: "সম্পূর্ণ COD সাপোর্ট যাচাইকরণ সহ",
-      descriptionEn: "Complete COD support with verification and partial payment options",
-      icon: DollarSign,
-      color: "from-green-500 to-emerald-600",
+      category: 'bangladesh',
+      title: 'ক্যাশ অন ডেলিভারি (COD)',
+      titleEn: 'Cash on Delivery (COD)',
+      description: 'সম্পূর্ণ COD সাপোর্ট যাচাইকরণ সহ',
+      descriptionEn: 'Complete COD support with verification and partial payment options',
+      icon: Banknote,
+      color: 'from-green-500 to-emerald-600',
       benefits: [
-        "Full COD support with verification",
-        "Partial payment (advance + COD)",
-        "Phone verification before dispatch",
-        "COD fraud detection"
-      ]
+        'Full COD support with verification',
+        'Partial payment (advance + COD)',
+        'Phone verification before dispatch',
+        'Auto SMS to confirm COD orders',
+        'Easy return & refund for COD',
+        'COD fraud detection & tracking dashboard',
+      ],
     },
     {
       id: 4,
-      category: "bangladesh",
-      title: "বাংলা ভাষা সাপোর্ট",
-      titleEn: "Bengali Language Support",
-      description: "১০০% বাংলা ইন্টারফেস এবং কমিউনিকেশন",
-      descriptionEn: "100% Bengali interface with localized invoices, SMS and receipts",
+      category: 'bangladesh',
+      title: 'বাংলা ভাষা সাপোর্ট',
+      titleEn: 'Bengali Language Support',
+      description: '১০০% বাংলা ইন্টারফেস এবং কমিউনিকেশন',
+      descriptionEn: '100% Bengali interface with localized invoices, SMS and receipts',
       icon: Globe,
-      color: "from-purple-500 to-pink-600",
+      color: 'from-purple-500 to-pink-600',
       benefits: [
-        "100% Bengali interface",
-        "Bengali SMS, invoices, receipts",
-        "BDT currency with ৳ symbol",
-        "Bengali customer support"
-      ]
+        '100% Bengali interface (সম্পূর্ণ বাংলা)',
+        'Bilingual product descriptions',
+        'Bengali SMS notifications to customers',
+        'Bengali invoices, receipts & reports',
+        'BDT currency with ৳ symbol',
+        'Bengali date & number formats',
+      ],
     },
     // Facebook Live Seller Features
     {
       id: 5,
-      category: "facebook-live",
-      title: "Facebook Live Shopping",
-      titleBn: "ফেসবুক লাইভ শপিং",
-      description: "Track live comments and convert them to orders automatically from your Facebook Live",
-      descriptionBn: "লাইভ কমেন্ট ট্র্যাক করুন এবং স্বয়ংক্রিয়ভাবে অর্ডারে রূপান্তর করুন",
+      category: 'facebook-live',
+      title: 'Facebook Live Shopping',
+      titleBn: 'ফেসবুক লাইভ শপিং',
+      description:
+        'Track live comments and convert them to orders automatically from your Facebook Live',
+      descriptionBn: 'লাইভ কমেন্ট ট্র্যাক করুন এবং স্বয়ংক্রিয়ভাবে অর্ডারে রূপান্তর করুন',
       icon: Video,
-      color: "from-blue-600 to-purple-600",
+      color: 'from-blue-600 to-purple-600',
       benefits: [
-        "Live comment tracking",
+        'Live comment tracking',
         "Auto order from 'inbox' or '+1' comments",
-        "Live sales counter during broadcast",
-        "Post-live order dashboard"
-      ]
+        'Live sales counter during broadcast',
+        'Instant customer reply automation',
+        'Product catalog sync with FB Live',
+        'Post-live order management dashboard',
+      ],
     },
     {
       id: 6,
-      category: "facebook-live",
-      title: "Facebook & Instagram Ads",
-      titleBn: "ফেসবুক ও ইনস্টাগ্রাম বিজ্ঞাপন",
-      description: "Maximize your social media ROI with integrated ads management and tracking",
-      descriptionBn: "ইন্টিগ্রেটেড বিজ্ঞাপন ম্যানেজমেন্ট এবং ট্র্যাকিং দিয়ে ROI বৃদ্ধি করুন",
+      category: 'facebook-live',
+      title: 'Facebook & Instagram Ads',
+      titleBn: 'ফেসবুক ও ইনস্টাগ্রাম বিজ্ঞাপন',
+      description: 'Maximize your social media ROI with integrated ads management and tracking',
+      descriptionBn: 'ইন্টিগ্রেটেড বিজ্ঞাপন ম্যানেজমেন্ট এবং ট্র্যাকিং দিয়ে ROI বৃদ্ধি করুন',
       icon: Target,
-      color: "from-pink-500 to-red-600",
+      color: 'from-pink-500 to-red-600',
       benefits: [
-        "Facebook Pixel integration",
-        "Instagram Shopping setup",
-        "Retargeting & conversion tracking",
-        "Ad performance analytics"
-      ]
+        'Facebook Pixel integration',
+        'Instagram Shopping setup',
+        'Direct checkout from FB/IG ads',
+        'Retargeting & conversion tracking',
+        'Retargeting pixel for cart abandonment',
+        'Ad performance analytics',
+      ],
     },
     {
       id: 7,
-      category: "facebook-live",
-      title: "Facebook Messenger Chatbot",
-      titleBn: "ফেসবুক মেসেঞ্জার চ্যাটবট",
-      description: "Automate customer support with Bengali language chatbot on Messenger and WhatsApp",
-      descriptionBn: "মেসেঞ্জার এবং WhatsApp এ বাংলা ভাষা চ্যাটবট দিয়ে স্বয়ংক্রিয় গ্রাহক সেবা",
+      category: 'facebook-live',
+      title: 'Facebook Messenger Chatbot',
+      titleBn: 'ফেসবুক মেসেঞ্জার চ্যাটবট',
+      description:
+        'Automate customer support with Bengali language chatbot on Messenger and WhatsApp',
+      descriptionBn: 'মেসেঞ্জার এবং WhatsApp এ বাংলা ভাষা চ্যাটবট দিয়ে স্বয়ংক্রিয় গ্রাহক সেবা',
       icon: MessageCircle,
-      color: "from-indigo-500 to-blue-600",
+      color: 'from-indigo-500 to-blue-600',
       benefits: [
-        "Bengali language chatbot",
-        "WhatsApp Business API",
-        "24/7 automated support",
-        "Order status auto-reply"
-      ]
+        'Bengali language chatbot',
+        'WhatsApp Business API integration',
+        'Auto-reply to product inquiries',
+        'Send product catalog in chat',
+        'Order status updates via Messenger',
+        '24/7 automated customer service',
+      ],
     },
     {
       id: 8,
-      category: "facebook-live",
-      title: "Social Media Order Manager",
-      titleBn: "সোশ্যাল মিডিয়া অর্ডার ম্যানেজার",
-      description: "Manage all your social media orders from one unified inbox",
-      descriptionBn: "একটি ইউনিফাইড ইনবক্স থেকে সমস্ত সোশ্যাল মিডিয়া অর্ডার পরিচালনা করুন",
+      category: 'facebook-live',
+      title: 'Social Media Order Manager',
+      titleBn: 'সোশ্যাল মিডিয়া অর্ডার ম্যানেজার',
+      description: 'Manage all your social media orders from one unified inbox',
+      descriptionBn: 'একটি ইউনিফাইড ইনবক্স থেকে সমস্ত সোশ্যাল মিডিয়া অর্ডার পরিচালনা করুন',
       icon: Send,
-      color: "from-cyan-500 to-blue-600",
+      color: 'from-cyan-500 to-blue-600',
       benefits: [
-        "Unified inbox (FB, Instagram, WhatsApp)",
-        "Auto-import orders from comments/DMs",
-        "Bulk messaging",
-        "Customer history tracking"
-      ]
+        'Unified inbox (FB, Instagram, WhatsApp)',
+        'Auto-import orders from comments/DMs',
+        'Customer phone number extraction',
+        'Duplicate order prevention',
+        'Bulk messaging to customers',
+        'Order confirmation screenshots',
+      ],
     },
     // Enhanced E-commerce Features
     {
       id: 9,
-      category: "ecommerce",
-      title: "Quick Store Setup",
-      titleBn: "দ্রুত দোকান সেটআপ",
-      description: "Launch your Bangladesh-optimized online store in minutes",
-      descriptionBn: "মিনিটের মধ্যে বাংলাদেশ-অপটিমাইজড অনলাইন দোকান চালু করুন",
+      category: 'ecommerce',
+      title: 'Quick Store Setup',
+      titleBn: 'দ্রুত দোকান সেটআপ',
+      description: 'Launch your Bangladesh-optimized online store in minutes',
+      descriptionBn: 'মিনিটের মধ্যে বাংলাদেশ-অপটিমাইজড অনলাইন দোকান চালু করুন',
       icon: Store,
-      color: "from-blue-500 to-indigo-600",
+      color: 'from-blue-500 to-indigo-600',
       benefits: [
-        "Bangladesh market optimized templates",
-        "Mobile-first responsive design",
-        "Bengali & English support",
-        "SEO optimized for BD market"
-      ]
+        'Bangladesh market optimized templates',
+        'Drag-and-drop customization',
+        'Mobile-first responsive design',
+        'SEO optimized for BD market',
+        'Custom domain support (.com.bd)',
+        'Free SSL certificate',
+      ],
     },
     {
       id: 10,
-      category: "ecommerce",
-      title: "Smart Product Management",
-      titleBn: "স্মার্ট পণ্য ব্যবস্থাপনা",
-      description: "Manage inventory with size/color variants and pre-order support",
-      descriptionBn: "সাইজ/রঙের ভেরিয়েন্ট এবং প্রি-অর্ডার সাপোর্ট সহ ইনভেন্টরি পরিচালনা করুন",
+      category: 'ecommerce',
+      title: 'Smart Product Management',
+      titleBn: 'স্মার্ট পণ্য ব্যবস্থাপনা',
+      description: 'Manage inventory with size/color variants and pre-order support',
+      descriptionBn: 'সাইজ/রঙের ভেরিয়েন্ট এবং প্রি-অর্ডার সাপোর্ট সহ ইনভেন্টরি পরিচালনা করুন',
       icon: Package,
-      color: "from-purple-500 to-pink-600",
+      color: 'from-purple-500 to-pink-600',
       benefits: [
-        "Size/color variant management",
-        "Pre-order & backorder support",
-        "Bulk product import/export",
-        "Automated inventory tracking"
-      ]
+        'Unlimited products & variants (Size, Color)',
+        'Size/color variant management',
+        'Bulk product import from Excel',
+        'Auto low stock alerts',
+        'Product image gallery (10+ images)',
+        'Pre-order & advance booking system',
+        'Flash sale & discount management',
+      ],
     },
     {
       id: 11,
-      category: "ecommerce",
-      title: "SMS Notifications (বাংলা)",
-      titleEn: "SMS Notifications (Bengali)",
-      description: "Automated Bengali SMS for order updates and customer communication",
-      descriptionBn: "অর্ডার আপডেট এবং গ্রাহক যোগাযোগের জন্য স্বয়ংক্রিয় বাংলা SMS",
-      icon: Send,
-      color: "from-green-500 to-teal-600",
+      category: 'automation',
+      title: 'SMS Notifications (বাংলা)',
+      titleEn: 'SMS Notifications (Bengali)',
+      description: 'Automated Bengali SMS for order updates and customer communication',
+      descriptionBn: 'অর্ডার আপডেট এবং গ্রাহক যোগাযোগের জন্য স্বয়ংক্রিয় বাংলা SMS',
+      icon: Phone,
+      color: 'from-green-500 to-teal-600',
       benefits: [
-        "Auto SMS updates (Bengali/English)",
-        "Order confirmation & tracking SMS",
-        "Bulk SMS campaigns",
-        "Two-way SMS support"
-      ]
+        'Auto SMS for order confirmation',
+        'Shipping & delivery SMS updates',
+        'Bengali SMS templates',
+        'Bulk SMS campaigns for promotions',
+        'OTP verification for customers',
+        'Two-way SMS support',
+        'Integration with local SMS providers',
+      ],
     },
     {
       id: 12,
-      category: "analytics",
-      title: "Real-time Sales Dashboard",
-      titleBn: "রিয়েল-টাইম বিক্রয় ড্যাশবোর্ড",
-      description: "Track sales, orders, and customer analytics with BD location insights",
-      descriptionBn: "বিডি লোকেশন ইনসাইট সহ বিক্রয়, অর্ডার এবং গ্রাহক বিশ্লেষণ ট্র্যাক করুন",
+      category: 'analytics',
+      title: 'Real-time Sales Dashboard',
+      titleBn: 'রিয়েল-টাইম বিক্রয় ড্যাশবোর্ড',
+      description: 'Track sales, orders, and customer analytics with BD location insights',
+      descriptionBn: 'বিডি লোকেশন ইনসাইট সহ বিক্রয়, অর্ডার এবং গ্রাহক বিশ্লেষণ ট্র্যাক করুন',
       icon: BarChart3,
-      color: "from-orange-500 to-red-600",
+      color: 'from-orange-500 to-red-600',
       benefits: [
-        "Live sales dashboard",
-        "BD location analytics (division/district)",
-        "Revenue & profit tracking",
-        "Customer behavior insights"
-      ]
+        'Live sales counter (today, this week, month)',
+        'Product-wise sales reports',
+        'BD location analytics (division/district)',
+        'Customer location analytics',
+        'Payment method breakdown',
+        'Revenue & profit tracking',
+        'Peak sales time analysis',
+        'Export reports to Excel',
+      ],
     },
     {
       id: 13,
-      category: "automation",
-      title: "AI Order Management",
-      titleBn: "AI অর্ডার ম্যানেজমেন্ট",
-      description: "Smart order processing with fraud detection and auto courier booking",
-      descriptionBn: "জালিয়াতি সনাক্তকরণ এবং স্বয়ংক্রিয় কুরিয়ার বুকিং সহ স্মার্ট অর্ডার প্রসেসিং",
+      category: 'automation',
+      title: 'AI Order Management',
+      titleBn: 'AI অর্ডার ম্যানেজমেন্ট',
+      description: 'Smart order processing with fraud detection and auto courier booking',
+      descriptionBn:
+        'জালিয়াতি সনাক্তকরণ এবং স্বয়ংক্রিয় কুরিয়ার বুকিং সহ স্মার্ট অর্ডার প্রসেসিং',
       icon: Bot,
-      color: "from-violet-500 to-purple-600",
+      color: 'from-violet-500 to-purple-600',
       benefits: [
-        "AI-powered fraud detection",
-        "Auto courier selection & booking",
-        "Smart order routing",
-        "Automated order confirmation"
-      ]
+        'AI-powered fraud detection',
+        'Auto order status updates',
+        'Smart fraud detection for fake orders',
+        'Auto courier selection & booking based on location',
+        'Predicted delivery date calculator',
+        'Auto customer follow-up messages',
+        'Intelligent inventory management',
+      ],
     },
     {
       id: 14,
-      category: "ecommerce",
-      title: "Customer Database & CRM",
-      titleBn: "গ্রাহক ডাটাবেস এবং CRM",
-      description: "Build lasting customer relationships with loyalty programs and reviews",
-      descriptionBn: "লয়্যালটি প্রোগ্রাম এবং রিভিউ সহ দীর্ঘস্থায়ী গ্রাহক সম্পর্ক তৈরি করুন",
+      category: 'ecommerce',
+      title: 'Customer Database & CRM',
+      titleBn: 'গ্রাহক ডাটাবেস এবং CRM',
+      description: 'Build lasting customer relationships with loyalty programs and reviews',
+      descriptionBn: 'লয়্যালটি প্রোগ্রাম এবং রিভিউ সহ দীর্ঘস্থায়ী গ্রাহক সম্পর্ক তৈরি করুন',
       icon: Users,
-      color: "from-pink-500 to-rose-600",
+      color: 'from-pink-500 to-rose-600',
       benefits: [
-        "Customer profiles & purchase history",
-        "Loyalty points system",
-        "Product review & rating system",
-        "Customer segmentation"
-      ]
-    }
+        'Complete customer profiles',
+        'Customer profiles & purchase history',
+        'Order history & repeat customer tracking',
+        'Customer segmentation (VIP, regular, new)',
+        'Birthday & special occasion reminders',
+        'Loyalty points system',
+        'Product review & rating collection',
+      ],
+    },
   ];
 
-  const filteredFeatures = selectedCategory === "all"
-    ? features
-    : features.filter(f => f.category === selectedCategory);
+  const filteredFeatures =
+    selectedCategory === 'all' ? features : features.filter((f) => f.category === selectedCategory);
 
   const toggleFeature = (id: number) => {
     setExpandedFeature(expandedFeature === id ? null : id);
@@ -291,19 +328,28 @@ export default function FeaturesPage() {
                 <span className="text-xl font-bold">Shamlai</span>
               </Link>
               <div className="hidden items-center gap-6 md:flex">
-                <Link href="/#features" className="text-sm font-medium text-gray-700 hover:text-brand-indigo">
+                <Link
+                  href="/#features"
+                  className="text-sm font-medium text-gray-700 hover:text-brand-indigo"
+                >
                   Features
                 </Link>
                 <Link href="/features" className="text-sm font-medium text-brand-indigo">
                   All Features
                 </Link>
-                <Link href="/#pricing" className="text-sm font-medium text-gray-700 hover:text-brand-indigo">
+                <Link
+                  href="/#pricing"
+                  className="text-sm font-medium text-gray-700 hover:text-brand-indigo"
+                >
                   Pricing
                 </Link>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-brand-indigo">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-gray-700 hover:text-brand-indigo"
+              >
                 Log in
               </Link>
               <Link href="/signup" className="btn btn-primary">
@@ -323,7 +369,7 @@ export default function FeaturesPage() {
               🇧🇩 বাংলাদেশের জন্য বিশেষভাবে তৈরি
             </div>
             <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              ফেসবুক লাইভ সেলার এবং{" "}
+              ফেসবুক লাইভ সেলার এবং{' '}
               <span className="bg-gradient-to-r from-brand-indigo to-purple-600 bg-clip-text text-transparent">
                 SME ব্যবসার জন্য
               </span>
@@ -359,8 +405,8 @@ export default function FeaturesPage() {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     selectedCategory === category.id
-                      ? "bg-brand-indigo text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? 'bg-brand-indigo text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -386,22 +432,22 @@ export default function FeaturesPage() {
                   className="card overflow-hidden transition-all hover:shadow-lg"
                 >
                   <div className="card-pad">
-                    <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color}`}>
+                    <div
+                      className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color}`}
+                    >
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="mb-2 text-xl font-bold text-gray-900">
-                      {feature.title}
-                    </h3>
-                    <p className="mb-4 text-gray-600">
-                      {feature.description}
-                    </p>
+                    <h3 className="mb-2 text-xl font-bold text-gray-900">{feature.title}</h3>
+                    <p className="mb-4 text-gray-600">{feature.description}</p>
 
                     <button
                       onClick={() => toggleFeature(feature.id)}
                       className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
                     >
-                      <span>{isExpanded ? "Hide" : "Show"} benefits</span>
-                      <ArrowRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      <span>{isExpanded ? 'Hide' : 'Show'} benefits</span>
+                      <ArrowRight
+                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      />
                     </button>
 
                     {isExpanded && (
@@ -463,9 +509,7 @@ export default function FeaturesPage() {
               </div>
               <span className="font-semibold text-gray-900">Shamlai</span>
             </div>
-            <p className="text-sm text-gray-600">
-              © 2024 Shamlai. All rights reserved.
-            </p>
+            <p className="text-sm text-gray-600">© 2024 Shamlai. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/#features" className="text-sm text-gray-600 hover:text-brand-indigo">
                 Features
