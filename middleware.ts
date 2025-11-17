@@ -58,7 +58,8 @@ export async function middleware(request: NextRequest) {
 
     if (sub) {
       // Avoid loops if already rewritten to /<shopId>
-      const alreadyShopRouted = /^\/[0-9a-fA-F-]{36}(?:\/|$)/.test(pathname);
+      // Shop IDs are now 8-10 digit numbers
+      const alreadyShopRouted = /^\/\d{8,10}(?:\/|$)/.test(pathname);
       if (!alreadyShopRouted) {
         const shopId = await getShopIdBySubdomain(sub);
         if (shopId) {

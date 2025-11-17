@@ -5,7 +5,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { insforgeClient } from '@/lib/insforge';
 import { logger } from '@/lib/utils/logger';
-import { normalizeSubdomain } from '@/lib/services/shop';
+import {
+  isSubdomainAvailable,
+  normalizeSubdomain,
+  generateUniqueShopId,
+} from '@/lib/services/shop';
 
 export default function Signup() {
   const router = useRouter();
@@ -32,7 +36,9 @@ export default function Signup() {
     setSubdomainStatus('checking');
 
     try {
-      const response = await fetch(`/api/subdomain/check?subdomain=${encodeURIComponent(normalized)}`);
+      const response = await fetch(
+        `/api/subdomain/check?subdomain=${encodeURIComponent(normalized)}`
+      );
       const data = await response.json();
 
       if (!response.ok || data.error) {
@@ -48,7 +54,10 @@ export default function Signup() {
       }
       return available;
     } catch (error) {
-      logger.error('Subdomain validation error', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Subdomain validation error',
+        error instanceof Error ? error : new Error(String(error))
+      );
       setSubdomainError('Failed to check subdomain availability. Please try again.');
       setSubdomainStatus('idle');
       return false;
@@ -98,10 +107,15 @@ export default function Signup() {
 
         // Create shop settings
         try {
+          // Generate unique shop ID (8-10 digit random number)
+          const shopId = await generateUniqueShopId();
+
           await insforgeClient.database.from('shop_settings').insert([
             {
-              shop_id: data.user.id,
+              user_id: data.user.id,
+              shop_id: shopId,
               shop_name: shopName || 'My Shop',
+              shop_username: normalized,
               subdomain: normalized,
               shop_email: email,
               currency: 'USD',

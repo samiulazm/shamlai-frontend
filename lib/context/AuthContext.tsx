@@ -27,6 +27,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to get shop_id from shop_settings by user_id
+  const getShopIdByUserId = async (userId: string): Promise<string | undefined> => {
+    try {
+      const { data, error } = await insforgeClient.database
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        return undefined;
+      }
+
+      return data.shop_id;
+    } catch (err) {
+      logger.warn('Failed to fetch shop_id', err instanceof Error ? err : new Error(String(err)));
+      return undefined;
+    }
+  };
+
   useEffect(() => {
     // Check for existing session
     checkUser();
@@ -53,12 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.error('Failed to get current user', error);
         setUser(null);
       } else if (data?.user) {
+        // Fetch shop_id from shop_settings
+        const shopId = await getShopIdByUserId(data.user.id);
+
         setUser({
           id: data.user.id,
           email: data.user.email || '',
           nickname: data.profile?.nickname || '',
           role: data.profile?.role || 'merchant',
-          shop_id: data.user.id, // Using user ID as shop ID
+          shop_id: shopId,
         });
       }
     } catch (err) {
@@ -83,12 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data?.user) {
         // Fetch full user profile
         const userProfile = await insforgeClient.auth.getCurrentUser();
+        const shopId = await getShopIdByUserId(data.user.id);
+
         setUser({
           id: data.user.id,
           email: data.user.email || '',
           nickname: userProfile.data?.profile?.nickname || '',
           role: userProfile.data?.profile?.role || 'merchant',
-          shop_id: data.user.id,
+          shop_id: shopId,
         });
       }
 
@@ -129,13 +154,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Create shop settings
         try {
           // Generate a unique subdomain for the shop
-          const { generateUniqueSubdomain } = await import('@/lib/services/shop');
+          const { generateUniqueSubdomain, generateUniqueShopId } = await import(
+            '@/lib/services/shop'
+          );
           const preferred = (shopName || email.split('@')[0] || 'shop').toString();
           const subdomain = await generateUniqueSubdomain(preferred);
+          const shopId = await generateUniqueShopId();
 
           await insforgeClient.database.from('shop_settings').insert({
-            shop_id: data.user.id,
+            user_id: data.user.id,
+            shop_id: shopId,
             shop_name: shopName || 'My Shop',
+            shop_username: subdomain,
             subdomain,
             shop_email: email,
             currency: 'USD',
@@ -145,20 +175,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             enable_wishlists: true,
             enable_guest_checkout: true,
           });
+
+          // Set user with the generated shop_id
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            nickname: shopName,
+            role: 'merchant',
+            shop_id: shopId,
+          });
         } catch (shopError) {
           logger.warn(
             'Failed to create shop settings',
             shopError instanceof Error ? shopError : new Error(String(shopError))
           );
-        }
 
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          nickname: shopName,
-          role: 'merchant',
-          shop_id: data.user.id,
-        });
+          // Set user even if shop creation failed
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            nickname: shopName,
+            role: 'merchant',
+          });
+        }
       }
 
       return { error: null };

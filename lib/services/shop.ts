@@ -64,6 +64,63 @@ export async function generateUniqueSubdomain(preferredBase: string): Promise<st
 }
 
 /**
+ * Generate a random shop ID with 8, 9, or 10 digits.
+ * The generated number will not have leading zeros.
+ */
+export function generateRandomShopId(): string {
+  // Random length between 8 and 10
+  const length = Math.floor(Math.random() * 3) + 8; // 8, 9, or 10
+
+  // Generate random number with the specified length
+  const min = Math.pow(10, length - 1);
+  const max = Math.pow(10, length) - 1;
+  const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
+
+  return randomNum.toString();
+}
+
+/**
+ * Check if a shop ID exists.
+ */
+export async function isShopIdAvailable(shopId: string): Promise<boolean> {
+  try {
+    const { data, error } = await insforgeClient.database
+      .from('shop_settings')
+      .select('id')
+      .eq('shop_id', shopId)
+      .limit(1);
+    if (error) {
+      logger.warn('Failed checking shop ID existence', error);
+      // On error, treat as unavailable to avoid duplicates
+      return false;
+    }
+    return (data || []).length === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generate a unique shop ID (8-10 digit random number).
+ * Keeps generating until a unique one is found.
+ */
+export async function generateUniqueShopId(): Promise<string> {
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts < maxAttempts) {
+    const shopId = generateRandomShopId();
+    if (await isShopIdAvailable(shopId)) {
+      return shopId;
+    }
+    attempts++;
+  }
+
+  // Extremely unlikely fallback - use timestamp-based ID
+  throw new Error('Unable to generate unique shop ID after maximum attempts');
+}
+
+/**
  * Resolve a shop ID by subdomain.
  * Cached for 1 hour (subdomains rarely change)
  */
