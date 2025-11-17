@@ -167,7 +167,7 @@ export default function StoreHome() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product) => (
+              {products.map((product: Product) => (
                 <div
                   key={product.id}
                   className="group rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
