@@ -1,19 +1,19 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
         brand: {
-          indigo: "#4F46E5",
-          emerald: "#10B981",
-          coral: "#F87171",
-          gray: "#F3F4F6"
-        }
-      }
-    }
+          indigo: 'var(--theme-primary)',
+          emerald: '#10B981',
+          coral: '#F87171',
+          gray: '#F3F4F6',
+        },
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 export default config;

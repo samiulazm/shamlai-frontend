@@ -1,10 +1,10 @@
-"use client";
-import { useState, useEffect } from "react";
-import { Bell, Store, LogOut, User, Settings, ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
+'use client';
+import { useState, useEffect } from 'react';
+import { Bell, Store, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { insforgeClient } from '@/lib/insforge';
+import { logger } from '@/lib/utils/logger';
 
 interface TopbarProps {
   title?: string;
@@ -12,7 +12,7 @@ interface TopbarProps {
   shopId?: string;
 }
 
-export default function Topbar({ title, user, shopId }: TopbarProps){
+export default function Topbar({ title, user, shopId }: TopbarProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -68,12 +68,12 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
     <div className="sticky top-0 z-20 border-b bg-white">
       <div className="container-responsive h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Store className="h-5 w-5 text-brand-indigo" />
-          <span className="font-semibold">{title ?? "Shamlai"}</span>
+          <Store className="h-5 w-5" style={{ color: 'var(--theme-primary)' }} />
+          <span className="font-semibold">{title ?? 'Shamlai'}</span>
         </div>
         <div className="flex items-center gap-3">
           {shopId ? (
-            <Link 
+            <Link
               href={`/${shopId}`}
               className="btn btn-outline"
               target="_blank"
@@ -84,11 +84,7 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
               View Storefront
             </Link>
           ) : (
-            <Link 
-              href="/shop"
-              className="btn btn-outline"
-              title="Set up your shop first"
-            >
+            <Link href="/shop" className="btn btn-outline" title="Set up your shop first">
               <Store className="h-4 w-4 mr-2" />
               View Storefront
             </Link>
@@ -103,7 +99,10 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
             >
-              <div className="h-8 w-8 rounded-full bg-brand-indigo text-white flex items-center justify-center text-sm font-semibold">
+              <div
+                className="h-8 w-8 rounded-full text-white flex items-center justify-center text-sm font-semibold"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              >
                 {getUserInitials()}
               </div>
               <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -112,10 +111,7 @@ export default function Topbar({ title, user, shopId }: TopbarProps){
             {showUserMenu && (
               <>
                 {/* Backdrop to close menu */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowUserMenu(false)}
-                />
+                <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
 
                 {/* Dropdown Menu */}
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
