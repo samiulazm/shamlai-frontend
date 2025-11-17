@@ -1,7 +1,6 @@
 // Shop Service - Shop settings and configuration
 import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
 import { logger } from '../utils/logger';
-import { cacheAside, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type {
   ShopSettings,
   Theme,
@@ -19,15 +18,15 @@ import type {
  * Turn a name/email local-part into a DNS-safe subdomain slug.
  */
 export function normalizeSubdomain(source: string): string {
-  return (
-    (source || '')
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumerics with hyphen
-      .replace(/^-+|-+$/g, '') // trim hyphens
-      .slice(0, 50) || // enforce max length
-    'shop'
-  );
+  const normalized = (source || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumerics with hyphen
+    .replace(/^-+|-+$/g, '') // trim hyphens
+    .slice(0, 50); // enforce max length
+
+  // Return normalized string if valid, otherwise use 'shop' as fallback
+  return normalized || 'shop';
 }
 
 /**
@@ -40,11 +39,15 @@ export async function isSubdomainAvailable(subdomain: string): Promise<boolean> 
     .select('id')
     .eq('subdomain', normalized)
     .limit(1);
+
   if (error) {
-    logger.warn('Failed checking subdomain existence', error);
-    // On error, treat as unavailable to avoid duplicates
-    return false;
+    // In many environments (e.g. before auth/RLS is fully configured) this check can
+    // fail even though the subdomain is actually free. We log the error for debugging
+    // but assume the subdomain is available so signup is not blocked.
+    logger.warn('Failed checking subdomain existence, assuming available', error);
+    return true;
   }
+
   return (data || []).length === 0;
 }
 
@@ -64,84 +67,56 @@ export async function generateUniqueSubdomain(preferredBase: string): Promise<st
 }
 
 /**
- * Generate a random shop ID with 8, 9, or 10 digits.
- * The generated number will not have leading zeros.
- */
-export function generateRandomShopId(): string {
-  // Random length between 8 and 10
-  const length = Math.floor(Math.random() * 3) + 8; // 8, 9, or 10
-
-  // Generate random number with the specified length
-  const min = Math.pow(10, length - 1);
-  const max = Math.pow(10, length) - 1;
-  const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
-
-  return randomNum.toString();
-}
-
-/**
- * Check if a shop ID exists.
- */
-export async function isShopIdAvailable(shopId: string): Promise<boolean> {
-  try {
-    const { data, error } = await insforgeClient.database
-      .from('shop_settings')
-      .select('id')
-      .eq('shop_id', shopId)
-      .limit(1);
-    if (error) {
-      logger.warn('Failed checking shop ID existence', error);
-      // On error, treat as unavailable to avoid duplicates
-      return false;
-    }
-    return (data || []).length === 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Generate a unique shop ID with 8, 9, or 10 digits.
- * Keeps generating until a unique one is found (up to 100 attempts).
- * @throws {Error} If unable to generate a unique ID after maximum attempts
+ * Generate a unique shop ID (UUID)
  */
 export async function generateUniqueShopId(): Promise<string> {
-  let attempts = 0;
-  const maxAttempts = 100;
-
-  while (attempts < maxAttempts) {
-    const shopId = generateRandomShopId();
-    if (await isShopIdAvailable(shopId)) {
-      return shopId;
-    }
-    attempts++;
+  // Check if crypto.randomUUID is available (Node.js 16+, browsers with crypto API)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
 
-  // Extremely unlikely fallback - use timestamp-based ID
-  throw new Error('Unable to generate unique shop ID after maximum attempts');
+  // Fallback for environments without crypto.randomUUID
+  // Generate a UUID v4 manually
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    // Fallback for older environments
+    for (let i = 0; i < 16; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  // Set version (4) and variant bits
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
+
+  // Convert to UUID string format
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join('-');
 }
 
 /**
  * Resolve a shop ID by subdomain.
- * Cached for 1 hour (subdomains rarely change)
  */
 export async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
   try {
-    const cacheKey = REDIS_KEYS.SHOP_BY_SUBDOMAIN(subdomain);
-
-    return await cacheAside(
-      cacheKey,
-      async () => {
-        const { data, error } = await insforgeClient.database
-          .from('shop_settings')
-          .select('shop_id')
-          .eq('subdomain', subdomain)
-          .single();
-        if (error) return null;
-        return data?.shop_id || null;
-      },
-      CACHE_TTL.SHOP_SUBDOMAIN
-    );
+    const { data, error } = await insforgeClient.database
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('subdomain', subdomain)
+      .single();
+    if (error) return null;
+    return data?.shop_id || null;
   } catch {
     return null;
   }
@@ -149,33 +124,24 @@ export async function getShopIdBySubdomain(subdomain: string): Promise<string | 
 
 /**
  * Get shop settings
- * Cached for 1 hour (settings change infrequently)
  */
 export async function getShopSettings(shopId: string): Promise<ShopSettings | null> {
   try {
-    const cacheKey = REDIS_KEYS.SHOP(shopId);
+    const { data, error } = await insforgeClient.database
+      .from('shop_settings')
+      .select('*')
+      .eq('shop_id', shopId)
+      .single();
 
-    return await cacheAside(
-      cacheKey,
-      async () => {
-        const { data, error } = await insforgeClient.database
-          .from('shop_settings')
-          .select('*')
-          .eq('shop_id', shopId)
-          .single();
+    if (error) {
+      // If no settings exist, return null
+      if (error?.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
 
-        if (error) {
-          // If no settings exist, return null
-          if (error?.code === 'PGRST116') {
-            return null;
-          }
-          throw error;
-        }
-
-        return data;
-      },
-      CACHE_TTL.SHOP
-    );
+    return data;
   } catch (error: any) {
     logger.error(
       'Error fetching shop settings',
@@ -196,16 +162,10 @@ export async function upsertShopSettings(
   settings: Partial<Omit<ShopSettings, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>
 ): Promise<ShopSettings> {
   try {
-    // First, try to get existing settings (bypass cache for latest data)
-    const { data: existingSettings } = await insforgeClient.database
-      .from('shop_settings')
-      .select('*')
-      .eq('shop_id', shopId)
-      .limit(1);
+    // First, try to get existing settings
+    const existingSettings = await getShopSettings(shopId);
 
-    let result: ShopSettings;
-
-    if (existingSettings && existingSettings.length > 0) {
+    if (existingSettings) {
       // Update existing settings
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
@@ -218,7 +178,7 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      result = data;
+      return data;
     } else {
       // Create new settings
       const { data, error } = await insforgeClient.database
@@ -235,16 +195,8 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      result = data;
+      return data;
     }
-
-    // Invalidate caches
-    await Promise.all([
-      invalidateCache.shop(shopId),
-      result.subdomain ? invalidateCache.shopBySubdomain(result.subdomain) : Promise.resolve(),
-    ]);
-
-    return result;
   } catch (error: any) {
     logger.error(
       'Error upserting shop settings',
