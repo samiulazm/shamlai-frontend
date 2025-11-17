@@ -28,10 +28,13 @@ let _insforgeServerClient: ReturnType<typeof createClient> | null = null;
 export const getInsforgeServerClient = () => {
   if (!_insforgeServerClient) {
     if (!process.env.INSFORGE_SERVICE_ROLE_KEY) {
-      throw new Error(
-        'INSFORGE_SERVICE_ROLE_KEY is required for server-side operations. ' +
-          'Please add it to your .env.local file.'
+      // Fall back to regular client if service role key is not available
+      // This allows the app to work in environments where RLS is not strictly required
+      logger.warn(
+        'INSFORGE_SERVICE_ROLE_KEY not found. Using regular client instead. ' +
+          'Some operations may be restricted by RLS policies.'
       );
+      return insforgeClient;
     }
 
     _insforgeServerClient = createClient({
