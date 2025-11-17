@@ -97,6 +97,7 @@ BEGIN
     ELSE
       RAISE EXCEPTION 'Failed to generate unique shop ID for record % after 100 attempts', shop_record.id;
     END IF;
+  END LOOP;
 END $$;
 
 -- Step 12: Drop the old shop_id column
