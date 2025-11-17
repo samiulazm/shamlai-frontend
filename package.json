@@ -17,6 +17,7 @@
     "test:redis": "tsx scripts/test-redis.ts",
     "seed": "tsx scripts/seed-database.ts",
     "migrate": "tsx scripts/run-migrations.ts",
+    "test:redis": "tsx scripts/test-redis-connection.ts",
     "docker:build": "docker build -t shamlai-frontend .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
@@ -25,8 +26,10 @@
   "dependencies": {
     "@insforge/sdk": "^1.0.0",
     "@sentry/nextjs": "^10.25.0",
+    "@upstash/redis": "^1.35.6",
     "clsx": "2.1.1",
     "framer-motion": "11.3.31",
+    "ioredis": "^5.8.2",
     "lucide-react": "0.468.0",
     "next": "^14.2.33",
     "react": "18.3.1",

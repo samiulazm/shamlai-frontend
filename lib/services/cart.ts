@@ -1,6 +1,7 @@
 // Cart Service - Shopping cart management functions
 import { insforgeClient } from '../insforge';
 import { logger } from '../utils/logger';
+import { cacheAside, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type { Cart, CartItem, Product, ProductVariant } from '../types/database';
 
 // ============================================================================
@@ -62,6 +63,7 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
 
 /**
  * Get cart with items and product details
+ * Cached for 24 hours (carts don't change frequently for inactive users)
  */
 export async function getCartWithItems(cartId: string): Promise<
   Cart & {
@@ -74,54 +76,62 @@ export async function getCartWithItems(cartId: string): Promise<
   }
 > {
   try {
-    // Get cart
-    const { data: cart, error: cartError } = await insforgeClient.database
-      .from('cart')
-      .select('*')
-      .eq('id', cartId)
-      .single();
+    const cacheKey = REDIS_KEYS.CART(cartId);
 
-    if (cartError) throw cartError;
+    return await cacheAside(
+      cacheKey,
+      async () => {
+        // Get cart
+        const { data: cart, error: cartError } = await insforgeClient.database
+          .from('cart')
+          .select('*')
+          .eq('id', cartId)
+          .single();
 
-    // Get cart items with product and variant details using joins (fixes N+1 query)
-    const { data: items, error: itemsError } = await insforgeClient.database
-      .from('cart_items')
-      .select(
-        `
-        *,
-        product:products(*),
-        variant:product_variants(*)
-      `
-      )
-      .eq('cart_id', cartId);
+        if (cartError) throw cartError;
 
-    if (itemsError) throw itemsError;
+        // Get cart items with product and variant details using joins (fixes N+1 query)
+        const { data: items, error: itemsError } = await insforgeClient.database
+          .from('cart_items')
+          .select(
+            `
+            *,
+            product:products(*),
+            variant:product_variants(*)
+          `
+          )
+          .eq('cart_id', cartId);
 
-    // Transform items to match expected structure
-    const itemsWithDetails = (items || []).map((item: any) => {
-      const product = item.product;
-      const variant = item.variant || undefined;
+        if (itemsError) throw itemsError;
 
-      if (!product) {
-        throw new Error(`Product ${item.product_id} not found or has been deleted`);
-      }
+        // Transform items to match expected structure
+        const itemsWithDetails = (items || []).map((item: any) => {
+          const product = item.product;
+          const variant = item.variant || undefined;
 
-      return {
-        ...item,
-        product,
-        variant,
-      };
-    });
+          if (!product) {
+            throw new Error(`Product ${item.product_id} not found or has been deleted`);
+          }
 
-    const subtotal = itemsWithDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const itemCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+          return {
+            ...item,
+            product,
+            variant,
+          };
+        });
 
-    return {
-      ...cart,
-      items: itemsWithDetails,
-      subtotal,
-      itemCount,
-    };
+        const subtotal = itemsWithDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const itemCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+
+        return {
+          ...cart,
+          items: itemsWithDetails,
+          subtotal,
+          itemCount,
+        };
+      },
+      CACHE_TTL.CART
+    );
   } catch (error: any) {
     logger.error(
       'Error getting cart with items',
@@ -205,6 +215,8 @@ export async function addToCart(
 
     const { data: existingItem } = await query.single();
 
+    let result: CartItem;
+
     if (existingItem) {
       // Update quantity if item exists
       const { data, error } = await insforgeClient.database
@@ -219,7 +231,7 @@ export async function addToCart(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     } else {
       // Add new item
       const { data, error } = await insforgeClient.database
@@ -237,8 +249,13 @@ export async function addToCart(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     }
+
+    // Invalidate cart cache
+    await invalidateCache.cart(cartId);
+
+    return result;
   } catch (error: any) {
     logger.error(
       'Error adding to cart',
@@ -274,6 +291,10 @@ export async function updateCartItemQuantity(itemId: string, quantity: number): 
       .single();
 
     if (error) throw error;
+
+    // Invalidate cart cache
+    await invalidateCache.cart(data.cart_id);
+
     return data;
   } catch (error: any) {
     logger.error(
@@ -293,6 +314,13 @@ export async function updateCartItemQuantity(itemId: string, quantity: number): 
  */
 export async function removeFromCart(itemId: string): Promise<CartItem> {
   try {
+    // Get cart_id before deleting
+    const { data: item } = await insforgeClient.database
+      .from('cart_items')
+      .select('cart_id')
+      .eq('id', itemId)
+      .single();
+
     const { data, error } = await insforgeClient.database
       .from('cart_items')
       .delete()
@@ -301,6 +329,12 @@ export async function removeFromCart(itemId: string): Promise<CartItem> {
       .single();
 
     if (error) throw error;
+
+    // Invalidate cart cache
+    if (item?.cart_id) {
+      await invalidateCache.cart(item.cart_id);
+    }
+
     return data;
   } catch (error: any) {
     logger.error(
