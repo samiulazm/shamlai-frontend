@@ -131,3 +131,14 @@ export function addBreadcrumb(breadcrumb: {
     Sentry.addBreadcrumb(breadcrumb);
   }
 }
+
+/**
+ * Configure Sentry scope
+ * Replaces deprecated Sentry.configureScope with getCurrentScope
+ */
+export function configureScope(callback: (scope: Sentry.Scope) => void) {
+  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    const scope = Sentry.getCurrentScope();
+    callback(scope);
+  }
+}
