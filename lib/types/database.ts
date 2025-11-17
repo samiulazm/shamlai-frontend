@@ -422,6 +422,7 @@ export interface ShopSettings {
   id: string;
   shop_id: string;
   shop_name: string;
+  subdomain?: string;
   shop_description?: string;
   shop_email: string;
   shop_phone?: string;

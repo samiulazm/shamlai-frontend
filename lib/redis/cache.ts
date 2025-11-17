@@ -32,11 +32,7 @@ export async function getCached<T>(key: string): Promise<T | null> {
 /**
  * Generic cache set with automatic JSON serialization
  */
-export async function setCached(
-  key: string,
-  value: any,
-  ttlSeconds?: number
-): Promise<boolean> {
+export async function setCached(key: string, value: any, ttlSeconds?: number): Promise<boolean> {
   if (!isRedisAvailable()) {
     return false;
   }
@@ -46,7 +42,7 @@ export async function setCached(
     const serialized = JSON.stringify(value);
 
     if (ttlSeconds) {
-      await redis.set(key, serialized, { ex: ttlSeconds });
+      await redis.setex(key, ttlSeconds, serialized);
     } else {
       await redis.set(key, serialized);
     }
