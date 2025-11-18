@@ -95,6 +95,21 @@ export interface InventoryLog {
 }
 
 // ============================================================================
+// Delivery Methods Types
+// ============================================================================
+
+export interface DeliveryMethod {
+  id: string;
+  shop_id: string;
+  name: string;
+  type: 'pathao' | 'steadfast' | 'redx' | 'paperfly' | 'office' | 'other';
+  api_key?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
 // Customer & Order Types
 // ============================================================================
 

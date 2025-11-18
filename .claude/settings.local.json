@@ -17,7 +17,10 @@
       "Bash(npm run test:*)",
       "Bash(node fix-imports.js:*)",
       "Bash(del:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(heroku logs:*)",
+      "Bash(npm run migrate:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
