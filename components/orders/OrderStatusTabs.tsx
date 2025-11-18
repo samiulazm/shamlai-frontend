@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import type { OrderStatus } from '@/lib/types/database';
-import { insforgeClient } from '@/lib/insforge';
+import { getOrderCountsByStatus } from '@/lib/services/orders';
 
 interface OrderStatusTabsProps {
   shopId: string;
@@ -15,11 +15,7 @@ interface StatusCount {
   count: number;
 }
 
-export default function OrderStatusTabs({
-  shopId,
-  selectedStatus,
-  onStatusChange,
-}: OrderStatusTabsProps) {
+function OrderStatusTabs({ shopId, selectedStatus, onStatusChange }: OrderStatusTabsProps) {
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,51 +27,9 @@ export default function OrderStatusTabs({
     try {
       setLoading(true);
 
-      // Fetch all orders to count by status
-      const { data: orders, error } = await insforgeClient.database
-        .from('orders')
-        .select('status')
-        .eq('shop_id', shopId);
-
-      if (error) throw error;
-
-      // Count orders by status
-      const counts = new Map<OrderStatus | 'all', number>();
-      counts.set('all', orders?.length || 0);
-
-      const allStatuses: OrderStatus[] = [
-        'pending',
-        'rts',
-        'processing',
-        'shipped',
-        'delivered',
-        'pending_return',
-        'returned',
-        'partial',
-        'cancelled',
-        'pending_cancel',
-        'preorder',
-        'lost',
-        'refunded',
-      ];
-
-      allStatuses.forEach((status) => {
-        const count = orders?.filter((o) => o.status === status).length || 0;
-        if (count > 0) {
-          counts.set(status, count);
-        }
-      });
-
-      // Convert to array
-      const countsArray: StatusCount[] = [
-        { status: 'all', count: counts.get('all') || 0 },
-        ...Array.from(counts.entries())
-          .filter(([status]) => status !== 'all')
-          .map(([status, count]) => ({ status: status as OrderStatus, count }))
-          .sort((a, b) => b.count - a.count), // Sort by count descending
-      ];
-
-      setStatusCounts(countsArray);
+      // Use optimized database aggregation
+      const counts = await getOrderCountsByStatus(shopId);
+      setStatusCounts(counts);
     } catch (error) {
       console.error('Error fetching status counts:', error);
     } finally {
@@ -138,3 +92,6 @@ export default function OrderStatusTabs({
     </div>
   );
 }
+
+// Wrap in memo to prevent unnecessary re-renders
+export default memo(OrderStatusTabs);

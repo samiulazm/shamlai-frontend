@@ -555,6 +555,110 @@ export async function getCustomerOrders(
 // ============================================================================
 
 /**
+ * Get order counts by status (optimized - uses database aggregation)
+ */
+export async function getOrderCountsByStatus(
+  shopId: string
+): Promise<Array<{ status: OrderStatus | 'all'; count: number }>> {
+  try {
+    const allStatuses: OrderStatus[] = [
+      'pending',
+      'rts',
+      'processing',
+      'shipped',
+      'delivered',
+      'pending_return',
+      'returned',
+      'partial',
+      'cancelled',
+      'pending_cancel',
+      'preorder',
+      'lost',
+      'refunded',
+    ];
+
+    // Get total count
+    const { count: totalCount, error: totalError } = await insforgeClient.database
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('shop_id', shopId);
+
+    if (totalError) throw totalError;
+
+    // Get counts for each status in parallel
+    const statusCountPromises = allStatuses.map(async (status) => {
+      const { count, error } = await insforgeClient.database
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
+        .eq('status', status);
+
+      if (error) throw error;
+      return { status, count: count || 0 };
+    });
+
+    const statusCounts = await Promise.all(statusCountPromises);
+
+    // Filter out statuses with zero count and sort by count descending
+    const filteredCounts = statusCounts
+      .filter((sc) => sc.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    // Add 'all' at the beginning
+    return [{ status: 'all' as const, count: totalCount || 0 }, ...filteredCounts];
+  } catch (error: any) {
+    logger.error(
+      'Error fetching order counts by status',
+      error instanceof Error ? error : new Error(String(error)),
+      { shopId }
+    );
+    throw error;
+  }
+}
+
+/**
+ * Get order counts by delivery method (optimized - uses database aggregation)
+ */
+export async function getOrderCountsByDeliveryMethod(
+  shopId: string
+): Promise<Array<{ deliveryMethod: string | 'all'; count: number }>> {
+  try {
+    // Get all unique delivery methods with their counts
+    const { data: orders, error } = await insforgeClient.database
+      .from('orders')
+      .select('delivery_method')
+      .eq('shop_id', shopId);
+
+    if (error) throw error;
+
+    // Count by delivery method
+    const counts = new Map<string, number>();
+    let totalCount = 0;
+
+    orders?.forEach((order) => {
+      const method = order.delivery_method || 'unknown';
+      counts.set(method, (counts.get(method) || 0) + 1);
+      totalCount++;
+    });
+
+    // Convert to array and sort by count descending
+    const deliveryMethodCounts = Array.from(counts.entries())
+      .map(([deliveryMethod, count]) => ({ deliveryMethod, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Add 'all' at the beginning
+    return [{ deliveryMethod: 'all' as const, count: totalCount }, ...deliveryMethodCounts];
+  } catch (error: any) {
+    logger.error(
+      'Error fetching order counts by delivery method',
+      error instanceof Error ? error : new Error(String(error)),
+      { shopId }
+    );
+    throw error;
+  }
+}
+
+/**
  * Get order statistics for a shop
  */
 export async function getOrderStats(

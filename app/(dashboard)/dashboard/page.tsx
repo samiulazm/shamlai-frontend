@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   LineChart,
   Line,
@@ -15,11 +16,38 @@ import { logger } from '@/lib/utils/logger';
 import { getDashboardStats, type DashboardStats } from '@/lib/services/dashboard';
 import StatCard from '@/components/dashboard/StatCard';
 import DateRangePicker from '@/components/dashboard/DateRangePicker';
-import WebOrderReportWidget from '@/components/dashboard/WebOrderReport';
-import OrdersBySourceWidget from '@/components/dashboard/OrdersBySource';
-import OrderCountsWidget from '@/components/dashboard/OrderCountsChart';
-import HourlyOrdersWidget from '@/components/dashboard/HourlyOrdersChart';
 import { ShoppingBag, DollarSign, TrendingUp, Package } from 'lucide-react';
+
+// Code-split heavy chart widgets for faster initial load
+const WidgetLoadingState = () => (
+  <div className="card">
+    <div className="card-pad">
+      <div className="h-64 flex items-center justify-center bg-gray-50 rounded animate-pulse">
+        <div className="text-gray-400">Loading chart...</div>
+      </div>
+    </div>
+  </div>
+);
+
+const WebOrderReportWidget = dynamic(() => import('@/components/dashboard/WebOrderReport'), {
+  loading: () => <WidgetLoadingState />,
+  ssr: false,
+});
+
+const OrdersBySourceWidget = dynamic(() => import('@/components/dashboard/OrdersBySource'), {
+  loading: () => <WidgetLoadingState />,
+  ssr: false,
+});
+
+const OrderCountsWidget = dynamic(() => import('@/components/dashboard/OrderCountsChart'), {
+  loading: () => <WidgetLoadingState />,
+  ssr: false,
+});
+
+const HourlyOrdersWidget = dynamic(() => import('@/components/dashboard/HourlyOrdersChart'), {
+  loading: () => <WidgetLoadingState />,
+  ssr: false,
+});
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -58,11 +86,17 @@ export default function Dashboard() {
       const dashboardStats = await getDashboardStats(user.user.id, dateRange || undefined);
       setStats(dashboardStats);
 
-      // Fetch orders for charts
+      // Optimize: Fetch only last 90 days of orders for charts (not all orders)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       const { data: orders } = await insforgeClient.database
         .from('orders')
         .select('*')
-        .eq('shop_id', user.user.id);
+        .eq('shop_id', user.user.id)
+        .gte('created_at', ninetyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limit to 1000 most recent orders
 
       // Fetch top products
       const { data: products } = await insforgeClient.database

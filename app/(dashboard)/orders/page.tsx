@@ -13,7 +13,7 @@ import OrderFilters, {
 } from '@/components/orders/OrderFilters';
 
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]); // Store all fetched orders
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
@@ -23,9 +23,31 @@ export default function Orders() {
   const [advancedFilters, setAdvancedFilters] = useState<OrderFiltersType>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 50, total: 0 });
 
+  // Filter orders client-side for instant tab switching
+  const filteredOrders = allOrders.filter((order) => {
+    if (selectedStatus !== 'all' && order.status !== selectedStatus) return false;
+    if (selectedDeliveryMethod !== 'all' && order.delivery_method !== selectedDeliveryMethod)
+      return false;
+    return true;
+  });
+
+  // Paginate filtered orders
+  const paginatedOrders = filteredOrders.slice(
+    (pagination.page - 1) * pagination.pageSize,
+    pagination.page * pagination.pageSize
+  );
+
+  // Only refetch on page mount or pagination changes (not on tab changes)
   useEffect(() => {
     fetchOrders();
-  }, [selectedStatus, selectedDeliveryMethod, pagination.page]);
+  }, [pagination.page, pagination.pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    }
+  }, [selectedStatus, selectedDeliveryMethod]);
 
   const fetchOrders = async () => {
     try {
@@ -41,28 +63,23 @@ export default function Orders() {
 
       setShopId(user.user.id);
 
-      // Fetch orders using the service
+      // Fetch ALL orders (without status/delivery method filters) for client-side filtering
+      // This enables instant tab switching without network requests
       const filters: any = {
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        pageSize: 500, // Fetch more orders to enable client-side filtering
+        sortBy: 'created_at',
+        sortOrder: 'desc',
       };
-
-      if (selectedStatus !== 'all') {
-        filters.status = selectedStatus;
-      }
-
-      if (selectedDeliveryMethod !== 'all') {
-        filters.deliveryMethod = selectedDeliveryMethod;
-      }
 
       const response = await OrderService.getOrders(user.user.id, filters);
 
-      setOrders(response.data || []);
-      setPagination({
-        page: response.page,
-        pageSize: response.pageSize,
-        total: response.total,
-      });
+      setAllOrders(response.data || []);
+      // Update total based on filtered results
+      setPagination((prev) => ({
+        ...prev,
+        total: filteredOrders.length,
+      }));
     } catch (err: any) {
       const { logger } = await import('@/lib/utils/logger');
       logger.error('Error fetching orders', err instanceof Error ? err : new Error(String(err)));
@@ -72,7 +89,7 @@ export default function Orders() {
     }
   };
 
-  if (loading && orders.length === 0) {
+  if (loading && allOrders.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -83,7 +100,7 @@ export default function Orders() {
     );
   }
 
-  if (error && orders.length === 0) {
+  if (error && allOrders.length === 0) {
     return (
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
@@ -154,13 +171,13 @@ export default function Orders() {
       <div className="card">
         <div className="card-pad">
           <OrderTable
-            orders={orders}
+            orders={paginatedOrders}
             showFilters={true}
             onFiltersClick={() => setShowFilters(!showFilters)}
             pagination={{
               page: pagination.page,
               pageSize: pagination.pageSize,
-              total: pagination.total,
+              total: filteredOrders.length,
               onPageChange: (page) => setPagination((prev) => ({ ...prev, page })),
               onPageSizeChange: (size) =>
                 setPagination((prev) => ({ ...prev, pageSize: size, page: 1 })),

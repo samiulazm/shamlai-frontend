@@ -54,35 +54,39 @@ export async function getDashboardStats(
     const previousEnd = new Date(startDate);
     previousEnd.setHours(23, 59, 59, 999);
 
-    // Fetch all orders for the shop
-    const { data: allOrders, error: ordersError } = await insforgeClient.database
+    // Optimize: Use database filters instead of fetching all orders
+    // Fetch only orders we need for calculations (today, yesterday, current period, previous period)
+    const earliestDate = new Date(Math.min(previousStart.getTime(), yesterday.getTime()));
+
+    const { data: filteredOrders, error: ordersError } = await insforgeClient.database
       .from('orders')
       .select('*, order_items(*)')
-      .eq('shop_id', shopId);
+      .eq('shop_id', shopId)
+      .gte('created_at', earliestDate.toISOString());
 
     if (ordersError) throw ordersError;
 
-    // Filter orders by date ranges
+    // Filter orders by specific date ranges
     const todayOrders =
-      allOrders?.filter((order) => {
+      filteredOrders?.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= today;
       }) || [];
 
     const yesterdayOrders =
-      allOrders?.filter((order) => {
+      filteredOrders?.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= yesterday && orderDate < today;
       }) || [];
 
     const currentPeriodOrders =
-      allOrders?.filter((order) => {
+      filteredOrders?.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= startDate && orderDate <= endDate;
       }) || [];
 
     const previousPeriodOrders =
-      allOrders?.filter((order) => {
+      filteredOrders?.filter((order) => {
         const orderDate = new Date(order.created_at);
         return orderDate >= previousStart && orderDate < previousEnd;
       }) || [];
@@ -108,16 +112,28 @@ export async function getDashboardStats(
     const previousProfit = await calculateProfit(previousPeriodOrders);
     const profitChange = calculateChange(currentProfit, previousProfit);
 
-    // Calculate total orders
-    const totalOrders = allOrders?.length || 0;
+    // Optimize: Fetch total and pending orders counts with specific queries
+    const [totalResult, pendingResult, pendingWebResult] = await Promise.all([
+      insforgeClient.database
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId),
+      insforgeClient.database
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
+        .eq('status', 'pending'),
+      insforgeClient.database
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
+        .eq('status', 'pending')
+        .eq('source', 'web'),
+    ]);
 
-    // Calculate pending orders
-    const pendingOrders = allOrders?.filter((order) => order.status === 'pending').length || 0;
-
-    // Calculate pending web orders (orders with source='web' and status='pending')
-    const pendingWebOrders =
-      allOrders?.filter((order) => order.status === 'pending' && (order as any).source === 'web')
-        .length || 0;
+    const totalOrders = totalResult.count || 0;
+    const pendingOrders = pendingResult.count || 0;
+    const pendingWebOrders = pendingWebResult.count || 0;
 
     return {
       todayOrders: todayOrdersCount,

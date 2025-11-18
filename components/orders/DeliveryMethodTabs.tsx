@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { useState, useEffect, memo } from 'react';
+import { getOrderCountsByDeliveryMethod } from '@/lib/services/orders';
 
 interface DeliveryMethodTabsProps {
   shopId: string;
@@ -14,11 +14,7 @@ interface MethodCount {
   count: number;
 }
 
-export default function DeliveryMethodTabs({
-  shopId,
-  selectedMethod,
-  onMethodChange,
-}: DeliveryMethodTabsProps) {
+function DeliveryMethodTabs({ shopId, selectedMethod, onMethodChange }: DeliveryMethodTabsProps) {
   const [methodCounts, setMethodCounts] = useState<MethodCount[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,34 +26,16 @@ export default function DeliveryMethodTabs({
     try {
       setLoading(true);
 
-      // Fetch all orders to count by delivery method
-      const { data: orders, error } = await insforgeClient.database
-        .from('orders')
-        .select('delivery_method')
-        .eq('shop_id', shopId);
+      // Use optimized database aggregation
+      const counts = await getOrderCountsByDeliveryMethod(shopId);
 
-      if (error) throw error;
+      // Transform the response to match component's interface
+      const transformedCounts = counts.map((c) => ({
+        method: c.deliveryMethod,
+        count: c.count,
+      }));
 
-      // Count orders by delivery method
-      const counts = new Map<string | 'all', number>();
-      counts.set('all', orders?.length || 0);
-
-      // Group by delivery method
-      orders?.forEach((order) => {
-        const method = (order as any).delivery_method || 'manual';
-        counts.set(method, (counts.get(method) || 0) + 1);
-      });
-
-      // Convert to array
-      const countsArray: MethodCount[] = [
-        { method: 'all', count: counts.get('all') || 0 },
-        ...Array.from(counts.entries())
-          .filter(([method]) => method !== 'all')
-          .map(([method, count]) => ({ method, count }))
-          .sort((a, b) => b.count - a.count), // Sort by count descending
-      ];
-
-      setMethodCounts(countsArray);
+      setMethodCounts(transformedCounts);
     } catch (error) {
       console.error('Error fetching delivery method counts:', error);
       // Set default if error
@@ -118,3 +96,6 @@ export default function DeliveryMethodTabs({
     </div>
   );
 }
+
+// Wrap in memo to prevent unnecessary re-renders
+export default memo(DeliveryMethodTabs);
