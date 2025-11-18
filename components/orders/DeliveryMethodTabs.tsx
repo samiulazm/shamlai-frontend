@@ -19,31 +19,31 @@ function DeliveryMethodTabs({ shopId, selectedMethod, onMethodChange }: Delivery
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchMethodCounts = async () => {
+      try {
+        setLoading(true);
+
+        // Use optimized database aggregation
+        const counts = await getOrderCountsByDeliveryMethod(shopId);
+
+        // Transform the response to match component's interface
+        const transformedCounts = counts.map((c) => ({
+          method: c.deliveryMethod,
+          count: c.count,
+        }));
+
+        setMethodCounts(transformedCounts);
+      } catch (error) {
+        console.error('Error fetching delivery method counts:', error);
+        // Set default if error
+        setMethodCounts([{ method: 'all', count: 0 }]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMethodCounts();
   }, [shopId]);
-
-  const fetchMethodCounts = async () => {
-    try {
-      setLoading(true);
-
-      // Use optimized database aggregation
-      const counts = await getOrderCountsByDeliveryMethod(shopId);
-
-      // Transform the response to match component's interface
-      const transformedCounts = counts.map((c) => ({
-        method: c.deliveryMethod,
-        count: c.count,
-      }));
-
-      setMethodCounts(transformedCounts);
-    } catch (error) {
-      console.error('Error fetching delivery method counts:', error);
-      // Set default if error
-      setMethodCounts([{ method: 'all', count: 0 }]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatMethodName = (method: string): string => {
     if (method === 'all') return 'All';

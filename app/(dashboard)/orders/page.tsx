@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { insforgeClient, OrderService } from '@/lib';
 import type { Order, OrderStatus } from '@/lib/types/database';
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge';
@@ -23,31 +23,45 @@ export default function Orders() {
   const [advancedFilters, setAdvancedFilters] = useState<OrderFiltersType>({});
   const [pagination, setPagination] = useState({ page: 1, pageSize: 50, total: 0 });
 
-  // Filter orders client-side for instant tab switching
-  const filteredOrders = allOrders.filter((order) => {
-    if (selectedStatus !== 'all' && order.status !== selectedStatus) return false;
-    if (selectedDeliveryMethod !== 'all' && order.delivery_method !== selectedDeliveryMethod)
-      return false;
-    return true;
-  });
-
-  // Paginate filtered orders
-  const paginatedOrders = filteredOrders.slice(
-    (pagination.page - 1) * pagination.pageSize,
-    pagination.page * pagination.pageSize
+  // Memoize filtered orders to avoid recalculation on every render
+  const filteredOrders = useMemo(
+    () =>
+      allOrders.filter((order) => {
+        if (selectedStatus !== 'all' && order.status !== selectedStatus) return false;
+        if (selectedDeliveryMethod !== 'all' && order.delivery_method !== selectedDeliveryMethod)
+          return false;
+        return true;
+      }),
+    [allOrders, selectedStatus, selectedDeliveryMethod]
   );
 
-  // Only refetch on page mount or pagination changes (not on tab changes)
+  // Memoize paginated orders
+  const paginatedOrders = useMemo(
+    () =>
+      filteredOrders.slice(
+        (pagination.page - 1) * pagination.pageSize,
+        pagination.page * pagination.pageSize
+      ),
+    [filteredOrders, pagination.page, pagination.pageSize]
+  );
+
+  // Only refetch on initial mount
   useEffect(() => {
     fetchOrders();
-  }, [pagination.page, pagination.pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update pagination total when filtered orders change
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, total: filteredOrders.length }));
+  }, [filteredOrders.length]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     if (pagination.page !== 1) {
       setPagination((prev) => ({ ...prev, page: 1 }));
     }
-  }, [selectedStatus, selectedDeliveryMethod]);
+  }, [selectedStatus, selectedDeliveryMethod, pagination.page]);
 
   const fetchOrders = async () => {
     try {
@@ -66,7 +80,7 @@ export default function Orders() {
       // Fetch ALL orders (without status/delivery method filters) for client-side filtering
       // This enables instant tab switching without network requests
       const filters: any = {
-        page: pagination.page,
+        page: 1,
         pageSize: 500, // Fetch more orders to enable client-side filtering
         sortBy: 'created_at',
         sortOrder: 'desc',
@@ -75,11 +89,7 @@ export default function Orders() {
       const response = await OrderService.getOrders(user.user.id, filters);
 
       setAllOrders(response.data || []);
-      // Update total based on filtered results
-      setPagination((prev) => ({
-        ...prev,
-        total: filteredOrders.length,
-      }));
+      // Note: pagination.total is automatically updated via useEffect when filteredOrders changes
     } catch (err: any) {
       const { logger } = await import('@/lib/utils/logger');
       logger.error('Error fetching orders', err instanceof Error ? err : new Error(String(err)));

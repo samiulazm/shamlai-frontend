@@ -20,22 +20,22 @@ function OrderStatusTabs({ shopId, selectedStatus, onStatusChange }: OrderStatus
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchStatusCounts = async () => {
+      try {
+        setLoading(true);
+
+        // Use optimized database aggregation
+        const counts = await getOrderCountsByStatus(shopId);
+        setStatusCounts(counts);
+      } catch (error) {
+        console.error('Error fetching status counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchStatusCounts();
   }, [shopId]);
-
-  const fetchStatusCounts = async () => {
-    try {
-      setLoading(true);
-
-      // Use optimized database aggregation
-      const counts = await getOrderCountsByStatus(shopId);
-      setStatusCounts(counts);
-    } catch (error) {
-      console.error('Error fetching status counts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getStatusLabel = (status: OrderStatus | 'all'): string => {
     if (status === 'all') return 'All';
