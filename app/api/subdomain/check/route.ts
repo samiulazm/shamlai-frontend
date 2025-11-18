@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getInsforgeServerClient } from '@/lib/insforge';
-import { normalizeSubdomain } from '@/lib/services/shop';
+import { normalizeSubdomain, isSubdomainAvailable } from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: Request) {
@@ -21,24 +20,9 @@ export async function GET(request: Request) {
       );
     }
 
-    // Use server client with service role to check subdomain availability
-    // This bypasses RLS policies and allows checking without authentication
-    const serverClient = getInsforgeServerClient();
-    const { data, error } = await serverClient.database
-      .from('shop_settings')
-      .select('id')
-      .eq('subdomain', normalized)
-      .limit(1);
-
-    if (error) {
-      logger.error('Error checking subdomain', error);
-      return NextResponse.json(
-        { error: 'Failed to check subdomain availability' },
-        { status: 500 }
-      );
-    }
-
-    const available = !data || data.length === 0;
+    // Use the shop service function which has proper error handling
+    // for cases where RLS policies or service role key are not configured
+    const available = await isSubdomainAvailable(normalized);
 
     return NextResponse.json({
       available,
@@ -49,6 +33,13 @@ export async function GET(request: Request) {
       'Subdomain check error',
       error instanceof Error ? error : new Error(String(error))
     );
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Return available=true on error to not block signup
+    // (same behavior as isSubdomainAvailable function)
+    const { searchParams } = new URL(request.url);
+    const subdomainParam = searchParams.get('subdomain') || '';
+    return NextResponse.json({
+      available: true,
+      normalized: normalizeSubdomain(subdomainParam),
+    });
   }
 }
