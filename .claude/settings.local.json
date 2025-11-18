@@ -20,7 +20,9 @@
       "Bash(echo:*)",
       "Bash(heroku logs:*)",
       "Bash(npm run migrate:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

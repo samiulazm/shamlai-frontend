@@ -164,7 +164,15 @@ const nextConfig = {
         tls: false,
         dns: false,
         child_process: false,
+        // Exclude Redis from client bundles (server-only)
+        ioredis: false,
       };
+
+      // Prevent ioredis and other server-only packages from being bundled
+      config.externals = config.externals || [];
+      config.externals.push({
+        ioredis: 'ioredis',
+      });
     }
 
     // Production optimizations
