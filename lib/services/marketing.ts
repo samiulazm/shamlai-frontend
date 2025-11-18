@@ -1,5 +1,5 @@
 // Marketing Service - Discount codes, reviews, wishlists, and email marketing
-import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
+import { insforgeClient, STORAGE_BUCKETS, uploadFileWithRetry } from '../insforge';
 import { logger } from '../utils/logger';
 import type {
   DiscountCode,
@@ -8,7 +8,7 @@ import type {
   Wishlist,
   EmailSubscriber,
   PaginatedResponse,
-  QueryFilters
+  QueryFilters,
 } from '../types/database';
 
 // ============================================================================
@@ -42,7 +42,7 @@ export async function getDiscountCodes(
 
     query = query
       .order(filters?.sortBy || 'created_at', {
-        ascending: filters?.sortOrder === 'asc'
+        ascending: filters?.sortOrder === 'asc',
       })
       .range(offset, offset + pageSize - 1);
 
@@ -55,13 +55,17 @@ export async function getDiscountCodes(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching discount codes', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      filters,
-    });
+    logger.error(
+      'Error fetching discount codes',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        filters,
+      }
+    );
     throw error;
   }
 }
@@ -82,10 +86,14 @@ export async function createDiscountCode(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating discount code', error instanceof Error ? error : new Error(String(error)), {
-      shopId: discountData.shop_id,
-      code: discountData.code,
-    });
+    logger.error(
+      'Error creating discount code',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId: discountData.shop_id,
+        code: discountData.code,
+      }
+    );
     throw error;
   }
 }
@@ -108,9 +116,13 @@ export async function updateDiscountCode(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating discount code', error instanceof Error ? error : new Error(String(error)), {
-      codeId,
-    });
+    logger.error(
+      'Error updating discount code',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        codeId,
+      }
+    );
     throw error;
   }
 }
@@ -175,16 +187,20 @@ export async function validateDiscountCode(
     if (discount.minimum_purchase && subtotal && subtotal < discount.minimum_purchase) {
       return {
         isValid: false,
-        reason: `Minimum purchase of $${discount.minimum_purchase} required`
+        reason: `Minimum purchase of $${discount.minimum_purchase} required`,
       };
     }
 
     return { isValid: true, discount };
   } catch (error: any) {
-    logger.error('Error validating discount code', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      code,
-    });
+    logger.error(
+      'Error validating discount code',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        code,
+      }
+    );
     return { isValid: false, reason: 'Error validating discount code' };
   }
 }
@@ -214,9 +230,7 @@ export async function getProductReviews(
       query = query.eq('is_approved', filters.isApproved);
     }
 
-    query = query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1);
+    query = query.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
 
     const { data: reviews, error, count } = await query;
 
@@ -232,7 +246,7 @@ export async function getProductReviews(
 
         return {
           ...review,
-          images: images || []
+          images: images || [],
         };
       })
     );
@@ -242,13 +256,17 @@ export async function getProductReviews(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching product reviews', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-      filters,
-    });
+    logger.error(
+      'Error fetching product reviews',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+        filters,
+      }
+    );
     throw error;
   }
 }
@@ -257,7 +275,10 @@ export async function getProductReviews(
  * Create a product review
  */
 export async function createProductReview(
-  reviewData: Omit<ProductReview, 'id' | 'created_at' | 'updated_at' | 'helpful_count' | 'is_approved'>,
+  reviewData: Omit<
+    ProductReview,
+    'id' | 'created_at' | 'updated_at' | 'helpful_count' | 'is_approved'
+  >,
   images?: File[]
 ): Promise<ProductReview> {
   try {
@@ -275,48 +296,54 @@ export async function createProductReview(
     // Create review
     const { data: review, error } = await insforgeClient.database
       .from('product_reviews')
-      .insert([{
-        ...reviewData,
-        verified_purchase: verifiedPurchase,
-        is_approved: false, // Requires approval
-        helpful_count: 0
-      }])
+      .insert([
+        {
+          ...reviewData,
+          verified_purchase: verifiedPurchase,
+          is_approved: false, // Requires approval
+          helpful_count: 0,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
 
-    // Upload review images
+    // Upload review images using the new uploadFileWithRetry helper
     if (images && images.length > 0) {
       const uploadPromises = images.map(async (file, index) => {
         const fileName = `review-${review.id}-${Date.now()}-${index}.${file.name.split('.').pop()}`;
-        
-        const { data: uploadData, error: uploadError } = await insforgeClient.storage
-          .from(STORAGE_BUCKETS.REVIEW_IMAGES)
-          .upload(fileName, file);
+
+        const { data: uploadData, error: uploadError } = await uploadFileWithRetry(
+          STORAGE_BUCKETS.REVIEW_IMAGES,
+          fileName,
+          file
+        );
 
         if (uploadError || !uploadData) throw uploadError || new Error('Upload failed');
 
         return {
           review_id: review.id,
-          image_url: uploadData.url,
-          image_key: uploadData.key
+          image_url: uploadData.url || '',
+          image_key: uploadData.key || fileName,
         };
       });
 
       const imageRecords = await Promise.all(uploadPromises);
 
-      await insforgeClient.database
-        .from('review_images')
-        .insert(imageRecords);
+      await insforgeClient.database.from('review_images').insert(imageRecords);
     }
 
     return review;
   } catch (error: any) {
-    logger.error('Error creating product review', error instanceof Error ? error : new Error(String(error)), {
-      productId: reviewData.product_id,
-      customerId: reviewData.customer_id,
-    });
+    logger.error(
+      'Error creating product review',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId: reviewData.product_id,
+        customerId: reviewData.customer_id,
+      }
+    );
     throw error;
   }
 }
@@ -337,7 +364,7 @@ export async function markReviewHelpful(reviewId: string): Promise<ProductReview
       .from('product_reviews')
       .update({
         helpful_count: (review?.helpful_count || 0) + 1,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', reviewId)
       .select()
@@ -346,9 +373,13 @@ export async function markReviewHelpful(reviewId: string): Promise<ProductReview
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error marking review helpful', error instanceof Error ? error : new Error(String(error)), {
-      reviewId,
-    });
+    logger.error(
+      'Error marking review helpful',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        reviewId,
+      }
+    );
     throw error;
   }
 }
@@ -362,7 +393,7 @@ export async function approveReview(reviewId: string): Promise<ProductReview> {
       .from('product_reviews')
       .update({
         is_approved: true,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', reviewId)
       .select()
@@ -371,9 +402,13 @@ export async function approveReview(reviewId: string): Promise<ProductReview> {
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error approving review', error instanceof Error ? error : new Error(String(error)), {
-      reviewId,
-    });
+    logger.error(
+      'Error approving review',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        reviewId,
+      }
+    );
     throw error;
   }
 }
@@ -397,9 +432,7 @@ export async function getProductRatingStats(productId: string): Promise<{
 
     const totalReviews = reviews?.length || 0;
     const averageRating =
-      totalReviews > 0
-        ? reviews!.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-        : 0;
+      totalReviews > 0 ? reviews!.reduce((sum, r) => sum + r.rating, 0) / totalReviews : 0;
 
     const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     reviews?.forEach((r) => {
@@ -409,12 +442,16 @@ export async function getProductRatingStats(productId: string): Promise<{
     return {
       averageRating,
       totalReviews,
-      ratingDistribution
+      ratingDistribution,
     };
   } catch (error: any) {
-    logger.error('Error fetching product rating stats', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-    });
+    logger.error(
+      'Error fetching product rating stats',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+      }
+    );
     throw error;
   }
 }
@@ -437,9 +474,13 @@ export async function getWishlist(customerId: string): Promise<Wishlist[]> {
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching wishlist', error instanceof Error ? error : new Error(String(error)), {
-      customerId,
-    });
+    logger.error(
+      'Error fetching wishlist',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        customerId,
+      }
+    );
     throw error;
   }
 }
@@ -473,21 +514,27 @@ export async function addToWishlist(
     // Add to wishlist
     const { data, error } = await insforgeClient.database
       .from('wishlists')
-      .insert([{
-        customer_id: customerId,
-        product_id: productId,
-        variant_id: variantId
-      }])
+      .insert([
+        {
+          customer_id: customerId,
+          product_id: productId,
+          variant_id: variantId,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error adding to wishlist', error instanceof Error ? error : new Error(String(error)), {
-      customerId,
-      productId,
-    });
+    logger.error(
+      'Error adding to wishlist',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        customerId,
+        productId,
+      }
+    );
     throw error;
   }
 }
@@ -497,16 +544,17 @@ export async function addToWishlist(
  */
 export async function removeFromWishlist(wishlistId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database
-      .from('wishlists')
-      .delete()
-      .eq('id', wishlistId);
+    const { error } = await insforgeClient.database.from('wishlists').delete().eq('id', wishlistId);
 
     if (error) throw error;
   } catch (error: any) {
-    logger.error('Error removing from wishlist', error instanceof Error ? error : new Error(String(error)), {
-      wishlistId,
-    });
+    logger.error(
+      'Error removing from wishlist',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        wishlistId,
+      }
+    );
     throw error;
   }
 }
@@ -526,22 +574,28 @@ export async function subscribeToNewsletter(
   try {
     const { data, error } = await insforgeClient.database
       .from('email_subscribers')
-      .upsert([{
-        shop_id: shopId,
-        email,
-        status: 'active',
-        source: source || 'website'
-      }])
+      .upsert([
+        {
+          shop_id: shopId,
+          email,
+          status: 'active',
+          source: source || 'website',
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error subscribing to newsletter', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      email,
-    });
+    logger.error(
+      'Error subscribing to newsletter',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        email,
+      }
+    );
     throw error;
   }
 }
@@ -549,26 +603,27 @@ export async function subscribeToNewsletter(
 /**
  * Unsubscribe from newsletter
  */
-export async function unsubscribeFromNewsletter(
-  shopId: string,
-  email: string
-): Promise<void> {
+export async function unsubscribeFromNewsletter(shopId: string, email: string): Promise<void> {
   try {
     const { error } = await insforgeClient.database
       .from('email_subscribers')
       .update({
         status: 'unsubscribed',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('shop_id', shopId)
       .eq('email', email);
 
     if (error) throw error;
   } catch (error: any) {
-    logger.error('Error unsubscribing from newsletter', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      email,
-    });
+    logger.error(
+      'Error unsubscribing from newsletter',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        email,
+      }
+    );
     throw error;
   }
 }
@@ -594,9 +649,7 @@ export async function getSubscribers(
       query = query.eq('status', filters.status);
     }
 
-    query = query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1);
+    query = query.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
 
     const { data, error, count } = await query;
 
@@ -607,14 +660,17 @@ export async function getSubscribers(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching subscribers', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      filters,
-    });
+    logger.error(
+      'Error fetching subscribers',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        filters,
+      }
+    );
     throw error;
   }
 }
-

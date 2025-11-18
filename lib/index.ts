@@ -20,27 +20,49 @@ export {
   ORDER_STATUS,
   PAYMENT_STATUS,
   FULFILLMENT_STATUS,
-  DISCOUNT_TYPES
+  DISCOUNT_TYPES,
 } from './insforge';
 
 // Utilities
 export * as Validation from './utils/validation';
 export * as SeedData from './utils/seed-data';
+export * as AIHelpers from './utils/ai-helpers';
 
 // React Hooks
 export * from './hooks/useProducts';
 export * from './hooks/useOrders';
 export * from './hooks/useCart';
 export * from './hooks/useShop';
+export * from './hooks/useRealtime';
 
 // Helper functions
 export {
   handleInsforgeError,
   uploadFile,
-  getCurrentUser
+  uploadFileWithRetry,
+  getCurrentUser,
+  resetPasswordForEmail,
+  updatePassword,
+  updateUserProfile,
+  verifyEmail,
+  resendVerificationEmail,
+  refreshSession,
+  onAuthStateChange,
+  generateAIContent,
+  chatCompletion,
+  invokeFunction,
+  subscribeToTable,
+  getPublicUrl,
+  deleteFile,
+  listFiles,
+  downloadFile,
+  moveFile,
+  copyFile,
+  fileExists,
+  executeWithRetry,
+  callRPC,
+  executeBatch,
+  upsert,
+  bulkInsert,
+  bulkUpdate,
 } from './insforge';
-
-
-
-
-

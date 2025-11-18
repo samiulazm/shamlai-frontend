@@ -1,5 +1,5 @@
 // Product Service - Comprehensive product management functions
-import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
+import { insforgeClient, STORAGE_BUCKETS, uploadFileWithRetry, deleteFile } from '../insforge';
 import { logger } from '../utils/logger';
 import { cacheAside, getCached, setCached, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type {
@@ -12,7 +12,7 @@ import type {
   Category,
   DatabaseResponse,
   PaginatedResponse,
-  QueryFilters
+  QueryFilters,
 } from '../types/database';
 
 // ============================================================================
@@ -52,10 +52,14 @@ export async function getProducts(
     // Complex queries - no cache
     return await fetchProducts(shopId, filters, page, pageSize);
   } catch (error: any) {
-    logger.error('Error fetching products', error instanceof Error ? error : new Error(String(error)), {
-      shopId,
-      filters,
-    });
+    logger.error(
+      'Error fetching products',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        shopId,
+        filters,
+      }
+    );
     throw error;
   }
 }
@@ -113,7 +117,7 @@ async function fetchProducts(
     total: count || 0,
     page,
     pageSize,
-    hasMore: (count || 0) > offset + pageSize
+    hasMore: (count || 0) > offset + pageSize,
   };
 }
 
@@ -121,11 +125,13 @@ async function fetchProducts(
  * Get a single product by ID with images and variants
  * Cached for 5 minutes
  */
-export async function getProductById(productId: string): Promise<Product & {
-  images?: ProductImage[];
-  variants?: ProductVariant[];
-  category?: Category;
-}> {
+export async function getProductById(productId: string): Promise<
+  Product & {
+    images?: ProductImage[];
+    variants?: ProductVariant[];
+    category?: Category;
+  }
+> {
   try {
     const cacheKey = REDIS_KEYS.PRODUCT(productId);
 
@@ -161,22 +167,26 @@ export async function getProductById(productId: string): Promise<Product & {
                 .select('*')
                 .eq('id', product.category_id)
                 .single()
-            : Promise.resolve({ data: null, error: null })
+            : Promise.resolve({ data: null, error: null }),
         ]);
 
         return {
           ...product,
           images: imagesResult.data || [],
           variants: variantsResult.data || [],
-          category: categoryResult.data || undefined
+          category: categoryResult.data || undefined,
         };
       },
       CACHE_TTL.PRODUCT
     );
   } catch (error: any) {
-    logger.error('Error fetching product', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-    });
+    logger.error(
+      'Error fetching product',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+      }
+    );
     throw error;
   }
 }
@@ -204,10 +214,14 @@ export async function getProductBySlug(slug: string, shopId?: string) {
     // Fetch related data
     return await getProductById(data.id);
   } catch (error: any) {
-    logger.error('Error fetching product by slug', error instanceof Error ? error : new Error(String(error)), {
-      slug,
-      shopId,
-    });
+    logger.error(
+      'Error fetching product by slug',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        slug,
+        shopId,
+      }
+    );
     throw error;
   }
 }
@@ -215,10 +229,7 @@ export async function getProductBySlug(slug: string, shopId?: string) {
 /**
  * Create a new product
  */
-export async function createProduct(
-  productData: ProductInsert,
-  images?: File[]
-): Promise<Product> {
+export async function createProduct(productData: ProductInsert, images?: File[]): Promise<Product> {
   try {
     // Create product
     const { data: product, error: productError } = await insforgeClient.database
@@ -239,9 +250,13 @@ export async function createProduct(
 
     return product;
   } catch (error: any) {
-    logger.error('Error creating product', error instanceof Error ? error : new Error(String(error)), {
-      productData: productData.name,
-    });
+    logger.error(
+      'Error creating product',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productData: productData.name,
+      }
+    );
     throw error;
   }
 }
@@ -249,10 +264,7 @@ export async function createProduct(
 /**
  * Update an existing product
  */
-export async function updateProduct(
-  productId: string,
-  updates: ProductUpdate
-): Promise<Product> {
+export async function updateProduct(productId: string, updates: ProductUpdate): Promise<Product> {
   try {
     const { data, error } = await insforgeClient.database
       .from('products')
@@ -271,9 +283,13 @@ export async function updateProduct(
 
     return data;
   } catch (error: any) {
-    logger.error('Error updating product', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-    });
+    logger.error(
+      'Error updating product',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+      }
+    );
     throw error;
   }
 }
@@ -305,9 +321,13 @@ export async function deleteProduct(productId: string): Promise<void> {
       ]);
     }
   } catch (error: any) {
-    logger.error('Error deleting product', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-    });
+    logger.error(
+      'Error deleting product',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+      }
+    );
     throw error;
   }
 }
@@ -319,26 +339,26 @@ export async function deleteProduct(productId: string): Promise<void> {
 /**
  * Add images to a product
  */
-export async function addProductImages(
-  productId: string,
-  images: File[]
-): Promise<ProductImage[]> {
+export async function addProductImages(productId: string, images: File[]): Promise<ProductImage[]> {
   try {
     const uploadPromises = images.map(async (file, index) => {
       const fileName = `product-${productId}-${Date.now()}-${index}.${file.name.split('.').pop()}`;
-      
-      const { data: uploadData, error: uploadError } = await insforgeClient.storage
-        .from(STORAGE_BUCKETS.PRODUCT_IMAGES)
-        .upload(fileName, file);
+
+      // Use the new uploadFileWithRetry helper for better reliability
+      const { data: uploadData, error: uploadError } = await uploadFileWithRetry(
+        STORAGE_BUCKETS.PRODUCT_IMAGES,
+        fileName,
+        file
+      );
 
       if (uploadError || !uploadData) throw uploadError || new Error('Upload failed');
 
       return {
         product_id: productId,
-        image_url: uploadData.url,
-        image_key: uploadData.key,
+        image_url: uploadData.url || '',
+        image_key: uploadData.key || fileName,
         sort_order: index,
-        is_primary: index === 0
+        is_primary: index === 0,
       };
     });
 
@@ -352,10 +372,14 @@ export async function addProductImages(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error adding product images', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-      imageCount: images.length,
-    });
+    logger.error(
+      'Error adding product images',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+        imageCount: images.length,
+      }
+    );
     throw error;
   }
 }
@@ -374,11 +398,9 @@ export async function deleteProductImage(imageId: string): Promise<void> {
 
     if (fetchError) throw fetchError;
 
-    // Delete from storage
+    // Delete from storage using the new deleteFile helper
     if (image?.image_key) {
-      await insforgeClient.storage
-        .from(STORAGE_BUCKETS.PRODUCT_IMAGES)
-        .remove(image.image_key);
+      await deleteFile(STORAGE_BUCKETS.PRODUCT_IMAGES, image.image_key);
     }
 
     // Delete from database
@@ -389,9 +411,13 @@ export async function deleteProductImage(imageId: string): Promise<void> {
 
     if (error) throw error;
   } catch (error: any) {
-    logger.error('Error deleting product image', error instanceof Error ? error : new Error(String(error)), {
-      imageId,
-    });
+    logger.error(
+      'Error deleting product image',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        imageId,
+      }
+    );
     throw error;
   }
 }
@@ -416,9 +442,13 @@ export async function createProductVariant(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating product variant', error instanceof Error ? error : new Error(String(error)), {
-      productId: variantData.product_id,
-    });
+    logger.error(
+      'Error creating product variant',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId: variantData.product_id,
+      }
+    );
     throw error;
   }
 }
@@ -441,9 +471,13 @@ export async function updateProductVariant(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating product variant', error instanceof Error ? error : new Error(String(error)), {
-      variantId,
-    });
+    logger.error(
+      'Error updating product variant',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        variantId,
+      }
+    );
     throw error;
   }
 }
@@ -460,9 +494,13 @@ export async function deleteProductVariant(variantId: string): Promise<void> {
 
     if (error) throw error;
   } catch (error: any) {
-    logger.error('Error deleting product variant', error instanceof Error ? error : new Error(String(error)), {
-      variantId,
-    });
+    logger.error(
+      'Error deleting product variant',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        variantId,
+      }
+    );
     throw error;
   }
 }
@@ -486,7 +524,7 @@ export async function updateInventory(
   try {
     // Get current quantity
     let currentQuantity: number;
-    
+
     if (variantId) {
       const { data: variant } = await insforgeClient.database
         .from('product_variants')
@@ -519,9 +557,8 @@ export async function updateInventory(
     }
 
     // Log the change
-    await insforgeClient.database
-      .from('inventory_logs')
-      .insert([{
+    await insforgeClient.database.from('inventory_logs').insert([
+      {
         product_id: productId,
         variant_id: variantId,
         change_type: changeType,
@@ -529,14 +566,19 @@ export async function updateInventory(
         quantity_after: newQuantity,
         reason,
         reference_id: referenceId,
-        created_by: userId
-      }]);
+        created_by: userId,
+      },
+    ]);
   } catch (error: any) {
-    logger.error('Error updating inventory', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-      variantId,
-      quantityChange,
-    });
+    logger.error(
+      'Error updating inventory',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+        variantId,
+        quantityChange,
+      }
+    );
     throw error;
   }
 }
@@ -564,10 +606,14 @@ export async function getInventoryLogs(
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching inventory logs', error instanceof Error ? error : new Error(String(error)), {
-      productId,
-      variantId,
-    });
+    logger.error(
+      'Error fetching inventory logs',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        productId,
+        variantId,
+      }
+    );
     throw error;
   }
 }
@@ -581,7 +627,7 @@ export async function getInventoryLogs(
  */
 export async function getCategories(shopId?: string): Promise<Category[]> {
   try {
-    let query = insforgeClient.database
+    const query = insforgeClient.database
       .from('categories')
       .select('*')
       .eq('is_active', true)
@@ -592,7 +638,10 @@ export async function getCategories(shopId?: string): Promise<Category[]> {
     if (error) throw error;
     return data || [];
   } catch (error: any) {
-    logger.error('Error fetching categories', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error fetching categories',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }
@@ -613,9 +662,13 @@ export async function createCategory(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error creating category', error instanceof Error ? error : new Error(String(error)), {
-      categoryName: categoryData.name,
-    });
+    logger.error(
+      'Error creating category',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        categoryName: categoryData.name,
+      }
+    );
     throw error;
   }
 }
@@ -638,9 +691,13 @@ export async function updateCategory(
     if (error) throw error;
     return data;
   } catch (error: any) {
-    logger.error('Error updating category', error instanceof Error ? error : new Error(String(error)), {
-      categoryId,
-    });
+    logger.error(
+      'Error updating category',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        categoryId,
+      }
+    );
     throw error;
   }
 }
@@ -680,14 +737,17 @@ export async function getProductsByCategory(
       total: count || 0,
       page,
       pageSize,
-      hasMore: (count || 0) > offset + pageSize
+      hasMore: (count || 0) > offset + pageSize,
     };
   } catch (error: any) {
-    logger.error('Error fetching products by category', error instanceof Error ? error : new Error(String(error)), {
-      categoryId,
-      filters,
-    });
+    logger.error(
+      'Error fetching products by category',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        categoryId,
+        filters,
+      }
+    );
     throw error;
   }
 }
-

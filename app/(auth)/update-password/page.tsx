@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { insforgeClient } from '@/lib/insforge';
+import { logger } from '@/lib/utils/logger';
 
 export default function UpdatePassword() {
   const router = useRouter();
@@ -43,24 +43,16 @@ export default function UpdatePassword() {
     setLoading(true);
 
     try {
-      // TODO: Password update not yet implemented in @insforge/sdk
-      // This is a placeholder that needs to be implemented when the SDK supports it
-      logger.warn('Password update functionality not yet available');
-      setError('Password update functionality is not yet available. Please contact support.');
-      setLoading(false);
+      const { updatePassword } = await import('@/lib/insforge');
+      const { error: updateError } = await updatePassword(password);
 
-      // Placeholder for when SDK supports password update:
-      // const { error: updateError } = await insforgeClient.auth.updateUser({
-      //   password,
-      // });
-      //
-      // if (updateError) {
-      //   setError(updateError.message || 'Failed to update password');
-      //   setLoading(false);
-      //   return;
-      // }
-      //
-      // router.push('/login?message=Password updated successfully');
+      if (updateError) {
+        setError(updateError.message || 'Failed to update password');
+        setLoading(false);
+        return;
+      }
+
+      router.push('/login?message=Password updated successfully');
     } catch (err: any) {
       logger.error('Password update error', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'An error occurred');
@@ -85,9 +77,7 @@ export default function UpdatePassword() {
       <div className="card w-full max-w-md shadow-lg">
         <div className="card-pad">
           <h1 className="text-2xl font-bold text-center mb-2">Update Password</h1>
-          <p className="text-sm text-gray-600 text-center mb-6">
-            Enter your new password
-          </p>
+          <p className="text-sm text-gray-600 text-center mb-6">Enter your new password</p>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -124,11 +114,7 @@ export default function UpdatePassword() {
                   disabled={loading}
                 />
               </div>
-              <button
-                className="btn btn-primary w-full"
-                type="submit"
-                disabled={loading}
-              >
+              <button className="btn btn-primary w-full" type="submit" disabled={loading}>
                 {loading ? 'Updating...' : 'Update Password'}
               </button>
             </form>

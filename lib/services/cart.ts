@@ -1,5 +1,5 @@
 // Cart Service - Shopping cart management functions
-import { insforgeClient } from '../insforge';
+import { insforgeClient, executeWithRetry } from '../insforge';
 import { logger } from '../utils/logger';
 import { cacheAside, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type { Cart, CartItem, Product, ProductVariant } from '../types/database';
@@ -81,26 +81,32 @@ export async function getCartWithItems(cartId: string): Promise<
     return await cacheAside(
       cacheKey,
       async () => {
-        // Get cart
-        const { data: cart, error: cartError } = await insforgeClient.database
-          .from('cart')
-          .select('*')
-          .eq('id', cartId)
-          .single();
+        // Get cart with retry logic
+        const { data: cart, error: cartError } = await executeWithRetry(async () => {
+          const result = await insforgeClient.database
+            .from('cart')
+            .select('*')
+            .eq('id', cartId)
+            .single();
+          return result;
+        });
 
-        if (cartError) throw cartError;
+        if (cartError || !cart) throw cartError || new Error('Cart not found');
 
         // Get cart items with product and variant details using joins (fixes N+1 query)
-        const { data: items, error: itemsError } = await insforgeClient.database
-          .from('cart_items')
-          .select(
+        const { data: items, error: itemsError } = await executeWithRetry(async () => {
+          const result = await insforgeClient.database
+            .from('cart_items')
+            .select(
+              `
+              *,
+              product:products(*),
+              variant:product_variants(*)
             `
-            *,
-            product:products(*),
-            variant:product_variants(*)
-          `
-          )
-          .eq('cart_id', cartId);
+            )
+            .eq('cart_id', cartId);
+          return result;
+        });
 
         if (itemsError) throw itemsError;
 
@@ -120,7 +126,10 @@ export async function getCartWithItems(cartId: string): Promise<
           };
         });
 
-        const subtotal = itemsWithDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const subtotal = itemsWithDetails.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
         const itemCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
 
         return {

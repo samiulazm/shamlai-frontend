@@ -1,9 +1,9 @@
 'use client';
 
-import Link from "next/link";
-import { useState } from "react";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
+import Link from 'next/link';
+import { useState } from 'react';
+import { insforgeClient } from '@/lib/insforge';
+import { logger } from '@/lib/utils/logger';
 
 export default function ResetPassword() {
   const [email, setEmail] = useState('');
@@ -18,16 +18,20 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      // TODO: Password reset not yet implemented in @insforge/sdk
-      // This is a placeholder that needs to be implemented when the SDK supports it
-      logger.warn('Password reset functionality not yet available');
-      setError('Password reset functionality is not yet available. Please contact support.');
-      setLoading(false);
+      const { resetPasswordForEmail } = await import('@/lib/insforge');
+      const { error: resetError } = await resetPasswordForEmail(
+        email,
+        `${window.location.origin}/update-password`
+      );
 
-      // Placeholder for when SDK supports password reset:
-      // const { error: resetError } = await insforgeClient.auth.resetPasswordForEmail(email, {
-      //   redirectTo: `${window.location.origin}/update-password`,
-      // });
+      if (resetError) {
+        setError(resetError.message || 'Failed to send reset email');
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+      setLoading(false);
     } catch (err: any) {
       logger.error('Password reset error', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'An error occurred');
@@ -71,11 +75,7 @@ export default function ResetPassword() {
                 disabled={loading || success}
               />
             </div>
-            <button
-              className="btn btn-primary w-full"
-              type="submit"
-              disabled={loading || success}
-            >
+            <button className="btn btn-primary w-full" type="submit" disabled={loading || success}>
               {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
           </form>

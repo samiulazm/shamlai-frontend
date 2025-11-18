@@ -1,5 +1,5 @@
 // Order Service - Comprehensive order management functions
-import { insforgeClient } from '../insforge';
+import { insforgeClient, executeWithRetry } from '../insforge';
 import { logger } from '../utils/logger';
 import type {
   Order,
@@ -191,24 +191,28 @@ export async function createOrder(
       .toUpperCase();
     const orderNumber = `ORD-${timestamp}-${randomStr}`;
 
-    // Create order
-    const { data: order, error: orderError } = await insforgeClient.database
-      .from('orders')
-      .insert([{ ...orderData, order_number: orderNumber }])
-      .select()
-      .single();
+    // Create order with retry logic for reliability
+    const { data: order, error: orderError } = await executeWithRetry(async () => {
+      const result = await insforgeClient.database
+        .from('orders')
+        .insert([{ ...orderData, order_number: orderNumber }])
+        .select()
+        .single();
+      return result;
+    });
 
-    if (orderError) throw orderError;
+    if (orderError || !order) throw orderError || new Error('Failed to create order');
 
-    // Create order items
+    // Create order items with retry logic
     const orderItems = items.map((item) => ({
       ...item,
       order_id: order.id,
     }));
 
-    const { error: itemsError } = await insforgeClient.database
-      .from('order_items')
-      .insert(orderItems);
+    const { error: itemsError } = await executeWithRetry(async () => {
+      const result = await insforgeClient.database.from('order_items').insert(orderItems);
+      return result;
+    });
 
     if (itemsError) throw itemsError;
 
@@ -267,26 +271,32 @@ export async function updateOrderStatus(
       updates.cancelled_at = new Date().toISOString();
     }
 
-    // Update order
-    const { data: order, error } = await insforgeClient.database
-      .from('orders')
-      .update(updates)
-      .eq('id', orderId)
-      .select()
-      .single();
+    // Update order with retry logic
+    const { data: order, error } = await executeWithRetry(async () => {
+      const result = await insforgeClient.database
+        .from('orders')
+        .update(updates)
+        .eq('id', orderId)
+        .select()
+        .single();
+      return result;
+    });
 
-    if (error) throw error;
+    if (error || !order) throw error || new Error('Failed to update order');
 
-    // Log status change
-    await insforgeClient.database.from('order_status_history').insert([
-      {
-        order_id: orderId,
-        status: newStatus,
-        comment,
-        notify_customer: notifyCustomer,
-        created_by: userId,
-      },
-    ]);
+    // Log status change with retry logic
+    await executeWithRetry(async () => {
+      const result = await insforgeClient.database.from('order_status_history').insert([
+        {
+          order_id: orderId,
+          status: newStatus,
+          comment,
+          notify_customer: notifyCustomer,
+          created_by: userId,
+        },
+      ]);
+      return result;
+    });
 
     return order;
   } catch (error: any) {

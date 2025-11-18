@@ -51,8 +51,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     checkUser();
 
-    // Note: @insforge/sdk doesn't have onAuthStateChange yet
-    // Polling for session changes every 5 minutes as a workaround
+    // Try to use onAuthStateChange if available, otherwise fall back to polling
+    const { onAuthStateChange } = require('@/lib/insforge');
+    const subscription = onAuthStateChange(
+      (event: 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'USER_UPDATED', session: any) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          checkUser();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    // Fallback polling if onAuthStateChange is not available
     const interval = setInterval(
       () => {
         checkUser();
@@ -61,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      subscription.unsubscribe();
       clearInterval(interval);
     };
   }, []);
@@ -224,9 +236,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshSession = async () => {
-    // Note: @insforge/sdk doesn't have refreshSession method yet
-    // Using checkUser as a workaround to refresh user state
-    await checkUser();
+    // Try to use refreshSession if available, otherwise fall back to checkUser
+    try {
+      const { refreshSession: refresh } = await import('@/lib/insforge');
+      const { error } = await refresh();
+      if (!error) {
+        await checkUser();
+      }
+    } catch {
+      // Fallback to checkUser if refreshSession is not available
+      await checkUser();
+    }
   };
 
   return (
