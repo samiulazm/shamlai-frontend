@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info('User signin successful', { email });
+
+    // Return the full response - the SDK returns { user, accessToken, ... }
+    // The client needs this to establish the session
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     logger.error('Signin API error', error instanceof Error ? error : new Error(String(error)));
