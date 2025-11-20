@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
 
     // Use the token to get current user
     // Set the token in the client headers
+    // Note: Don't pass anonKey when using accessToken - they conflict
     const clientWithToken = createClient({
       baseUrl: INSFORGE_URL,
-      ...(INSFORGE_ANON_KEY && { anonKey: INSFORGE_ANON_KEY }),
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
