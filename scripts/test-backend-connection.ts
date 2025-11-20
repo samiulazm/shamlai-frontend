@@ -43,7 +43,10 @@ async function testConnection() {
 
     if (error) {
       console.log(`   ❌ Login failed: ${error.message}`);
-      console.log(`   Error code: ${error.code || 'N/A'}`);
+      const errorCode = (error as any).code;
+      if (errorCode) {
+        console.log(`   Error code: ${errorCode}`);
+      }
 
       if (error.message.includes('Invalid') || error.message.includes('credentials')) {
         console.log('\n   💡 Solution: Run the create-test-user script:');
@@ -56,11 +59,14 @@ async function testConnection() {
       return false;
     }
 
-    if (data?.user) {
-      console.log(`   ✅ Login successful!`);
-      console.log(`   User ID: ${data.user.id}`);
-      console.log(`   Email: ${data.user.email}`);
+    if (!data?.user) {
+      console.log('   ❌ No user data received');
+      return false;
     }
+
+    console.log(`   ✅ Login successful!`);
+    console.log(`   User ID: ${data.user.id}`);
+    console.log(`   Email: ${data.user.email}`);
 
     // Test 3: Check shop settings
     console.log('\n3️⃣  Checking shop settings...');
