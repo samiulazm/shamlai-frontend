@@ -92,7 +92,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check for auth token in cookies
-  const authToken = request.cookies.get('sb-access-token');
+  const authToken = request.cookies.get('insforge_access_token');
 
   // Redirect to login if trying to access protected route without auth
   if (protectedRoutes.some((route) => finalPathname.startsWith(route)) && !authToken) {
