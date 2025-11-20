@@ -24,20 +24,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Use the token to get current user
-    // Set the token in the client headers
-    // Note: Don't pass anonKey when using accessToken - they conflict
-    const clientWithToken = createClient({
-      baseUrl: INSFORGE_URL,
+    // Make a direct HTTP request to the backend to verify the token
+    // This is more reliable than using SDK's getCurrentUser which expects an established session
+    const response = await fetch(`${INSFORGE_URL}/api/auth/user`, {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
       },
     });
 
-    const { data, error } = await clientWithToken.auth.getCurrentUser();
+    if (!response.ok) {
+      logger.error(
+        'Get user failed',
+        new Error(`Backend returned ${response.status}: ${response.statusText}`)
+      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
 
-    if (error || !data?.user) {
-      logger.error('Get user failed', error instanceof Error ? error : new Error(String(error)));
+    const data = await response.json();
+
+    if (!data?.user) {
+      logger.error('Get user failed', new Error('No user data in response'));
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
