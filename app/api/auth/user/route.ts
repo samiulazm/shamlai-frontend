@@ -13,12 +13,14 @@ const insforgeClient = createClient({
 
 export async function GET(request: NextRequest) {
   try {
-    // Get access token from cookie or Authorization header
+    // Get access token from cookie, Authorization header, or query parameter
     const accessToken =
       request.cookies.get('insforge_access_token')?.value ||
-      request.headers.get('Authorization')?.replace('Bearer ', '');
+      request.headers.get('Authorization')?.replace('Bearer ', '') ||
+      request.nextUrl.searchParams.get('token');
 
     if (!accessToken) {
+      // Return 401 but don't log as error - this is expected for unauthenticated users
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 

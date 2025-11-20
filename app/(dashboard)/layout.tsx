@@ -58,13 +58,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     try {
       // Try to get user from API route first (server-side, no mixed content issues)
       let userData = null;
+
+      // First, try to get token from localStorage (set during login)
+      let tokenFromStorage: string | null = null;
       try {
-        const apiResponse = await fetch('/api/auth/user');
+        if (typeof window !== 'undefined') {
+          tokenFromStorage = localStorage.getItem('insforge_access_token');
+        }
+      } catch (e) {
+        // localStorage not available
+      }
+
+      try {
+        // Include token in query if available from localStorage
+        const apiUrl = tokenFromStorage
+          ? `/api/auth/user?token=${encodeURIComponent(tokenFromStorage)}`
+          : '/api/auth/user';
+
+        const apiResponse = await fetch(apiUrl, {
+          credentials: 'include', // Important: include cookies
+        });
+
         if (apiResponse.ok) {
           const apiData = await apiResponse.json();
           if (apiData?.user) {
             userData = apiData;
           }
+        } else if (apiResponse.status === 401) {
+          // 401 is expected if not logged in - try SDK
+          console.log('API auth returned 401, trying SDK...');
         }
       } catch (apiErr) {
         // API route failed, try SDK directly

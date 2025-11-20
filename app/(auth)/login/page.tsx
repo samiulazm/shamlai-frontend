@@ -86,8 +86,18 @@ export default function Login() {
 
         setLoading(false);
 
-        // Small delay to ensure session is set before redirect
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Store token in localStorage for immediate access
+        if (accessToken) {
+          try {
+            localStorage.setItem('insforge_access_token', accessToken);
+            console.log('✅ Stored access token in localStorage');
+          } catch (storageErr) {
+            console.warn('⚠️ Could not store token in localStorage:', storageErr);
+          }
+        }
+
+        // Small delay to ensure cookie is set before redirect
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Redirect to dashboard
         router.push('/dashboard');
