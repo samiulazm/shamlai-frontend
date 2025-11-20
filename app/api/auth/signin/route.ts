@@ -43,9 +43,21 @@ export async function POST(request: NextRequest) {
 
     logger.info('User signin successful', { email });
 
-    // Return the full response - the SDK returns { user, accessToken, ... }
-    // The client needs this to establish the session
-    return NextResponse.json(data, { status: 200 });
+    // Create response with user data
+    const response = NextResponse.json(data, { status: 200 });
+
+    // Set access token in cookie so it can be used for subsequent requests
+    if (data?.accessToken) {
+      response.cookies.set('insforge_access_token', data.accessToken, {
+        httpOnly: false, // Allow client-side JavaScript to read it if needed
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+    }
+
+    return response;
   } catch (error: any) {
     logger.error('Signin API error', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(

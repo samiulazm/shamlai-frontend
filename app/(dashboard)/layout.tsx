@@ -56,15 +56,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const checkAuth = async () => {
     try {
-      const { data, error } = await insforgeClient.auth.getCurrentUser();
-
-      if (error || !data?.user) {
-        router.push('/login');
-        return;
+      // Try to get user from API route first (server-side, no mixed content issues)
+      let userData = null;
+      try {
+        const apiResponse = await fetch('/api/auth/user');
+        if (apiResponse.ok) {
+          const apiData = await apiResponse.json();
+          if (apiData?.user) {
+            userData = apiData;
+          }
+        }
+      } catch (apiErr) {
+        // API route failed, try SDK directly
+        console.warn('API auth check failed, trying SDK:', apiErr);
       }
 
-      setUser(data);
-      const currentShopId = data.user.id;
+      // If API route didn't work, try SDK directly
+      if (!userData) {
+        const { data, error } = await insforgeClient.auth.getCurrentUser();
+        if (error || !data?.user) {
+          router.push('/login');
+          return;
+        }
+        userData = data;
+      }
+
+      setUser(userData);
+      const currentShopId = userData.user.id;
       setShopId(currentShopId);
 
       // Fetch shop settings to get shop name
