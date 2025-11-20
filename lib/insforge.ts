@@ -4,6 +4,7 @@ import { logger } from './utils/logger';
 // InsForge Backend Configuration
 // Note: Validation happens at runtime, not during build time
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
+const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 
 // Validate environment variable at runtime (not during build)
 if (
@@ -17,6 +18,7 @@ if (
 // Create and export the InsForge client with latest configuration
 export const insforgeClient = createClient({
   baseUrl: INSFORGE_URL,
+  ...(INSFORGE_ANON_KEY && { anonKey: INSFORGE_ANON_KEY }),
 });
 
 // Create a server-side client with service role for operations that bypass RLS

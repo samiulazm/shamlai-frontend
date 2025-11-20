@@ -139,7 +139,22 @@ export default function Signup() {
       }
     } catch (err: any) {
       logger.error('Signup error', err instanceof Error ? err : new Error(String(err)));
-      setError(err.message || 'An error occurred during signup');
+
+      let errorMessage = err.message || 'An error occurred during signup';
+
+      // Provide more specific error messages
+      if (
+        errorMessage.includes('fetch') ||
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('network')
+      ) {
+        errorMessage =
+          'Network error: Cannot connect to backend server. Please check your internet connection and backend configuration.';
+      } else if (errorMessage.includes('CORS')) {
+        errorMessage = 'CORS error: Backend is not configured to accept requests from this domain.';
+      }
+
+      setError(errorMessage);
       setLoading(false);
     }
   };
