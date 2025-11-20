@@ -5,8 +5,8 @@
 
 import { createClient } from '@insforge/sdk';
 
-const insforgeClient = createClient({ 
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app'
+const insforgeClient = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
 });
 
 async function createTestUser() {
@@ -15,7 +15,7 @@ async function createTestUser() {
   // Test user credentials
   const testUser = {
     email: 'test@shamlai.com',
-    password: 'Test123456!'
+    password: 'Test123456!',
   };
 
   try {
@@ -23,7 +23,7 @@ async function createTestUser() {
     console.log('📝 Signing up user:', testUser.email);
     const { data: authData, error: signupError } = await insforgeClient.auth.signUp({
       email: testUser.email,
-      password: testUser.password
+      password: testUser.password,
     });
 
     if (signupError || !authData?.user) {
@@ -39,7 +39,7 @@ async function createTestUser() {
     console.log('\n📝 Setting up user profile...');
     const { data: profileData, error: profileError } = await insforgeClient.auth.setProfile({
       nickname: 'Test User',
-      bio: 'Test account for development'
+      bio: 'Test account for development',
     });
 
     if (profileError) {
@@ -57,18 +57,20 @@ async function createTestUser() {
     console.log('\n📝 Creating shop settings...');
     const { data: shopData, error: shopError } = await insforgeClient.database
       .from('shop_settings')
-      .insert([{
-        shop_id: authData.user.id,
-        shop_name: 'Test Shop',
-        shop_description: 'A test e-commerce shop',
-        shop_email: testUser.email,
-        currency: 'USD',
-        timezone: 'UTC',
-        weight_unit: 'kg',
-        enable_reviews: true,
-        enable_wishlists: true,
-        enable_guest_checkout: true
-      }])
+      .insert([
+        {
+          shop_id: authData.user.id,
+          shop_name: 'Test Shop',
+          shop_description: 'A test e-commerce shop',
+          shop_email: testUser.email,
+          currency: 'USD',
+          timezone: 'UTC',
+          weight_unit: 'kg',
+          enable_reviews: true,
+          enable_wishlists: true,
+          enable_guest_checkout: true,
+        },
+      ])
       .select()
       .single();
 
@@ -90,7 +92,6 @@ async function createTestUser() {
 
     // Sign out to clean up
     await insforgeClient.auth.signOut();
-
   } catch (error) {
     console.error('\n❌ Error creating test user:', error);
     console.log('\n💡 Note: If user already exists, you can use the credentials above to login.');
@@ -107,8 +108,3 @@ createTestUser()
     console.error('❌ Script failed:', error);
     process.exit(1);
   });
-
-
-
-
-

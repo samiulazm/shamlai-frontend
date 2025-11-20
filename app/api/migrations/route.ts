@@ -38,10 +38,14 @@ async function getMigrations(): Promise<MigrationFile[]> {
 export async function GET(request: NextRequest) {
   try {
     // Get API key from environment or request
-    const apiKey =
-      process.env.INSFORGE_API_KEY ||
-      request.headers.get('x-insforge-api-key') ||
-      'ik_f57173c2e4a67d386f54be355582a3f0';
+    const apiKey = process.env.INSFORGE_API_KEY || request.headers.get('x-insforge-api-key');
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: 'INSFORGE_API_KEY is required' },
+        { status: 401 }
+      );
+    }
 
     // Note: In production, check if migrations are needed
     // For now, we'll always attempt to run migrations

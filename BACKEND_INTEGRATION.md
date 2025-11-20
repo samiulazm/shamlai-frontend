@@ -50,7 +50,7 @@ npm install
 The InsForge URL is already configured in `lib/insforge.ts`:
 
 ```typescript
-const INSFORGE_URL = 'https://3ftnzn2r.us-east.insforge.app';
+const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 ```
 
 ### 3. Seed the Database

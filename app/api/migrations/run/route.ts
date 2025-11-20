@@ -23,10 +23,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get API key
-    const apiKey =
-      process.env.INSFORGE_API_KEY ||
-      request.headers.get('x-insforge-api-key') ||
-      'ik_f57173c2e4a67d386f54be355582a3f0';
+    const apiKey = process.env.INSFORGE_API_KEY || request.headers.get('x-insforge-api-key');
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: 'INSFORGE_API_KEY is required' },
+        { status: 401 }
+      );
+    }
 
     // Note: In a real implementation, you would call the MCP tool here
     // For now, we'll return a success response

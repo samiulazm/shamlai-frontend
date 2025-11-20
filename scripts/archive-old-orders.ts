@@ -17,8 +17,7 @@
 
 import { createClient } from '@insforge/sdk';
 
-const INSFORGE_URL =
-  process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
+const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 const ARCHIVE_AGE_YEARS = 2;
 
 interface Order {

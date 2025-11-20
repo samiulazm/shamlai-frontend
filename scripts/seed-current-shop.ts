@@ -5,19 +5,19 @@
 import { createClient } from '@insforge/sdk';
 import { seedAllData } from '../lib/utils/seed-data';
 
-const insforgeClient = createClient({ 
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app'
+const insforgeClient = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
 });
 
 async function main() {
-  console.log('🌱 Seeding Current User\'s Shop\n');
+  console.log("🌱 Seeding Current User's Shop\n");
 
   try {
     // Login with test credentials
     console.log('Logging in as test@shamlai.com...');
     const { data: authData, error: authError } = await insforgeClient.auth.signInWithPassword({
       email: 'test@shamlai.com',
-      password: 'Test123456!'
+      password: 'Test123456!',
     });
 
     if (authError || !authData?.user) {
@@ -47,4 +47,3 @@ async function main() {
 }
 
 main();
-

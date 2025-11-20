@@ -19,8 +19,8 @@ Your Insforge backend with PostgreSQL database is properly configured and active
 ### ✅ Backend Connection
 
 - **Status:** ✅ **CONNECTED**
-- **Backend URL:** `https://3ftnzn2r.us-east.insforge.app`
-- **API Key:** `ik_f57173c2e4a67d386f54be355582a3f0` (Retrieved)
+- **Backend URL:** `http://119.40.88.49:7130`
+- **API Key:** Set via `INSFORGE_API_KEY` environment variable
 - **Backend Version:** 1.0.0
 - **Connection Test:** ✅ **SUCCESSFUL**
 
@@ -169,7 +169,7 @@ Your Insforge backend with PostgreSQL database is properly configured and active
 
 - **File:** `lib/insforge.ts`
 - **Client Export:** ✅ `insforgeClient` exported
-- **Base URL:** `https://3ftnzn2r.us-east.insforge.app`
+- **Base URL:** `http://119.40.88.49:7130`
 - **Fallback URL:** ✅ Configured (hardcoded fallback)
 
 ### Environment Variables
@@ -243,7 +243,8 @@ Your Insforge backend with PostgreSQL database is properly configured and active
 1. **Create `.env.local` file:**
 
    ```bash
-   NEXT_PUBLIC_INSFORGE_URL=https://3ftnzn2r.us-east.insforge.app
+   NEXT_PUBLIC_INSFORGE_URL=http://119.40.88.49:7130
+   INSFORGE_API_KEY=your-insforge-api-key-here
    INSFORGE_SERVICE_ROLE_KEY=your-service-role-key-here
    ```
 

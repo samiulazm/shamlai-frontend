@@ -3,8 +3,7 @@ import { logger } from './utils/logger';
 
 // InsForge Backend Configuration
 // Note: Validation happens at runtime, not during build time
-const INSFORGE_URL =
-  process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://3ftnzn2r.us-east.insforge.app';
+const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 
 // Validate environment variable at runtime (not during build)
 if (

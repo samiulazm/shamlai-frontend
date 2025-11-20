@@ -26,7 +26,12 @@ async function runMigrations() {
 
   try {
     // Get API key
-    const apiKey = process.env.INSFORGE_API_KEY || 'ik_f57173c2e4a67d386f54be355582a3f0';
+    const apiKey = process.env.INSFORGE_API_KEY;
+
+    if (!apiKey) {
+      console.error('❌ INSFORGE_API_KEY environment variable is required');
+      process.exit(1);
+    }
 
     // Get migrations directory
     const migrationsDir = join(process.cwd(), 'scripts', 'migrations');
