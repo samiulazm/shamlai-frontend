@@ -19,24 +19,36 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Sign in with InsForge
-      const { data, error: authError } = await insforgeClient.auth.signInWithPassword({
-        email,
-        password,
+      // Use API proxy route to avoid mixed content issues (HTTPS -> HTTP)
+      const signinResponse = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
-      if (authError) {
-        setError(authError.message || 'Invalid email or password');
+      const signinData = await signinResponse.json();
+
+      if (!signinResponse.ok) {
+        setError(signinData.error || 'Invalid email or password');
         setLoading(false);
         return;
       }
 
-      if (data) {
-        console.log('✅ Login successful!', data.user);
+      // If signin was successful via API, proceed with the session
+      if (signinData.user || signinData.data?.user || signinData.session) {
+        console.log('✅ Login successful!', signinData.user || signinData.data?.user);
         setLoading(false);
 
         // Redirect to dashboard
         router.push('/dashboard');
+      } else {
+        setError('Login successful but user data not received');
+        setLoading(false);
       }
     } catch (err: any) {
       logger.error('Login error', err instanceof Error ? err : new Error(String(err)));

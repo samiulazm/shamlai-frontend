@@ -78,64 +78,81 @@ export default function Signup() {
     }
 
     try {
-      // Sign up with InsForge
-      const { data, error: authError } = await insforgeClient.auth.signUp({
-        email,
-        password,
+      // Use API proxy route to avoid mixed content issues (HTTPS -> HTTP)
+      const signupResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
-      if (authError) {
-        setError(authError.message || 'Failed to create account');
+      const signupData = await signupResponse.json();
+
+      if (!signupResponse.ok) {
+        setError(signupData.error || 'Failed to create account');
         setLoading(false);
         return;
       }
 
-      if (data?.user) {
-        console.log('✅ Account created!', data.user);
+      // If signup was successful, use the user data from the response
+      if (signupData.user || signupData.data?.user) {
+        const user = signupData.user || signupData.data?.user;
+        console.log('✅ Account created!', user);
 
-        // Set up user profile
-        const { error: profileError } = await insforgeClient.auth.setProfile({
-          nickname: shopName || email.split('@')[0],
-        });
+        const userId = user.id;
 
-        if (profileError) {
-          logger.warn(
-            'Profile setup error',
-            profileError instanceof Error ? profileError : new Error(String(profileError))
-          );
-        }
+        if (userId) {
+          // Set up user profile
+          const { error: profileError } = await insforgeClient.auth.setProfile({
+            nickname: shopName || email.split('@')[0],
+          });
 
-        // Create shop settings
-        try {
-          // Generate unique shop ID (8-10 digit random number)
-          const shopId = await generateUniqueShopId();
+          if (profileError) {
+            logger.warn(
+              'Profile setup error',
+              profileError instanceof Error ? profileError : new Error(String(profileError))
+            );
+          }
 
-          await insforgeClient.database.from('shop_settings').insert([
-            {
-              user_id: data.user.id,
-              shop_id: shopId,
-              shop_name: shopName || 'My Shop',
-              shop_username: normalized,
-              subdomain: normalized,
-              shop_email: email,
-              currency: 'USD',
-              timezone: 'UTC',
-              weight_unit: 'kg',
-              enable_reviews: true,
-              enable_wishlists: true,
-              enable_guest_checkout: true,
-            },
-          ]);
-        } catch (shopError) {
-          logger.warn(
-            'Shop settings error',
-            shopError instanceof Error ? shopError : new Error(String(shopError))
-          );
-          // Continue anyway - user is created
+          // Create shop settings
+          try {
+            // Generate unique shop ID (8-10 digit random number)
+            const shopId = await generateUniqueShopId();
+
+            await insforgeClient.database.from('shop_settings').insert([
+              {
+                user_id: userId,
+                shop_id: shopId,
+                shop_name: shopName || 'My Shop',
+                shop_username: normalized,
+                subdomain: normalized,
+                shop_email: email,
+                currency: 'USD',
+                timezone: 'UTC',
+                weight_unit: 'kg',
+                enable_reviews: true,
+                enable_wishlists: true,
+                enable_guest_checkout: true,
+              },
+            ]);
+          } catch (shopError) {
+            logger.warn(
+              'Shop settings error',
+              shopError instanceof Error ? shopError : new Error(String(shopError))
+            );
+            // Continue anyway - user is created
+          }
         }
 
         // Redirect to dashboard
         router.push('/dashboard');
+      } else {
+        setError('Account created but user data not received');
+        setLoading(false);
       }
     } catch (err: any) {
       logger.error('Signup error', err instanceof Error ? err : new Error(String(err)));
