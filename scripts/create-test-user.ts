@@ -55,11 +55,44 @@ async function createTestUser() {
     }
 
     console.log('\n📝 Creating shop settings...');
+
+    // Generate a unique numeric shop_id (8-10 digits)
+    const generateNumericShopId = (): string => {
+      const length = Math.floor(Math.random() * 3) + 8; // 8-10 digits
+      const min = Math.pow(10, length - 1);
+      const max = Math.pow(10, length) - 1;
+      return String(Math.floor(Math.random() * (max - min + 1)) + min);
+    };
+
+    let shopId = generateNumericShopId();
+    let attempts = 0;
+
+    // Ensure uniqueness
+    while (attempts < 100) {
+      const { data: existing } = await insforgeClient.database
+        .from('shop_settings')
+        .select('id')
+        .eq('shop_id', shopId)
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        break; // Shop ID is unique
+      }
+      shopId = generateNumericShopId();
+      attempts++;
+    }
+
+    const subdomain = 'test-shop';
+    const shopUsername = 'test-shop';
+
     const { data: shopData, error: shopError } = await insforgeClient.database
       .from('shop_settings')
       .insert([
         {
-          shop_id: authData.user.id,
+          user_id: authData.user.id,
+          shop_id: shopId,
+          shop_username: shopUsername,
+          subdomain: subdomain,
           shop_name: 'Test Shop',
           shop_description: 'A test e-commerce shop',
           shop_email: testUser.email,

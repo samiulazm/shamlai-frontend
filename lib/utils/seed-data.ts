@@ -42,9 +42,42 @@ function pickRandom<T>(array: T[], count: number = 1): T[] {
 // Shop Settings Seed
 // ============================================================================
 
-export async function seedShopSettings(shopId: string): Promise<ShopSettings> {
+export async function seedShopSettings(userId: string): Promise<ShopSettings> {
   try {
+    // Generate a unique numeric shop_id (8-10 digits)
+    const generateNumericShopId = (): string => {
+      const length = Math.floor(Math.random() * 3) + 8; // 8-10 digits
+      const min = Math.pow(10, length - 1);
+      const max = Math.pow(10, length) - 1;
+      return String(Math.floor(Math.random() * (max - min + 1)) + min);
+    };
+
+    let shopId = generateNumericShopId();
+    let attempts = 0;
+
+    // Ensure uniqueness
+    while (attempts < 100) {
+      const { data: existing } = await insforgeClient.database
+        .from('shop_settings')
+        .select('id')
+        .eq('shop_id', shopId)
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        break; // Shop ID is unique
+      }
+      shopId = generateNumericShopId();
+      attempts++;
+    }
+
+    const subdomain = 'demo-shop';
+    const shopUsername = 'demo-shop';
+
     const settingsData = {
+      user_id: userId,
+      shop_id: shopId,
+      shop_username: shopUsername,
+      subdomain: subdomain,
       shop_name: 'Demo E-Commerce Store',
       shop_description: 'Your one-stop shop for amazing products',
       shop_email: 'support@demoshop.com',
@@ -61,11 +94,11 @@ export async function seedShopSettings(shopId: string): Promise<ShopSettings> {
       enable_guest_checkout: true,
     };
 
-    // Check if shop settings already exist
+    // Check if shop settings already exist for this user
     const { data: existing } = await insforgeClient.database
       .from('shop_settings')
       .select('*')
-      .eq('shop_id', shopId)
+      .eq('user_id', userId)
       .single();
 
     if (existing) {
@@ -73,7 +106,7 @@ export async function seedShopSettings(shopId: string): Promise<ShopSettings> {
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
         .update(settingsData)
-        .eq('shop_id', shopId)
+        .eq('user_id', userId)
         .select()
         .single();
 
@@ -84,7 +117,7 @@ export async function seedShopSettings(shopId: string): Promise<ShopSettings> {
       // Create new settings
       const { data, error } = await insforgeClient.database
         .from('shop_settings')
-        .insert([{ shop_id: shopId, ...settingsData }])
+        .insert([settingsData])
         .select()
         .single();
 
