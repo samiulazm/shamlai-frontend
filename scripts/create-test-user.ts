@@ -26,35 +26,62 @@ async function createTestUser() {
       password: testUser.password,
     });
 
-    if (signupError || !authData?.user) {
-      console.error('❌ Signup failed:', signupError);
+    let userId: string;
+
+    if (signupError) {
+      // User might already exist, try to login instead
+      if (
+        signupError.message?.includes('already exists') ||
+        signupError.message?.includes('ALREADY_EXISTS')
+      ) {
+        console.log('⚠️  User already exists, attempting to login...');
+        const { data: loginData, error: loginError } = await insforgeClient.auth.signInWithPassword(
+          {
+            email: testUser.email,
+            password: testUser.password,
+          }
+        );
+
+        if (loginError || !loginData?.user) {
+          console.error('❌ Login failed:', loginError);
+          return;
+        }
+
+        userId = loginData.user.id;
+        console.log('✅ Logged in successfully!');
+        console.log('   User ID:', userId);
+        console.log('   Email:', loginData.user.email);
+      } else {
+        console.error('❌ Signup failed:', signupError);
+        return;
+      }
+    } else if (authData?.user) {
+      userId = authData.user.id;
+      console.log('✅ User created successfully!');
+      console.log('   User ID:', userId);
+      console.log('   Email:', authData.user.email);
+    } else {
+      console.error('❌ No user data received');
       return;
     }
 
-    console.log('✅ User created successfully!');
-    console.log('   User ID:', authData.user.id);
-    console.log('   Email:', authData.user.email);
+    // 2. Update user profile with additional info (only if user was just created)
+    if (!signupError || !signupError.message?.includes('already exists')) {
+      console.log('\n📝 Setting up user profile...');
+      const { data: profileData, error: profileError } = await insforgeClient.auth.setProfile({
+        nickname: 'Test User',
+        bio: 'Test account for development',
+      });
 
-    // 2. Update user profile with additional info
-    console.log('\n📝 Setting up user profile...');
-    const { data: profileData, error: profileError } = await insforgeClient.auth.setProfile({
-      nickname: 'Test User',
-      bio: 'Test account for development',
-    });
-
-    if (profileError) {
-      console.error('❌ Profile update failed:', profileError);
-    } else {
-      console.log('✅ Profile created successfully!');
+      if (profileError) {
+        console.error('❌ Profile update failed:', profileError);
+      } else {
+        console.log('✅ Profile created successfully!');
+      }
     }
 
     // 3. Create initial shop settings for this user
-    if (!authData?.user?.id) {
-      console.error('❌ Cannot create shop settings: User ID not available');
-      return;
-    }
-
-    console.log('\n📝 Creating shop settings...');
+    console.log('\n📝 Checking shop settings...');
 
     // Generate a unique numeric shop_id (8-10 digits)
     const generateNumericShopId = (): string => {
@@ -67,50 +94,66 @@ async function createTestUser() {
     let shopId = generateNumericShopId();
     let attempts = 0;
 
-    // Ensure uniqueness
-    while (attempts < 100) {
-      const { data: existing } = await insforgeClient.database
-        .from('shop_settings')
-        .select('id')
-        .eq('shop_id', shopId)
-        .limit(1);
-
-      if (!existing || existing.length === 0) {
-        break; // Shop ID is unique
-      }
-      shopId = generateNumericShopId();
-      attempts++;
-    }
-
-    const subdomain = 'test-shop';
-    const shopUsername = 'test-shop';
-
-    const { data: shopData, error: shopError } = await insforgeClient.database
+    // Check if shop settings already exist
+    const { data: existingShop } = await insforgeClient.database
       .from('shop_settings')
-      .insert([
-        {
-          user_id: authData.user.id,
-          shop_id: shopId,
-          shop_username: shopUsername,
-          subdomain: subdomain,
-          shop_name: 'Test Shop',
-          shop_description: 'A test e-commerce shop',
-          shop_email: testUser.email,
-          currency: 'USD',
-          timezone: 'UTC',
-          weight_unit: 'kg',
-          enable_reviews: true,
-          enable_wishlists: true,
-          enable_guest_checkout: true,
-        },
-      ])
-      .select()
+      .select('*')
+      .eq('user_id', userId)
       .single();
 
-    if (shopError) {
-      console.error('❌ Shop settings failed:', shopError);
+    if (existingShop) {
+      console.log('✅ Shop settings already exist!');
+      console.log('   Shop ID:', existingShop.shop_id);
+      console.log('   Shop Name:', existingShop.shop_name);
     } else {
-      console.log('✅ Shop settings created successfully!');
+      console.log('📝 Creating shop settings...');
+
+      // Ensure uniqueness
+      while (attempts < 100) {
+        const { data: existing } = await insforgeClient.database
+          .from('shop_settings')
+          .select('id')
+          .eq('shop_id', shopId)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          break; // Shop ID is unique
+        }
+        shopId = generateNumericShopId();
+        attempts++;
+      }
+
+      const subdomain = 'test-shop';
+      const shopUsername = 'test-shop';
+
+      const { data: shopData, error: shopError } = await insforgeClient.database
+        .from('shop_settings')
+        .insert([
+          {
+            user_id: userId,
+            shop_id: shopId,
+            shop_username: shopUsername,
+            subdomain: subdomain,
+            shop_name: 'Test Shop',
+            shop_description: 'A test e-commerce shop',
+            shop_email: testUser.email,
+            currency: 'USD',
+            timezone: 'UTC',
+            weight_unit: 'kg',
+            enable_reviews: true,
+            enable_wishlists: true,
+            enable_guest_checkout: true,
+          },
+        ])
+        .select()
+        .single();
+
+      if (shopError) {
+        console.error('❌ Shop settings failed:', shopError);
+      } else {
+        console.log('✅ Shop settings created successfully!');
+        console.log('   Shop ID:', shopData.shop_id);
+      }
     }
 
     // Print login credentials
