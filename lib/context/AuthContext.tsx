@@ -150,72 +150,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
-        // Set profile with nickname and role
-        try {
-          await insforgeClient.auth.setProfile({
-            nickname: shopName || email.split('@')[0],
-            role: 'merchant',
-          });
-        } catch (profileError) {
-          logger.warn(
-            'Failed to set user profile',
-            profileError instanceof Error ? profileError : new Error(String(profileError))
-          );
-        }
-
-        // Create shop settings
-        try {
-          // Generate a unique subdomain for the shop
-          const { generateUniqueSubdomain, generateUniqueShopId } = await import(
-            '@/lib/services/shop'
-          );
-          const preferred = (shopName || email.split('@')[0] || 'shop').toString();
-          const subdomain = await generateUniqueSubdomain(preferred);
-          const shopId = await generateUniqueShopId();
-
-          await insforgeClient.database.from('shop_settings').insert({
-            user_id: data.user.id,
-            shop_id: shopId,
-            shop_name: shopName || 'My Shop',
-            shop_username: subdomain,
-            subdomain,
-            shop_email: email,
-            currency: 'USD',
-            timezone: 'UTC',
-            weight_unit: 'kg',
-            enable_reviews: true,
-            enable_wishlists: true,
-            enable_guest_checkout: true,
-          });
-
-          // Set user with the generated shop_id
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            nickname: shopName,
-            role: 'merchant',
-            shop_id: shopId,
-          });
-        } catch (shopError) {
-          const errorMessage =
-            shopError instanceof Error &&
-            shopError.message.includes('Unable to generate unique shop ID')
-              ? 'Unable to generate a unique shop ID. Please try again later.'
-              : 'Failed to create shop settings';
-
-          logger.warn(
-            errorMessage,
-            shopError instanceof Error ? shopError : new Error(String(shopError))
-          );
-
-          // Set user even if shop creation failed
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            nickname: shopName,
-            role: 'merchant',
-          });
-        }
+        // Set user immediately - shop creation is handled by signup page via /api/auth/complete-signup
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          nickname: shopName || email.split('@')[0],
+          role: 'merchant',
+          // shop_id will be set after shop creation via checkUser()
+        });
       }
 
       return { error: null };
