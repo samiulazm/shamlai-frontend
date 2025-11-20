@@ -46,21 +46,50 @@ export default function Login() {
       if (user) {
         console.log('✅ API login successful!', user);
 
-        // Try to set the session in the client SDK if we have an access token
-        // Note: This might fail due to mixed content, but we'll try anyway
-        if (accessToken) {
-          try {
-            // The SDK might need the session set manually, but for now
-            // we'll just proceed - the API route authenticated successfully
-            console.log('✅ Access token received, session should be established');
-          } catch (sdkErr) {
-            console.warn('⚠️ Could not set client session (may need manual setup):', sdkErr);
+        // CRITICAL: Also authenticate the client-side SDK so it has the session
+        // This is needed because the dashboard checks getCurrentUser() which requires SDK session
+        try {
+          console.log('🔐 Authenticating client SDK...');
+          const { data: sdkData, error: sdkError } = await insforgeClient.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (sdkError) {
+            console.warn('⚠️ Client SDK auth failed:', sdkError.message);
+            // If SDK auth fails (mixed content), try to manually set the token
+            if (accessToken) {
+              // Store token in localStorage as fallback
+              try {
+                localStorage.setItem('insforge_access_token', accessToken);
+                console.log('✅ Stored access token in localStorage as fallback');
+              } catch (storageErr) {
+                console.warn('⚠️ Could not store token:', storageErr);
+              }
+            }
+            // Continue anyway - API auth worked
+          } else {
+            console.log('✅ Client SDK authenticated successfully!', sdkData?.user);
+          }
+        } catch (sdkErr: any) {
+          console.warn('⚠️ Client SDK auth error (but API auth succeeded):', sdkErr?.message);
+          // Try to store token as fallback
+          if (accessToken) {
+            try {
+              localStorage.setItem('insforge_access_token', accessToken);
+              console.log('✅ Stored access token in localStorage as fallback');
+            } catch (storageErr) {
+              // Ignore storage errors
+            }
           }
         }
 
         setLoading(false);
 
-        // Redirect to dashboard - the session should work via cookies/headers
+        // Small delay to ensure session is set before redirect
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Redirect to dashboard
         router.push('/dashboard');
       } else {
         setError('Login successful but user data not received');
