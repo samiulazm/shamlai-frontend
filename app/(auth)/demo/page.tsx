@@ -15,7 +15,7 @@ export default function DemoPage() {
     const loginWithDemoAccount = async () => {
       try {
         setStatus('loading');
-        
+
         // Always log out first to ensure we're using the demo account
         console.log('🔓 Logging out current session...');
         await insforgeClient.auth.signOut();
@@ -24,12 +24,31 @@ export default function DemoPage() {
         console.log('🔐 Logging in with demo account...');
         const { data, error: authError } = await insforgeClient.auth.signInWithPassword({
           email: 'test@shamlai.com',
-          password: 'Test123456!'
+          password: 'Test123456!',
         });
 
         if (authError) {
-          logger.error('Demo login failed', authError instanceof Error ? authError : new Error(String(authError)));
-          setError(authError.message || 'Failed to login with demo account');
+          logger.error(
+            'Demo login failed',
+            authError instanceof Error ? authError : new Error(String(authError))
+          );
+
+          // Provide more detailed error messages
+          let errorMessage = authError.message || 'Failed to login with demo account';
+
+          // Check for specific error types
+          if (
+            errorMessage.includes('fetch') ||
+            errorMessage.includes('network') ||
+            errorMessage.includes('CORS')
+          ) {
+            errorMessage =
+              'Network error: Cannot connect to backend. Please check if the backend is accessible and CORS is configured.';
+          } else if (errorMessage.includes('Invalid') || errorMessage.includes('credentials')) {
+            errorMessage = 'Invalid credentials. The demo account may not exist on this backend.';
+          }
+
+          setError(errorMessage);
           setStatus('error');
           return;
         }
@@ -37,7 +56,7 @@ export default function DemoPage() {
         if (data?.user) {
           console.log('✅ Demo login successful!', data.user);
           setStatus('success');
-          
+
           // Redirect to demo shop storefront after a brief delay
           const shopId = data.user.id;
           setTimeout(() => {
@@ -45,8 +64,24 @@ export default function DemoPage() {
           }, 800);
         }
       } catch (err: any) {
-        logger.error('Unexpected error during demo login', err instanceof Error ? err : new Error(String(err)));
-        setError(err.message || 'An unexpected error occurred');
+        logger.error(
+          'Unexpected error during demo login',
+          err instanceof Error ? err : new Error(String(err))
+        );
+
+        let errorMessage = err.message || 'An unexpected error occurred';
+
+        // Check for network/CORS errors
+        if (
+          errorMessage.includes('fetch') ||
+          errorMessage.includes('network') ||
+          errorMessage.includes('Failed to fetch')
+        ) {
+          errorMessage =
+            'Network error: Cannot connect to backend server. Please check backend URL configuration.';
+        }
+
+        setError(errorMessage);
         setStatus('error');
       }
     };
@@ -63,12 +98,8 @@ export default function DemoPage() {
               <div className="mb-6">
                 <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Loading Demo...
-              </h1>
-              <p className="text-gray-600">
-                Logging you in with the demo account
-              </p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Demo...</h1>
+              <p className="text-gray-600">Logging you in with the demo account</p>
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 font-medium">Demo Credentials</p>
                 <p className="text-xs text-blue-700 mt-1">Email: test@shamlai.com</p>
@@ -80,26 +111,22 @@ export default function DemoPage() {
           {status === 'success' && (
             <>
               <div className="mb-6">
-                <svg 
-                  className="inline-block h-16 w-16 text-green-500" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="inline-block h-16 w-16 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Success!
-              </h1>
-              <p className="text-gray-600 mb-4">
-                Redirecting to demo shop...
-              </p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Success!</h1>
+              <p className="text-gray-600 mb-4">Redirecting to demo shop...</p>
               <div className="animate-pulse">
                 <div className="h-2 bg-indigo-600 rounded-full w-3/4 mx-auto"></div>
               </div>
@@ -109,32 +136,28 @@ export default function DemoPage() {
           {status === 'error' && (
             <>
               <div className="mb-6">
-                <svg 
-                  className="inline-block h-16 w-16 text-red-500" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="inline-block h-16 w-16 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Demo Login Failed
-              </h1>
-              <p className="text-red-600 mb-6">
-                {error}
-              </p>
-              
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Demo Login Failed</h1>
+              <p className="text-red-600 mb-6">{error}</p>
+
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">
                   The demo account may not exist yet. Please create it first:
                 </p>
-                
+
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-left">
                   <p className="text-xs font-mono text-gray-800 mb-2">
                     npx tsx scripts/create-test-user.ts
@@ -145,14 +168,11 @@ export default function DemoPage() {
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <Link 
-                    href="/signup" 
-                    className="btn btn-primary flex-1"
-                  >
+                  <Link href="/signup" className="btn btn-primary flex-1">
                     Create Account
                   </Link>
-                  <Link 
-                    href="/login" 
+                  <Link
+                    href="/login"
                     className="btn border border-gray-300 bg-white hover:bg-gray-50 flex-1"
                   >
                     Manual Login
@@ -163,13 +183,10 @@ export default function DemoPage() {
           )}
 
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              This demo account is for testing purposes only
-            </p>
+            <p className="text-xs text-gray-500">This demo account is for testing purposes only</p>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
