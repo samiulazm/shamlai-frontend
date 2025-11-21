@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
 import { createClient } from '@insforge/sdk';
+import { validateBody } from '@/lib/validation/validator';
+import { signinSchema } from '@/lib/validation/schemas';
+import { withErrorHandler, UnauthorizedError } from '@/lib/errors/api-errors';
+import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
+import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
+import { auditAuthEvent, AuditAction } from '@/lib/services/audit';
+import { getClientIP } from '@/lib/redis/rate-limiter';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
@@ -11,58 +18,64 @@ const insforgeClient = createClient({
   ...(INSFORGE_ANON_KEY && { anonKey: INSFORGE_ANON_KEY }),
 });
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { email, password } = body;
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Apply rate limiting (5 requests per minute)
+  const rateLimitResponse = await rateLimitEndpoint.auth(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
+  // Validate request body
+  const { email, password, rememberMe } = await validateBody(request, signinSchema);
 
-    // Use the InsForge SDK directly (server-side, no mixed content issues)
-    const { data, error } = await insforgeClient.auth.signInWithPassword({
-      email,
-      password,
+  // Use the InsForge SDK directly (server-side, no mixed content issues)
+  const { data, error } = await insforgeClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    // Audit failed login attempt
+    const ip = getClientIP(request.headers);
+    await auditAuthEvent(AuditAction.FAILED_LOGIN, 'unknown', email, {
+      ip,
+      userAgent: request.headers.get('user-agent') || undefined,
+      reason: error.message,
     });
 
-    if (error) {
-      logger.error('Signin failed', error instanceof Error ? error : new Error(String(error)), {
-        email,
-        errorMessage: error.message,
-      });
+    logger.warn('Failed signin attempt', {
+      email,
+      ip,
+      errorMessage: error.message,
+    });
 
-      // Return appropriate error message
-      let errorMessage = error.message || 'Invalid credentials';
-      if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404')) {
-        errorMessage = 'NOT_FOUND';
-      }
-
-      return NextResponse.json({ error: errorMessage }, { status: (error as any).status || 401 });
-    }
-
-    logger.info('User signin successful', { email });
-
-    // Create response with user data
-    const response = NextResponse.json(data, { status: 200 });
-
-    // Set access token in cookie so it can be used for subsequent requests
-    if (data?.accessToken) {
-      response.cookies.set('insforge_access_token', data.accessToken, {
-        httpOnly: false, // Allow client-side JavaScript to read it if needed
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
-      });
-    }
-
-    return response;
-  } catch (error: any) {
-    logger.error('Signin API error', error instanceof Error ? error : new Error(String(error)));
-    return NextResponse.json(
-      { error: error.message || 'An error occurred during signin' },
-      { status: 500 }
-    );
+    throw new UnauthorizedError(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
   }
-}
+
+  // Audit successful login
+  const ip = getClientIP(request.headers);
+  await auditAuthEvent(AuditAction.LOGIN, data.user.id, email, {
+    ip,
+    userAgent: request.headers.get('user-agent') || undefined,
+  });
+
+  logger.info('User signin successful', { email, userId: data.user.id });
+
+  // Create response with user data
+  const response = NextResponse.json(data, { status: 200 });
+
+  // Set access token in cookie with SECURE settings
+  if (data?.accessToken) {
+    const cookieMaxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7; // 30 days if remember me, else 7 days
+
+    response.cookies.set('insforge_access_token', data.accessToken, {
+      httpOnly: true, // SECURITY FIX: Prevent XSS attacks by making cookie inaccessible to JavaScript
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax', // CSRF protection
+      maxAge: cookieMaxAge,
+      path: '/',
+    });
+  }
+
+  return response;
+});
