@@ -23,9 +23,16 @@
       "Bash(curl:*)",
       "Bash(npm run dev:*)",
       "Bash(cat:*)",
-      "Bash(heroku config:*)"
+      "Bash(heroku config:*)",
+      "Bash(heroku config:set:*)",
+      "Bash(heroku config:get:*)",
+      "Bash(npx @insforge/install:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsx:*)",
+      "Bash(NEXT_PUBLIC_INSFORGE_URL=http://119.40.88.49:7131 npx tsx:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": ["insforge"]
 }
