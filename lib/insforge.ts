@@ -52,6 +52,9 @@ export const getInsforgeServerClient = () => {
 // Export types for TypeScript usage
 export type InsforgeClient = typeof insforgeClient;
 
+// Export a function to get a new client instance (alias for backwards compatibility)
+export const getInsforgeClient = () => insforgeClient;
+
 // Helper function to handle errors consistently
 export const handleInsforgeError = (error: any) => {
   logger.error('InsForge Error', error instanceof Error ? error : new Error(String(error)), {
