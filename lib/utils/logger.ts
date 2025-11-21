@@ -67,7 +67,6 @@ class Logger {
   private sendToExternalService(entry: LogEntry) {
     // TODO: Implement external logging service integration
     // Examples: Sentry, LogRocket, DataDog, CloudWatch, etc.
-    
     // Example for Sentry:
     // if (window.Sentry && (entry.level === 'error' || entry.level === 'fatal')) {
     //   window.Sentry.captureException(entry.error || new Error(entry.message), {
@@ -91,11 +90,11 @@ class Logger {
     this.log('warn', message, context, error);
   }
 
-  error(message: string, error?: Error, context?: LogContext) {
+  error(message: string, context?: LogContext, error?: Error) {
     this.log('error', message, context, error);
   }
 
-  fatal(message: string, error?: Error, context?: LogContext) {
+  fatal(message: string, context?: LogContext, error?: Error) {
     this.log('fatal', message, context, error);
   }
 
@@ -156,20 +155,22 @@ export function measurePerformance<T>(
   context?: LogContext
 ): T | Promise<T> {
   const startTime = performance.now();
-  
+
   try {
     const result = operation();
-    
+
     if (result instanceof Promise) {
-      return result.then((res) => {
-        const duration = performance.now() - startTime;
-        logger.performance(operationName, duration, context);
-        return res;
-      }).catch((error) => {
-        const duration = performance.now() - startTime;
-        logger.error(`${operationName} failed after ${duration}ms`, error, context);
-        throw error;
-      });
+      return result
+        .then((res) => {
+          const duration = performance.now() - startTime;
+          logger.performance(operationName, duration, context);
+          return res;
+        })
+        .catch((error) => {
+          const duration = performance.now() - startTime;
+          logger.error(`${operationName} failed after ${duration}ms`, context, error);
+          throw error;
+        });
     } else {
       const duration = performance.now() - startTime;
       logger.performance(operationName, duration, context);
@@ -177,10 +178,9 @@ export function measurePerformance<T>(
     }
   } catch (error) {
     const duration = performance.now() - startTime;
-    logger.error(`${operationName} failed after ${duration}ms`, error as Error, context);
+    logger.error(`${operationName} failed after ${duration}ms`, context, error as Error);
     throw error;
   }
 }
 
 export default logger;
-

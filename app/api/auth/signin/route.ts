@@ -34,19 +34,19 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     password,
   });
 
-  if (error) {
+  if (error || !data) {
     // Audit failed login attempt
     const ip = getClientIP(request.headers);
     await auditAuthEvent(AuditAction.FAILED_LOGIN, 'unknown', email, {
       ip,
       userAgent: request.headers.get('user-agent') || undefined,
-      reason: error.message,
+      reason: error?.message || 'Unknown error',
     });
 
     logger.warn('Failed signin attempt', {
       email,
       ip,
-      errorMessage: error.message,
+      errorMessage: error?.message || 'Unknown error',
     });
 
     throw new UnauthorizedError(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);

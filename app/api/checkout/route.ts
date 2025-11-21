@@ -90,11 +90,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
         // Verify stock availability
         if (product.track_inventory && product.stock_quantity < item.quantity) {
-          throw new InsufficientStockError(
-            product.name,
-            product.stock_quantity,
-            item.quantity
-          );
+          throw new InsufficientStockError(product.name, product.stock_quantity, item.quantity);
         }
 
         // Get price (from variant or product)
@@ -139,7 +135,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       // Step 3: Get or create customer
       const customer = await getOrCreateCustomer(
         shopId,
-        customerEmail || shippingAddress.email,
+        customerEmail || '',
         shippingAddress.firstName,
         shippingAddress.lastName,
         shippingAddress.phone
@@ -241,7 +237,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       const orderData = {
         shop_id: shopId,
         customer_id: customer.id,
-        customer_email: customerEmail || shippingAddress.email,
+        customer_email: customerEmail || '',
         customer_phone: shippingAddress.phone,
         shipping_first_name: shippingAddress.firstName,
         shipping_last_name: shippingAddress.lastName,
@@ -249,7 +245,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         shipping_address1: shippingAddress.address1,
         shipping_address2: shippingAddress.address2,
         shipping_city: shippingAddress.city,
-        shipping_state: shippingAddress.province,
+        shipping_state: shippingAddress.province || '',
         shipping_postal_code: shippingAddress.postalCode,
         shipping_country: shippingAddress.country,
         billing_first_name: billingAddress?.firstName || shippingAddress.firstName,
@@ -257,7 +253,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         billing_address1: billingAddress?.address1 || shippingAddress.address1,
         billing_address2: billingAddress?.address2 || shippingAddress.address2,
         billing_city: billingAddress?.city || shippingAddress.city,
-        billing_state: billingAddress?.province || shippingAddress.province,
+        billing_state: billingAddress?.province || shippingAddress.province || '',
         billing_postal_code: billingAddress?.postalCode || shippingAddress.postalCode,
         billing_country: billingAddress?.country || shippingAddress.country,
         subtotal,
@@ -276,7 +272,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
       const orderItems = validatedItems.map((item) => ({
         product_id: item.productId,
-        variant_id: item.variantId || null,
+        variant_id: item.variantId || undefined,
         product_name: item.productName,
         sku: item.sku,
         quantity: item.quantity,
@@ -290,7 +286,6 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       const { order, success } = await processNewOrder(orderData, orderItems, {
         sendEmail: true,
         sendSMS: false,
-        paymentMethod: 'pending',
       });
 
       if (!success || !order) {
@@ -308,7 +303,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         {
           total: order.total,
           itemCount: items.length,
-          customerEmail: customerEmail || shippingAddress.email,
+          customerEmail: customerEmail || '',
         }
       );
 

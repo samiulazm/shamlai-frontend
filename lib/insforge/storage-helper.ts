@@ -35,25 +35,21 @@ export interface StorageListOptions {
 /**
  * Upload file to InsForge storage
  */
-export async function uploadFile(
-  options: StorageUploadOptions
-): Promise<StorageUploadResult> {
-  const { bucket, path, file, contentType, cacheControl, upsert, metadata } =
-    options;
+export async function uploadFile(options: StorageUploadOptions): Promise<StorageUploadResult> {
+  const { bucket, path, file, contentType, cacheControl, upsert, metadata } = options;
 
   const manager = getInsForgeManager();
 
   try {
     logger.info('Uploading file', { bucket, path });
 
-    const { data, error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.from(bucket).upload(path, file, {
-          contentType,
-          cacheControl: cacheControl || '3600',
-          upsert: upsert || false,
-          metadata,
-        })
+    const { data, error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).upload(path, file, {
+        contentType,
+        cacheControl: cacheControl || '3600',
+        upsert: upsert || false,
+        metadata,
+      })
     );
 
     if (error) {
@@ -61,14 +57,12 @@ export async function uploadFile(
     }
 
     // Get public URL
+    const client = await manager.getClient();
     const { data: urlData } = client.storage.from(bucket).getPublicUrl(path);
+    manager.releaseClient(client);
 
     const size =
-      file instanceof File
-        ? file.size
-        : file instanceof Buffer
-        ? file.length
-        : undefined;
+      file instanceof File ? file.size : file instanceof Buffer ? file.length : undefined;
 
     logger.info('File uploaded successfully', {
       bucket,
@@ -130,8 +124,8 @@ export async function downloadFile(
   const manager = getInsForgeManager();
 
   try {
-    const { data, error } = await manager.executeQuery(
-      async (client) => client.storage.from(bucket).download(path)
+    const { data, error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).download(path)
     );
 
     return { data, error };
@@ -152,8 +146,8 @@ export async function deleteFile(
   const pathArray = Array.isArray(paths) ? paths : [paths];
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) => client.storage.from(bucket).remove(pathArray)
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).remove(pathArray)
     );
 
     if (error) {
@@ -187,13 +181,12 @@ export async function listFiles(options: StorageListOptions): Promise<{
   const manager = getInsForgeManager();
 
   try {
-    const { data, error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.from(bucket).list(path, {
-          limit: limit || 100,
-          offset: offset || 0,
-          sortBy: sortBy ? { column: sortBy, order: 'asc' } : undefined,
-        })
+    const { data, error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).list(path, {
+        limit: limit || 100,
+        offset: offset || 0,
+        sortBy: sortBy ? { column: sortBy, order: 'asc' } : undefined,
+      })
     );
 
     if (error) {
@@ -230,9 +223,8 @@ export async function getSignedUrl(
   const manager = getInsForgeManager();
 
   try {
-    const { data, error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.from(bucket).createSignedUrl(path, expiresIn)
+    const { data, error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).createSignedUrl(path, expiresIn)
     );
 
     if (error) {
@@ -257,9 +249,8 @@ export async function moveFile(
   const manager = getInsForgeManager();
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.from(bucket).move(fromPath, toPath)
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).move(fromPath, toPath)
     );
 
     if (error) {
@@ -286,9 +277,8 @@ export async function copyFile(
   const manager = getInsForgeManager();
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.from(bucket).copy(fromPath, toPath)
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.from(bucket).copy(fromPath, toPath)
     );
 
     if (error) {
@@ -317,8 +307,8 @@ export async function getBucketInfo(bucket: string): Promise<{
   const manager = getInsForgeManager();
 
   try {
-    const { data, error } = await manager.executeQuery(
-      async (client) => client.storage.getBucket(bucket)
+    const { data, error } = await manager.executeQuery(async (client) =>
+      client.storage.getBucket(bucket)
     );
 
     if (error) {
@@ -342,11 +332,10 @@ export async function createBucket(
   const manager = getInsForgeManager();
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) =>
-        client.storage.createBucket(name, {
-          public: options.public || false,
-        })
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.createBucket(name, {
+        public: options.public || false,
+      })
     );
 
     if (error) {
@@ -365,14 +354,12 @@ export async function createBucket(
 /**
  * Delete storage bucket
  */
-export async function deleteBucket(
-  name: string
-): Promise<{ success: boolean; error?: any }> {
+export async function deleteBucket(name: string): Promise<{ success: boolean; error?: any }> {
   const manager = getInsForgeManager();
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) => client.storage.deleteBucket(name)
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.deleteBucket(name)
     );
 
     if (error) {
@@ -391,14 +378,12 @@ export async function deleteBucket(
 /**
  * Empty storage bucket
  */
-export async function emptyBucket(
-  name: string
-): Promise<{ success: boolean; error?: any }> {
+export async function emptyBucket(name: string): Promise<{ success: boolean; error?: any }> {
   const manager = getInsForgeManager();
 
   try {
-    const { error } = await manager.executeQuery(
-      async (client) => client.storage.emptyBucket(name)
+    const { error } = await manager.executeQuery(async (client) =>
+      client.storage.emptyBucket(name)
     );
 
     if (error) {

@@ -5,11 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { getInsforgeClient } from '@/lib/insforge';
-import {
-  UnauthorizedError,
-  ForbiddenError,
-  NotFoundError,
-} from '@/lib/errors/api-errors';
+import { UnauthorizedError, ForbiddenError, NotFoundError } from '@/lib/errors/api-errors';
 import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { logger } from '@/lib/utils/logger';
 
@@ -182,7 +178,7 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
       .eq('user_id', user.id);
 
     const role = (userShops?.[0]?.role as UserRole) || UserRole.CUSTOMER;
-    const shopIds = userShops?.map((s) => s.shop_id) || [];
+    const shopIds = userShops?.map((s: any) => s.shop_id) || [];
     const permissions = ROLE_PERMISSIONS[role] || [];
 
     return {
@@ -246,10 +242,7 @@ export async function requireRole(
 /**
  * Check if user owns a resource in a specific shop
  */
-export async function requireShopAccess(
-  user: AuthUser,
-  shopId: string
-): Promise<void> {
+export async function requireShopAccess(user: AuthUser, shopId: string): Promise<void> {
   if (user.role === UserRole.SUPER_ADMIN) {
     return; // Super admin has access to all shops
   }
@@ -315,9 +308,7 @@ export function getPrimaryShopId(user: AuthUser): string | null {
 /**
  * Middleware wrapper for protected routes
  */
-export function withAuth(
-  handler: (request: NextRequest, user: AuthUser) => Promise<Response>
-) {
+export function withAuth(handler: (request: NextRequest, user: AuthUser) => Promise<Response>) {
   return async (request: NextRequest): Promise<Response> => {
     const user = await requireAuth(request);
     return handler(request, user);

@@ -134,10 +134,9 @@ export class InsForgeQueryBuilder<T = any> {
     const manager = getInsForgeManager();
 
     return manager.executeQuery(async (client) => {
-      let query = client.database.from(this.table).select(
-        this.selectColumns,
-        this.countEnabled ? { count: 'exact' } : undefined
-      );
+      let query = client.database
+        .from(this.table)
+        .select(this.selectColumns, this.countEnabled ? { count: 'exact' } : undefined);
 
       // Apply filters
       for (const filter of this.filters) {
@@ -152,10 +151,7 @@ export class InsForgeQueryBuilder<T = any> {
       // Apply limit and offset
       if (this.limitValue !== undefined) {
         if (this.offsetValue !== undefined) {
-          query = query.range(
-            this.offsetValue,
-            this.offsetValue + this.limitValue - 1
-          );
+          query = query.range(this.offsetValue, this.offsetValue + this.limitValue - 1);
         } else {
           query = query.limit(this.limitValue);
         }
@@ -248,9 +244,8 @@ export async function bulkInsert<T>(
     const batch = items.slice(i, i + batchSize);
 
     try {
-      const { data, error } = await manager.executeQuery(
-        async (client) =>
-          client.database.from(table).insert(batch).select()
+      const { data, error } = await manager.executeQuery(async (client) =>
+        client.database.from(table).insert(batch).select()
       );
 
       if (error) {
@@ -316,14 +311,8 @@ export async function bulkUpdate<T>(
     await Promise.all(
       batch.map(async (update) => {
         try {
-          const { data, error } = await manager.executeQuery(
-            async (client) =>
-              client.database
-                .from(table)
-                .update(update.data)
-                .eq('id', update.id)
-                .select()
-                .single()
+          const { data, error } = await manager.executeQuery(async (client) =>
+            client.database.from(table).update(update.data).eq('id', update.id).select().single()
           );
 
           if (error) {
@@ -383,9 +372,8 @@ export async function bulkDelete(
     const batch = ids.slice(i, i + batchSize);
 
     try {
-      const { error } = await manager.executeQuery(
-        async (client) =>
-          client.database.from(table).delete().in('id', batch)
+      const { error } = await manager.executeQuery(async (client) =>
+        client.database.from(table).delete().in('id', batch)
       );
 
       if (error) {
@@ -412,12 +400,8 @@ export async function upsert<T>(
 ): Promise<{ data: T[] | null; error: any }> {
   const manager = getInsForgeManager();
 
-  return manager.executeQuery(
-    async (client) =>
-      client.database
-        .from(table)
-        .upsert(data, { onConflict: conflictColumn })
-        .select()
+  return manager.executeQuery(async (client) =>
+    client.database.from(table).upsert(data, { onConflict: conflictColumn }).select()
   );
 }
 
@@ -431,13 +415,12 @@ export async function softDelete(
   const manager = getInsForgeManager();
   const idArray = Array.isArray(ids) ? ids : [ids];
 
-  const { data, error } = await manager.executeQuery(
-    async (client) =>
-      client.database
-        .from(table)
-        .update({ deleted_at: new Date().toISOString() })
-        .in('id', idArray)
-        .select('id')
+  const { data, error } = await manager.executeQuery(async (client) =>
+    client.database
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', idArray)
+      .select('id')
   );
 
   if (error) {
@@ -454,7 +437,7 @@ export async function count(
   table: string,
   filters?: (builder: InsForgeQueryBuilder) => InsForgeQueryBuilder
 ): Promise<number> {
-  let builder = query(table).select('id', true).withCount();
+  let builder = query(table).select('id').withCount();
 
   if (filters) {
     builder = filters(builder);

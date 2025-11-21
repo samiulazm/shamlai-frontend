@@ -169,11 +169,7 @@ class InsForgeClientManager {
           lastError = error;
 
           // Don't retry on validation errors or 4xx errors
-          if (
-            error?.status >= 400 &&
-            error?.status < 500 &&
-            error?.status !== 429
-          ) {
+          if (error?.status >= 400 && error?.status < 500 && error?.status !== 429) {
             throw error;
           }
 
@@ -232,8 +228,7 @@ class InsForgeClientManager {
     return {
       ...this.pool.stats,
       poolSize: this.config.poolSize,
-      availableConnections:
-        this.pool.available.filter((a) => a).length,
+      availableConnections: this.pool.available.filter((a) => a).length,
     };
   }
 
@@ -276,10 +271,7 @@ class InsForgeClientManager {
       const client = await this.getClient();
 
       // Try a simple query
-      const { error } = await client.database
-        .from('shop_settings')
-        .select('id')
-        .limit(1);
+      const { error } = await client.database.from('shop_settings').select('id').limit(1);
 
       this.releaseClient(client);
 
@@ -320,4 +312,22 @@ export async function executeInsForgeQuery<T>(
 ): Promise<T> {
   const manager = getInsForgeManager();
   return manager.executeQuery(operation, options);
+}
+
+/**
+ * Get a simple InsForge client (without pooling)
+ * For simple operations that don't need the full manager
+ */
+export function getInsforgeClient() {
+  const config: InsForgeClientConfig = {
+    baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
+    anonKey: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY,
+    serviceKey: process.env.INSFORGE_SERVICE_KEY,
+  };
+
+  return createClient({
+    baseUrl: config.baseUrl,
+    ...(config.anonKey && { anonKey: config.anonKey }),
+    ...(config.serviceKey && { serviceKey: config.serviceKey }),
+  });
 }

@@ -37,6 +37,7 @@ export {
   getInsForgeManager,
   initializeInsForgeManager,
   executeInsForgeQuery,
+  getInsforgeClient,
   type InsForgeClientConfig,
 } from './client-manager';
 

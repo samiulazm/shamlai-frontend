@@ -12,11 +12,7 @@ import { getInsforgeClient } from '@/lib/insforge';
 import { logger } from '@/lib/utils/logger';
 import { validateBody, validateSearchParams } from '@/lib/validation/validator';
 import { addToCartSchema, updateCartItemSchema } from '@/lib/validation/schemas';
-import {
-  withErrorHandler,
-  NotFoundError,
-  BadRequestError,
-} from '@/lib/errors/api-errors';
+import { withErrorHandler, NotFoundError, BadRequestError } from '@/lib/errors/api-errors';
 import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { z } from 'zod';
 
@@ -31,10 +27,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Validate query parameters
-  const { sessionId } = validateSearchParams(
-    request,
-    z.object({ sessionId: z.string().min(1) })
-  );
+  const { sessionId } = validateSearchParams(request, z.object({ sessionId: z.string().min(1) }));
 
   const client = getInsforgeClient();
 
@@ -52,13 +45,16 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   // Get cart items with product details
   const { data: items } = await client.database
     .from('cart_items')
-    .select(`
+    .select(
+      `
       *,
       product:products(id, name, price, image_url, stock_quantity)
-    `)
+    `
+    )
     .eq('cart_id', cart.id);
 
-  const total = items?.reduce((sum, item) => sum + parseFloat(item.subtotal.toString()), 0) || 0;
+  const total =
+    items?.reduce((sum: number, item: any) => sum + parseFloat(item.subtotal.toString()), 0) || 0;
 
   return NextResponse.json({
     cart: {
@@ -146,23 +142,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const newSubtotal = price * newQuantity;
 
   // Use upsert to handle concurrent requests atomically
-  const { error: itemError } = await client.database
-    .from('cart_items')
-    .upsert(
-      {
-        id: existingItem?.id,
-        cart_id: cart.id,
-        product_id: productId,
-        variant_id: variantId || null,
-        quantity: newQuantity,
-        price,
-        subtotal: newSubtotal,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: existingItem ? 'id' : undefined,
-      }
-    );
+  const { error: itemError } = await client.database.from('cart_items').upsert(
+    {
+      id: existingItem?.id,
+      cart_id: cart.id,
+      product_id: productId,
+      variant_id: variantId || null,
+      quantity: newQuantity,
+      price,
+      subtotal: newSubtotal,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: existingItem ? 'id' : undefined,
+    }
+  );
 
   if (itemError) {
     logger.error('Failed to add item to cart', { error: itemError, productId });
@@ -205,10 +199,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
 
   // If quantity is 0, delete the item
   if (quantity === 0) {
-    const { error } = await client.database
-      .from('cart_items')
-      .delete()
-      .eq('id', cartItemId);
+    const { error } = await client.database.from('cart_items').delete().eq('id', cartItemId);
 
     if (error) {
       logger.error('Failed to remove cart item', { error, cartItemId });
@@ -286,10 +277,7 @@ export const DELETE = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Validate query parameters
-  const { sessionId } = validateSearchParams(
-    request,
-    z.object({ sessionId: z.string().min(1) })
-  );
+  const { sessionId } = validateSearchParams(request, z.object({ sessionId: z.string().min(1) }));
 
   const client = getInsforgeClient();
 
@@ -308,10 +296,7 @@ export const DELETE = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Delete all cart items
-  const { error } = await client.database
-    .from('cart_items')
-    .delete()
-    .eq('cart_id', cart.id);
+  const { error } = await client.database.from('cart_items').delete().eq('cart_id', cart.id);
 
   if (error) {
     logger.error('Failed to clear cart', { error, cartId: cart.id });
