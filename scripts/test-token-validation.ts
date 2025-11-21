@@ -5,7 +5,7 @@
  * Tests if the backend's /api/auth/user endpoint accepts a valid token
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 

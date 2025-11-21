@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface Wishlist {
@@ -37,21 +37,25 @@ export default function Wishlists() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch wishlists with customer and product information
-      const { data: wishlistsData, error: wishlistsError } = await insforgeClient.database
+      const { data: wishlistsData, error: wishlistsError } = await supabaseClient
         .from('wishlists')
-        .select(`
+        .select(
+          `
           *,
           customer:customers(full_name, email),
           product:products(name, base_price, inventory_quantity)
-        `)
-        .eq('shop_id', user.user.id)
+        `
+        )
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       if (wishlistsError) {

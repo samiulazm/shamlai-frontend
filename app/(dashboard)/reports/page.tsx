@@ -1,15 +1,15 @@
-"use client";
-import { useEffect, useState } from "react";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
+'use client';
+import { useEffect, useState } from 'react';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabaseClient } from '@/lib/supabase';
+import { logger } from '@/lib/utils/logger';
 
 interface SalesData {
   name: string;
   sales: number;
 }
 
-export default function Reports(){
+export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -25,23 +25,26 @@ export default function Reports(){
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch orders for analytics
-      const { data: orders, error: ordersError } = await insforgeClient.database
+      const { data: orders, error: ordersError } = await supabaseClient
         .from('orders')
         .select('total, created_at, status')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
 
       // Calculate totals
-      const revenue = orders?.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0) || 0;
+      const revenue =
+        orders?.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0) || 0;
       const orderCount = orders?.length || 0;
       setTotalRevenue(revenue);
       setTotalOrders(orderCount);
@@ -51,11 +54,11 @@ export default function Reports(){
       const now = new Date();
       const monthlySales: Record<string, number> = {};
 
-      orders?.forEach(order => {
+      orders?.forEach((order) => {
         const orderDate = new Date(order.created_at);
         const monthIndex = orderDate.getMonth();
         const monthName = months[monthIndex];
-        
+
         if (monthlySales[monthName]) {
           monthlySales[monthName] += parseFloat(order.total.toString());
         } else {
@@ -63,9 +66,9 @@ export default function Reports(){
         }
       });
 
-      const chartData = months.map(month => ({
+      const chartData = months.map((month) => ({
         name: month,
-        sales: monthlySales[month] || 0
+        sales: monthlySales[month] || 0,
       }));
 
       setSalesData(chartData);
@@ -96,7 +99,9 @@ export default function Reports(){
           <div className="card-pad">
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error: {error}</p>
-              <button onClick={fetchReports} className="btn btn-outline">Try Again</button>
+              <button onClick={fetchReports} className="btn btn-outline">
+                Try Again
+              </button>
             </div>
           </div>
         </div>
@@ -107,7 +112,7 @@ export default function Reports(){
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Reports</h1>
-      
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card">
           <div className="card-pad">

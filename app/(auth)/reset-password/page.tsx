@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 export default function ResetPassword() {
@@ -18,11 +18,9 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const { resetPasswordForEmail } = await import('@/lib/insforge');
-      const { error: resetError } = await resetPasswordForEmail(
-        email,
-        `${window.location.origin}/update-password`
-      );
+      const { error: resetError } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
 
       if (resetError) {
         setError(resetError.message || 'Failed to send reset email');

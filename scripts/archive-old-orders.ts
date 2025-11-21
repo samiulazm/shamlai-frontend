@@ -15,7 +15,7 @@
  *   --force    - Skip confirmation prompt
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 const ARCHIVE_AGE_YEARS = 2;

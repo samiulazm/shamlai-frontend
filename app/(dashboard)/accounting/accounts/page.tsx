@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface Account {
@@ -36,10 +36,12 @@ export default function Accounts() {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
 
       // Fetch accounts (would come from accounts table)
       // For now, simulate with empty array
@@ -60,13 +62,13 @@ export default function Accounts() {
     try {
       if (editingAccount) {
         // Update account
-        // await insforgeClient.database
+        // await supabaseClient
         //   .from('accounts')
         //   .update(formData)
         //   .eq('id', editingAccount.id);
       } else {
         // Create account
-        // await insforgeClient.database
+        // await supabaseClient
         //   .from('accounts')
         //   .insert([{ ...formData, shop_id: shopId }]);
       }
@@ -89,7 +91,7 @@ export default function Accounts() {
     if (!confirm('Are you sure you want to delete this account?')) return;
 
     try {
-      // await insforgeClient.database
+      // await supabaseClient
       //   .from('accounts')
       //   .delete()
       //   .eq('id', id);

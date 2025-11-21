@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient, chatCompletion, generateAIContent } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
+// Note: AI functions (chatCompletion, generateAIContent) need external integration
 import { logger } from '@/lib/utils/logger';
 
 interface Conversation {
@@ -28,14 +29,16 @@ export default function Chatbot() {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch chatbot conversations with message count
-      const { data: convData, error: convError } = await insforgeClient.database
+      const { data: convData, error: convError } = await supabaseClient
         .from('chatbot_conversations')
         .select(
           `
@@ -43,7 +46,7 @@ export default function Chatbot() {
           chatbot_messages (id, created_at)
         `
         )
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(10);
 

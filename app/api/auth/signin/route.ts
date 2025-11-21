@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { validateBody } from '@/lib/validation/validator';
 import { signinSchema } from '@/lib/validation/schemas';
 import { withErrorHandler, UnauthorizedError } from '@/lib/errors/api-errors';
@@ -9,14 +9,15 @@ import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { auditAuthEvent, AuditAction } from '@/lib/services/audit';
 import { getClientIP } from '@/lib/redis/rate-limiter';
 
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
-const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_INSFORGE_URL ||
+  'http://119.40.88.49:7130';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 
-// Create InsForge client for server-side use (no mixed content issues here)
-const insforgeClient = createClient({
-  baseUrl: INSFORGE_URL,
-  ...(INSFORGE_ANON_KEY && { anonKey: INSFORGE_ANON_KEY }),
-});
+// Create Supabase client for server-side use (no mixed content issues here)
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '');
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   // Apply rate limiting (5 requests per minute)
@@ -28,8 +29,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Validate request body
   const { email, password, rememberMe } = await validateBody(request, signinSchema);
 
-  // Use the InsForge SDK directly (server-side, no mixed content issues)
-  const { data, error } = await insforgeClient.auth.signInWithPassword({
+  // Use the Supabase SDK directly (server-side, no mixed content issues)
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
     email,
     password,
   });
@@ -65,10 +66,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const response = NextResponse.json(data, { status: 200 });
 
   // Set access token in cookie with SECURE settings
-  if (data?.accessToken) {
+  if (data?.session?.access_token) {
     const cookieMaxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7; // 30 days if remember me, else 7 days
 
-    response.cookies.set('insforge_access_token', data.accessToken, {
+    response.cookies.set('supabase_access_token', data.session.access_token, {
       httpOnly: true, // SECURITY FIX: Prevent XSS attacks by making cookie inaccessible to JavaScript
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax', // CSRF protection

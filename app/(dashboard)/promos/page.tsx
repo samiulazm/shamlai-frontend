@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as MarketingService from '@/lib/services/marketing';
 import { logger } from '@/lib/utils/logger';
 import type { DiscountCode } from '@/lib/types/database';
@@ -33,13 +33,15 @@ export default function Promos() {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      const response = await MarketingService.getDiscountCodes(user.user.id, {
+      const response = await MarketingService.getDiscountCodes(user.id, {
         page: 1,
         pageSize: 50,
       });
@@ -68,14 +70,16 @@ export default function Promos() {
       setCreating(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       await MarketingService.createDiscountCode({
-        shop_id: user.user.id,
+        shop_id: user.id,
         code: formData.code.toUpperCase(),
         discount_type: formData.discount_type,
         discount_value: formData.discount_value,

@@ -1,5 +1,5 @@
 // Product Service - Comprehensive product management functions
-import { insforgeClient, STORAGE_BUCKETS, uploadFileWithRetry, deleteFile } from '../insforge';
+import { supabaseClient, STORAGE_BUCKETS, uploadFileWithRetry, deleteFile } from '../supabase';
 import { logger } from '../utils/logger';
 import { cacheAside, getCached, setCached, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type {
@@ -75,10 +75,7 @@ async function fetchProducts(
 ): Promise<PaginatedResponse<Product>> {
   const offset = (page - 1) * pageSize;
 
-  let query = insforgeClient.database
-    .from('products')
-    .select('*', { count: 'exact' })
-    .eq('shop_id', shopId);
+  let query = supabaseClient.from('products').select('*', { count: 'exact' }).eq('shop_id', shopId);
 
   // Apply filters
   if (filters?.categoryId) {
@@ -138,7 +135,7 @@ export async function getProductById(productId: string): Promise<
     return await cacheAside(
       cacheKey,
       async () => {
-        const { data: product, error } = await insforgeClient.database
+        const { data: product, error } = await supabaseClient
           .from('products')
           .select('*')
           .eq('id', productId)
@@ -149,24 +146,20 @@ export async function getProductById(productId: string): Promise<
 
         // Fetch related data in parallel
         const [imagesResult, variantsResult, categoryResult] = await Promise.all([
-          insforgeClient.database
+          supabaseClient
             .from('product_images')
             .select('*')
             .eq('product_id', productId)
             .order('sort_order', { ascending: true }),
 
-          insforgeClient.database
+          supabaseClient
             .from('product_variants')
             .select('*')
             .eq('product_id', productId)
             .eq('is_active', true),
 
           product.category_id
-            ? insforgeClient.database
-                .from('categories')
-                .select('*')
-                .eq('id', product.category_id)
-                .single()
+            ? supabaseClient.from('categories').select('*').eq('id', product.category_id).single()
             : Promise.resolve({ data: null, error: null }),
         ]);
 
@@ -196,11 +189,7 @@ export async function getProductById(productId: string): Promise<
  */
 export async function getProductBySlug(slug: string, shopId?: string) {
   try {
-    let query = insforgeClient.database
-      .from('products')
-      .select('*')
-      .eq('slug', slug)
-      .eq('is_active', true);
+    let query = supabaseClient.from('products').select('*').eq('slug', slug).eq('is_active', true);
 
     if (shopId) {
       query = query.eq('shop_id', shopId);
@@ -232,7 +221,7 @@ export async function getProductBySlug(slug: string, shopId?: string) {
 export async function createProduct(productData: ProductInsert, images?: File[]): Promise<Product> {
   try {
     // Create product
-    const { data: product, error: productError } = await insforgeClient.database
+    const { data: product, error: productError } = await supabaseClient
       .from('products')
       .insert([productData])
       .select()
@@ -266,7 +255,7 @@ export async function createProduct(productData: ProductInsert, images?: File[])
  */
 export async function updateProduct(productId: string, updates: ProductUpdate): Promise<Product> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('products')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', productId)
@@ -300,13 +289,13 @@ export async function updateProduct(productId: string, updates: ProductUpdate): 
 export async function deleteProduct(productId: string): Promise<void> {
   try {
     // Get product info first to invalidate shop cache
-    const { data: product } = await insforgeClient.database
+    const { data: product } = await supabaseClient
       .from('products')
       .select('shop_id')
       .eq('id', productId)
       .single();
 
-    const { error } = await insforgeClient.database
+    const { error } = await supabaseClient
       .from('products')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', productId);
@@ -355,8 +344,8 @@ export async function addProductImages(productId: string, images: File[]): Promi
 
       return {
         product_id: productId,
-        image_url: uploadData.url || '',
-        image_key: uploadData.key || fileName,
+        image_url: uploadData.fullPath || '',
+        image_key: uploadData.path || fileName,
         sort_order: index,
         is_primary: index === 0,
       };
@@ -364,7 +353,7 @@ export async function addProductImages(productId: string, images: File[]): Promi
 
     const imageRecords = await Promise.all(uploadPromises);
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('product_images')
       .insert(imageRecords)
       .select();
@@ -390,7 +379,7 @@ export async function addProductImages(productId: string, images: File[]): Promi
 export async function deleteProductImage(imageId: string): Promise<void> {
   try {
     // Get image details first to delete from storage
-    const { data: image, error: fetchError } = await insforgeClient.database
+    const { data: image, error: fetchError } = await supabaseClient
       .from('product_images')
       .select('*')
       .eq('id', imageId)
@@ -404,10 +393,7 @@ export async function deleteProductImage(imageId: string): Promise<void> {
     }
 
     // Delete from database
-    const { error } = await insforgeClient.database
-      .from('product_images')
-      .delete()
-      .eq('id', imageId);
+    const { error } = await supabaseClient.from('product_images').delete().eq('id', imageId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -433,7 +419,7 @@ export async function createProductVariant(
   variantData: Omit<ProductVariant, 'id' | 'created_at' | 'updated_at'>
 ): Promise<ProductVariant> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('product_variants')
       .insert([variantData])
       .select()
@@ -461,7 +447,7 @@ export async function updateProductVariant(
   updates: Partial<ProductVariant>
 ): Promise<ProductVariant> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('product_variants')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', variantId)
@@ -487,7 +473,7 @@ export async function updateProductVariant(
  */
 export async function deleteProductVariant(variantId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database
+    const { error } = await supabaseClient
       .from('product_variants')
       .update({ is_active: false })
       .eq('id', variantId);
@@ -526,14 +512,14 @@ export async function updateInventory(
     let currentQuantity: number;
 
     if (variantId) {
-      const { data: variant } = await insforgeClient.database
+      const { data: variant } = await supabaseClient
         .from('product_variants')
         .select('inventory_quantity')
         .eq('id', variantId)
         .single();
       currentQuantity = variant?.inventory_quantity || 0;
     } else {
-      const { data: product } = await insforgeClient.database
+      const { data: product } = await supabaseClient
         .from('products')
         .select('inventory_quantity')
         .eq('id', productId)
@@ -545,19 +531,19 @@ export async function updateInventory(
 
     // Update quantity
     if (variantId) {
-      await insforgeClient.database
+      await supabaseClient
         .from('product_variants')
         .update({ inventory_quantity: newQuantity })
         .eq('id', variantId);
     } else {
-      await insforgeClient.database
+      await supabaseClient
         .from('products')
         .update({ inventory_quantity: newQuantity })
         .eq('id', productId);
     }
 
     // Log the change
-    await insforgeClient.database.from('inventory_logs').insert([
+    await supabaseClient.from('inventory_logs').insert([
       {
         product_id: productId,
         variant_id: variantId,
@@ -591,7 +577,7 @@ export async function getInventoryLogs(
   variantId?: string
 ): Promise<InventoryLog[]> {
   try {
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('inventory_logs')
       .select('*')
       .eq('product_id', productId)
@@ -627,7 +613,7 @@ export async function getInventoryLogs(
  */
 export async function getCategories(shopId?: string): Promise<Category[]> {
   try {
-    const query = insforgeClient.database
+    const query = supabaseClient
       .from('categories')
       .select('*')
       .eq('is_active', true)
@@ -653,7 +639,7 @@ export async function createCategory(
   categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Category> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('categories')
       .insert([categoryData])
       .select()
@@ -681,7 +667,7 @@ export async function updateCategory(
   updates: Partial<Category>
 ): Promise<Category> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('categories')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', categoryId)
@@ -714,7 +700,7 @@ export async function getProductsByCategory(
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('products')
       .select('*', { count: 'exact' })
       .eq('category_id', categoryId)

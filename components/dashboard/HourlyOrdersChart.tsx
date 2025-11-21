@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface HourlyOrdersWidgetProps {
@@ -51,7 +51,7 @@ export default function HourlyOrdersWidget({ shopId }: HourlyOrdersWidgetProps) 
       yesterdayEnd.setHours(23, 59, 59, 999);
 
       // Fetch today's orders
-      const { data: todayOrders, error: todayError } = await insforgeClient.database
+      const { data: todayOrders, error: todayError } = await supabaseClient
         .from('orders')
         .select('created_at')
         .eq('shop_id', shopId)
@@ -62,7 +62,7 @@ export default function HourlyOrdersWidget({ shopId }: HourlyOrdersWidgetProps) 
       if (todayError) throw todayError;
 
       // Fetch yesterday's orders
-      const { data: yesterdayOrders, error: yesterdayError } = await insforgeClient.database
+      const { data: yesterdayOrders, error: yesterdayError } = await supabaseClient
         .from('orders')
         .select('created_at')
         .eq('shop_id', shopId)

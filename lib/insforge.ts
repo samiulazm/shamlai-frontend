@@ -1,4 +1,4 @@
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { logger } from './utils/logger';
 
 // InsForge Backend Configuration
@@ -766,7 +766,7 @@ export const executeWithRetry = async <T>(
  */
 export const callRPC = async <T = any>(functionName: string, params?: Record<string, any>) => {
   try {
-    const dbClient = insforgeClient.database as any;
+    const dbClient = insforgeClient as any;
 
     // Try rpc method if available
     if (dbClient.rpc) {
@@ -825,7 +825,7 @@ export const executeBatch = async <T = any>(
  */
 export const upsert = async <T = any>(table: string, data: any, conflictColumn: string = 'id') => {
   try {
-    const { data: result, error } = await insforgeClient.database
+    const { data: result, error } = await insforgeClient
       .from(table)
       .upsert(data, { onConflict: conflictColumn })
       .select()
@@ -845,7 +845,7 @@ export const upsert = async <T = any>(table: string, data: any, conflictColumn: 
  */
 export const bulkInsert = async <T = any>(table: string, records: any[]) => {
   try {
-    const { data, error } = await insforgeClient.database.from(table).insert(records).select();
+    const { data, error } = await insforgeClient.from(table).insert(records).select();
 
     if (error) throw error;
     return { data: data as T[], error: null };
@@ -866,7 +866,7 @@ export const bulkUpdate = async <T = any>(
   filter: { column: string; operator: 'eq' | 'in' | 'gt' | 'lt' | 'gte' | 'lte'; value: any }
 ) => {
   try {
-    let query = insforgeClient.database.from(table).update(updates);
+    let query = insforgeClient.from(table).update(updates);
 
     // Apply filter
     if (filter.operator === 'eq') {

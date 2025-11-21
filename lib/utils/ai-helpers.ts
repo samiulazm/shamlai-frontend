@@ -1,5 +1,6 @@
 // AI helper utilities for common e-commerce tasks
-import { generateAIContent, chatCompletion } from '../insforge';
+// Note: AI helpers temporarily disabled - Supabase doesn't have built-in AI functions like Insforge
+// import { generateAIContent, chatCompletion } from '../supabase';
 import { logger } from './logger';
 
 /**
@@ -29,20 +30,23 @@ Tone: ${tone}
 Length: 150-200 words
 Include: Key features, benefits, and a call-to-action`;
 
-    const { data, error } = await generateAIContent(prompt, {
-      model: 'gpt-4',
-      temperature: 0.7,
-      maxTokens: 300,
-      systemPrompt:
-        'You are an expert e-commerce copywriter specializing in product descriptions that convert.',
-    });
+    // TODO: Implement AI integration with external service (OpenAI, etc.)
+    // const { data, error } = await generateAIContent(prompt, {
+    //   model: 'gpt-4',
+    //   temperature: 0.7,
+    //   maxTokens: 300,
+    //   systemPrompt:
+    //     'You are an expert e-commerce copywriter specializing in product descriptions that convert.',
+    // });
+    const error = new Error('AI integration not available');
 
     if (error) {
       logger.warn('AI description generation failed, using fallback', error);
       return generateFallbackDescription(productName, productDetails);
     }
 
-    return data?.content || generateFallbackDescription(productName, productDetails);
+    // return data?.content || generateFallbackDescription(productName, productDetails);
+    return generateFallbackDescription(productName, productDetails);
   } catch (err) {
     logger.error(
       'Error generating product description',
@@ -70,17 +74,20 @@ Requirements:
 - Include a call-to-action
 - SEO optimized`;
 
-    const { data, error } = await generateAIContent(prompt, {
-      model: 'gpt-4',
-      temperature: 0.5,
-      maxTokens: 100,
-    });
+    // TODO: Implement AI integration with external service (OpenAI, etc.)
+    // const { data, error } = await generateAIContent(prompt, {
+    //   model: 'gpt-4',
+    //   temperature: 0.5,
+    //   maxTokens: 100,
+    // });
+    const error = new Error('AI integration not available');
 
     if (error) {
       return `${productName} - ${productDescription.substring(0, 120)}...`;
     }
 
-    return data?.content || `${productName} - ${productDescription.substring(0, 120)}...`;
+    // return data?.content || `${productName} - ${productDescription.substring(0, 120)}...`;
+    return `${productName} - ${productDescription.substring(0, 120)}...`;
   } catch (err) {
     logger.error(
       'Error generating SEO meta description',
@@ -128,18 +135,23 @@ export async function generateSupportResponse(
       content: customerQuestion,
     });
 
-    const { data, error } = await chatCompletion(messages, {
-      model: 'gpt-4',
-      temperature: 0.7,
-      maxTokens: 500,
-    });
+    // TODO: Implement AI integration with external service (OpenAI, etc.)
+    // const { data, error } = await chatCompletion(messages, {
+    //   model: 'gpt-4',
+    //   temperature: 0.7,
+    //   maxTokens: 500,
+    // });
+    const error = new Error('AI integration not available');
+    // const data = null;
 
+    // AI integration is not available - return fallback response
     if (error) {
-      logger.warn('AI support response generation failed', error);
+      logger.warn('AI support response generation failed - using fallback', error);
       return 'Thank you for contacting us. Our team will get back to you shortly.';
     }
 
-    return data?.content || 'Thank you for contacting us. Our team will get back to you shortly.';
+    // return data?.content || 'Thank you for contacting us. Our team will get back to you shortly.';
+    return 'Thank you for contacting us. Our team will get back to you shortly.';
   } catch (err) {
     logger.error(
       'Error generating support response',

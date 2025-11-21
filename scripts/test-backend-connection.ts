@@ -9,7 +9,7 @@
  *   npx tsx scripts/test-backend-connection.ts
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
 

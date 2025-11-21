@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Shield, AlertTriangle } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface BlockedItem {
@@ -31,15 +31,17 @@ export default function BlockList() {
   const fetchBlockList = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
 
       // Fetch blocked items (this would come from a block_list table)
       // For now, we'll simulate with empty array
       // In production, this would be:
-      // const { data } = await insforgeClient.database
+      // const { data } = await supabaseClient
       //   .from('block_list')
       //   .select('*')
       //   .eq('shop_id', user.user.id);
@@ -64,7 +66,7 @@ export default function BlockList() {
     try {
       // Add to block list
       // In production:
-      // await insforgeClient.database
+      // await supabaseClient
       //   .from('block_list')
       //   .insert([{
       //     shop_id: shopId,
@@ -99,7 +101,7 @@ export default function BlockList() {
     try {
       // Remove from block list
       // In production:
-      // await insforgeClient.database
+      // await supabaseClient
       //   .from('block_list')
       //   .delete()
       //   .eq('id', id);

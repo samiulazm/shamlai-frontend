@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as ShopService from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
 import type { ShopSettings } from '@/lib/types/database';
@@ -29,13 +29,15 @@ export default function SeoMarketing() {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      const shopSettings = await ShopService.getShopSettings(user.user.id);
+      const shopSettings = await ShopService.getShopSettings(user.id);
 
       if (shopSettings) {
         setSettings(shopSettings);
@@ -65,14 +67,16 @@ export default function SeoMarketing() {
       setError(null);
       setSuccess(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Update shop settings with SEO fields
-      const updatedSettings = await ShopService.upsertShopSettings(user.user.id, {
+      const updatedSettings = await ShopService.upsertShopSettings(user.id, {
         meta_title: formData.meta_title || undefined,
         meta_description: formData.meta_description || undefined,
         facebook_pixel_id: formData.facebook_pixel_id || undefined,

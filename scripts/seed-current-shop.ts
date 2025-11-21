@@ -2,7 +2,7 @@
  * Seed products to currently logged-in user's shop
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { seedAllData } from '../lib/utils/seed-data';
 
 const insforgeClient = createClient({

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, UserCheck, Clock } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';
 
@@ -30,10 +30,12 @@ export default function FollowUps() {
   const fetchFollowUps = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
       setFollowUps([]);
     } catch (error) {
       logger.error(

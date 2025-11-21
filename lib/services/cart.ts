@@ -1,5 +1,5 @@
 // Cart Service - Shopping cart management functions
-import { insforgeClient, executeWithRetry } from '../insforge';
+import { supabaseClient, executeWithRetry } from '../supabase';
 import { logger } from '../utils/logger';
 import { cacheAside, invalidateCache, CACHE_TTL, REDIS_KEYS } from '../redis';
 import type { Cart, CartItem, Product, ProductVariant } from '../types/database';
@@ -13,7 +13,7 @@ import type { Cart, CartItem, Product, ProductVariant } from '../types/database'
  */
 export async function getOrCreateCart(userId?: string, sessionId?: string): Promise<Cart> {
   try {
-    let query = insforgeClient.database.from('cart').select('*');
+    let query = supabaseClient.from('cart').select('*');
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -34,7 +34,7 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Cart expires in 7 days
 
-    const { data: newCart, error } = await insforgeClient.database
+    const { data: newCart, error } = await supabaseClient
       .from('cart')
       .insert([
         {
@@ -83,11 +83,7 @@ export async function getCartWithItems(cartId: string): Promise<
       async () => {
         // Get cart with retry logic
         const { data: cart, error: cartError } = await executeWithRetry(async () => {
-          const result = await insforgeClient.database
-            .from('cart')
-            .select('*')
-            .eq('id', cartId)
-            .single();
+          const result = await supabaseClient.from('cart').select('*').eq('id', cartId).single();
           return result;
         });
 
@@ -95,7 +91,7 @@ export async function getCartWithItems(cartId: string): Promise<
 
         // Get cart items with product and variant details using joins (fixes N+1 query)
         const { data: items, error: itemsError } = await executeWithRetry(async () => {
-          const result = await insforgeClient.database
+          const result = await supabaseClient
             .from('cart_items')
             .select(
               `
@@ -169,7 +165,7 @@ export async function addToCart(
     let trackInventory: boolean;
 
     if (variantId) {
-      const { data: variant, error: variantError } = await insforgeClient.database
+      const { data: variant, error: variantError } = await supabaseClient
         .from('product_variants')
         .select('price, inventory_quantity, product_id')
         .eq('id', variantId)
@@ -180,7 +176,7 @@ export async function addToCart(
       }
 
       // Get product to check if inventory tracking is enabled
-      const { data: product } = await insforgeClient.database
+      const { data: product } = await supabaseClient
         .from('products')
         .select('track_inventory')
         .eq('id', variant.product_id)
@@ -190,7 +186,7 @@ export async function addToCart(
       availableQuantity = variant.inventory_quantity;
       trackInventory = product?.track_inventory || false;
     } else {
-      const { data: product, error: productError } = await insforgeClient.database
+      const { data: product, error: productError } = await supabaseClient
         .from('products')
         .select('base_price, inventory_quantity, track_inventory')
         .eq('id', productId)
@@ -210,7 +206,7 @@ export async function addToCart(
     }
 
     // Check if item already exists in cart
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('cart_items')
       .select('*')
       .eq('cart_id', cartId)
@@ -228,7 +224,7 @@ export async function addToCart(
 
     if (existingItem) {
       // Update quantity if item exists
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('cart_items')
         .update({
           quantity: existingItem.quantity + quantity,
@@ -243,7 +239,7 @@ export async function addToCart(
       result = data;
     } else {
       // Add new item
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('cart_items')
         .insert([
           {
@@ -289,7 +285,7 @@ export async function updateCartItemQuantity(itemId: string, quantity: number): 
       return await removeFromCart(itemId);
     }
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('cart_items')
       .update({
         quantity,
@@ -324,13 +320,13 @@ export async function updateCartItemQuantity(itemId: string, quantity: number): 
 export async function removeFromCart(itemId: string): Promise<CartItem> {
   try {
     // Get cart_id before deleting
-    const { data: item } = await insforgeClient.database
+    const { data: item } = await supabaseClient
       .from('cart_items')
       .select('cart_id')
       .eq('id', itemId)
       .single();
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('cart_items')
       .delete()
       .eq('id', itemId)
@@ -362,10 +358,7 @@ export async function removeFromCart(itemId: string): Promise<CartItem> {
  */
 export async function clearCart(cartId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database
-      .from('cart_items')
-      .delete()
-      .eq('cart_id', cartId);
+    const { error } = await supabaseClient.from('cart_items').delete().eq('cart_id', cartId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -385,7 +378,7 @@ export async function mergeGuestCart(guestSessionId: string, userId: string): Pr
     const userCart = await getOrCreateCart(userId);
 
     // Get guest cart
-    const { data: guestCart } = await insforgeClient.database
+    const { data: guestCart } = await supabaseClient
       .from('cart')
       .select('*')
       .eq('session_id', guestSessionId)
@@ -396,7 +389,7 @@ export async function mergeGuestCart(guestSessionId: string, userId: string): Pr
     }
 
     // Get guest cart items
-    const { data: guestItems } = await insforgeClient.database
+    const { data: guestItems } = await supabaseClient
       .from('cart_items')
       .select('*')
       .eq('cart_id', guestCart.id);
@@ -409,7 +402,7 @@ export async function mergeGuestCart(guestSessionId: string, userId: string): Pr
     }
 
     // Delete guest cart
-    await insforgeClient.database.from('cart').delete().eq('id', guestCart.id);
+    await supabaseClient.from('cart').delete().eq('id', guestCart.id);
 
     return userCart;
   } catch (error: any) {
@@ -515,7 +508,7 @@ export async function calculateCartTotals(
 
     // Calculate discount
     if (discountCode) {
-      const { data: discount } = await insforgeClient.database
+      const { data: discount } = await supabaseClient
         .from('discount_codes')
         .select('*')
         .eq('code', discountCode)
@@ -548,7 +541,7 @@ export async function calculateCartTotals(
 
     // Calculate shipping
     if (shippingMethodId) {
-      const { data: shippingMethod } = await insforgeClient.database
+      const { data: shippingMethod } = await supabaseClient
         .from('shipping_methods')
         .select('*')
         .eq('id', shippingMethodId)

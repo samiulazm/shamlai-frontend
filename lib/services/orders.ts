@@ -1,5 +1,5 @@
 // Order Service - Comprehensive order management functions
-import { insforgeClient, executeWithRetry } from '../insforge';
+import { supabaseClient, executeWithRetry } from '../supabase';
 import { logger } from '../utils/logger';
 import type {
   Order,
@@ -36,10 +36,7 @@ export async function getOrders(
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
-      .from('orders')
-      .select('*', { count: 'exact' })
-      .eq('shop_id', shopId);
+    let query = supabaseClient.from('orders').select('*', { count: 'exact' }).eq('shop_id', shopId);
 
     // Apply filters
     if (filters?.status) {
@@ -105,7 +102,7 @@ export async function getOrderById(orderId: string): Promise<
   }
 > {
   try {
-    const { data: order, error } = await insforgeClient.database
+    const { data: order, error } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('id', orderId)
@@ -116,9 +113,9 @@ export async function getOrderById(orderId: string): Promise<
 
     // Fetch order items and customer
     const [itemsResult, customerResult] = await Promise.all([
-      insforgeClient.database.from('order_items').select('*').eq('order_id', orderId),
+      supabaseClient.from('order_items').select('*').eq('order_id', orderId),
 
-      insforgeClient.database.from('customers').select('*').eq('id', order.customer_id).single(),
+      supabaseClient.from('customers').select('*').eq('id', order.customer_id).single(),
     ]);
 
     return {
@@ -147,7 +144,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<
   }
 > {
   try {
-    const { data: order, error } = await insforgeClient.database
+    const { data: order, error } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('order_number', orderNumber)
@@ -193,7 +190,7 @@ export async function createOrder(
 
     // Create order with retry logic for reliability
     const { data: order, error: orderError } = await executeWithRetry(async () => {
-      const result = await insforgeClient.database
+      const result = await supabaseClient
         .from('orders')
         .insert([{ ...orderData, order_number: orderNumber }])
         .select()
@@ -210,7 +207,7 @@ export async function createOrder(
     }));
 
     const { error: itemsError } = await executeWithRetry(async () => {
-      const result = await insforgeClient.database.from('order_items').insert(orderItems);
+      const result = await supabaseClient.from('order_items').insert(orderItems);
       return result;
     });
 
@@ -273,7 +270,7 @@ export async function updateOrderStatus(
 
     // Update order with retry logic
     const { data: order, error } = await executeWithRetry(async () => {
-      const result = await insforgeClient.database
+      const result = await supabaseClient
         .from('orders')
         .update(updates)
         .eq('id', orderId)
@@ -286,7 +283,7 @@ export async function updateOrderStatus(
 
     // Log status change with retry logic
     await executeWithRetry(async () => {
-      const result = await insforgeClient.database.from('order_status_history').insert([
+      const result = await supabaseClient.from('order_status_history').insert([
         {
           order_id: orderId,
           status: newStatus,
@@ -317,7 +314,7 @@ export async function updateOrderStatus(
  */
 export async function updateOrder(orderId: string, updates: OrderUpdate): Promise<Order> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('orders')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', orderId)
@@ -348,7 +345,7 @@ export async function cancelOrder(
 ): Promise<Order> {
   try {
     // Get order items to restore inventory
-    const { data: items } = await insforgeClient.database
+    const { data: items } = await supabaseClient
       .from('order_items')
       .select('*')
       .eq('order_id', orderId);
@@ -393,7 +390,7 @@ export async function cancelOrder(
  */
 export async function getOrderStatusHistory(orderId: string): Promise<OrderStatusHistory[]> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('order_status_history')
       .select('*')
       .eq('order_id', orderId)
@@ -430,7 +427,7 @@ export async function getOrCreateCustomer(
 ): Promise<Customer> {
   try {
     // Try to find existing customer
-    const { data: existing } = await insforgeClient.database
+    const { data: existing } = await supabaseClient
       .from('customers')
       .select('*')
       .eq('shop_id', shopId)
@@ -442,7 +439,7 @@ export async function getOrCreateCustomer(
     }
 
     // Create new customer
-    const { data: customer, error } = await insforgeClient.database
+    const { data: customer, error } = await supabaseClient
       .from('customers')
       .insert([
         {
@@ -481,7 +478,7 @@ export async function getOrCreateCustomer(
 async function updateCustomerStats(customerId: string): Promise<void> {
   try {
     // Get all completed orders for this customer
-    const { data: orders } = await insforgeClient.database
+    const { data: orders } = await supabaseClient
       .from('orders')
       .select('total, status')
       .eq('customer_id', customerId)
@@ -491,7 +488,7 @@ async function updateCustomerStats(customerId: string): Promise<void> {
       const totalOrders = orders.length;
       const totalSpent = orders.reduce((sum, order) => sum + parseFloat(order.total.toString()), 0);
 
-      await insforgeClient.database
+      await supabaseClient
         .from('customers')
         .update({
           total_orders: totalOrders,
@@ -524,7 +521,7 @@ export async function getCustomerOrders(
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('orders')
       .select('*', { count: 'exact' })
       .eq('customer_id', customerId);
@@ -578,7 +575,7 @@ export async function getOrderStats(
   ordersByStatus: Record<OrderStatus, number>;
 }> {
   try {
-    let query = insforgeClient.database.from('orders').select('*').eq('shop_id', shopId);
+    let query = supabaseClient.from('orders').select('*').eq('shop_id', shopId);
 
     if (startDate) {
       query = query.gte('created_at', startDate);

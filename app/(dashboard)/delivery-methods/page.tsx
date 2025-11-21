@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Truck } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface DeliveryMethod {
@@ -34,15 +34,17 @@ export default function DeliveryMethods() {
   const fetchMethods = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
       // Fetch delivery methods for this shop
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('delivery_methods')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -66,7 +68,7 @@ export default function DeliveryMethods() {
     try {
       if (editingMethod) {
         // Update method
-        const { error } = await insforgeClient.database
+        const { error } = await supabaseClient
           .from('delivery_methods')
           .update({
             name: formData.name,
@@ -82,7 +84,7 @@ export default function DeliveryMethods() {
         }
       } else {
         // Create method
-        const { error } = await insforgeClient.database.from('delivery_methods').insert({
+        const { error } = await supabaseClient.from('delivery_methods').insert({
           shop_id: shopId,
           name: formData.name,
           type: formData.type,
@@ -291,7 +293,7 @@ export default function DeliveryMethods() {
                             }
 
                             try {
-                              const { error } = await insforgeClient.database
+                              const { error } = await supabaseClient
                                 .from('delivery_methods')
                                 .delete()
                                 .eq('id', method.id)

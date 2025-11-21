@@ -3,7 +3,7 @@
  * Supports region-based and product-based tax rates
  */
 
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { BadRequestError } from '@/lib/errors/api-errors';
 
@@ -55,7 +55,7 @@ export async function calculateTax(
   shippingAddress: ShippingAddress,
   subtotal: number
 ): Promise<TaxCalculation> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   try {
     // Get applicable tax rates for the shipping address
@@ -142,12 +142,12 @@ async function getApplicableTaxRates(
   shopId: string,
   shippingAddress: ShippingAddress
 ): Promise<TaxRate[]> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   try {
     // Query tax rates that match the shipping address
     // Priority order: postal code > province > country
-    const { data: taxRates, error } = await client.database
+    const { data: taxRates, error } = await client
       .from('tax_rates')
       .select('*')
       .eq('shop_id', shopId)
@@ -230,9 +230,9 @@ export async function createTaxRate(
   shopId: string,
   taxRateData: Omit<TaxRate, 'id' | 'shopId'>
 ): Promise<TaxRate> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
-  const { data, error } = await client.database
+  const { data, error } = await client
     .from('tax_rates')
     .insert({
       shop_id: shopId,
@@ -271,9 +271,9 @@ export async function createTaxRate(
  * Get tax rates for a shop
  */
 export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
-  const { data: taxRates, error } = await client.database
+  const { data: taxRates, error } = await client
     .from('tax_rates')
     .select('*')
     .eq('shop_id', shopId)
@@ -302,9 +302,9 @@ export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
  * Delete tax rate
  */
 export async function deleteTaxRate(shopId: string, taxRateId: string): Promise<void> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
-  const { error } = await client.database
+  const { error } = await client
     .from('tax_rates')
     .delete()
     .eq('id', taxRateId)
@@ -369,7 +369,7 @@ export const TAX_PRESETS = {
   // European Union
   EU_STANDARD_VAT: {
     name: 'EU VAT',
-    rate: 0.20, // 20% (varies by country)
+    rate: 0.2, // 20% (varies by country)
     country: 'EU',
     priority: 0,
     isCompound: false,

@@ -116,7 +116,7 @@ export const productVariantSchema = z.object({
   compareAtPrice: z.coerce.number().positive().optional(),
   stockQuantity: z.coerce.number().int().nonnegative().default(0),
   weight: z.coerce.number().nonnegative().optional(),
-  options: z.record(z.string()).optional(), // e.g., { "color": "red", "size": "M" }
+  options: z.record(z.string(), z.string()).optional(), // e.g., { "color": "red", "size": "M" }
 });
 
 export const bulkProductUpdateSchema = z.object({

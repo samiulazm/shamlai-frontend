@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { getOrders } from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
 
@@ -9,7 +9,7 @@ import { logger } from '@/lib/utils/logger';
 export async function GET(request: NextRequest) {
   try {
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

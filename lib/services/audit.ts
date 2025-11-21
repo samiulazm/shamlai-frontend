@@ -3,7 +3,7 @@
  * Track all critical data changes for compliance and debugging
  */
 
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 export enum AuditAction {
@@ -57,11 +57,13 @@ export interface AuditLogEntry {
 /**
  * Create audit log entry
  */
-export async function createAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<void> {
-  const client = getInsforgeClient();
+export async function createAuditLog(
+  entry: Omit<AuditLogEntry, 'id' | 'timestamp'>
+): Promise<void> {
+  const client = getSupabaseClient();
 
   try {
-    await client.database.from('audit_logs').insert({
+    await client.from('audit_logs').insert({
       shop_id: entry.shopId,
       user_id: entry.userId,
       user_email: entry.userEmail,
@@ -105,11 +107,16 @@ export async function auditProductChange(
     resourceType: AuditResourceType.PRODUCT,
     resourceId: productId,
     resourceName: productName,
-    changes: changes ? {
-      before: changes.before,
-      after: changes.after,
-      fields: changes.before && changes.after ? getChangedFields(changes.before, changes.after) : undefined,
-    } : undefined,
+    changes: changes
+      ? {
+          before: changes.before,
+          after: changes.after,
+          fields:
+            changes.before && changes.after
+              ? getChangedFields(changes.before, changes.after)
+              : undefined,
+        }
+      : undefined,
     metadata,
   });
 }
@@ -133,11 +140,16 @@ export async function auditOrderChange(
     resourceType: AuditResourceType.ORDER,
     resourceId: orderId,
     resourceName: orderNumber,
-    changes: changes ? {
-      before: changes.before,
-      after: changes.after,
-      fields: changes.before && changes.after ? getChangedFields(changes.before, changes.after) : undefined,
-    } : undefined,
+    changes: changes
+      ? {
+          before: changes.before,
+          after: changes.after,
+          fields:
+            changes.before && changes.after
+              ? getChangedFields(changes.before, changes.after)
+              : undefined,
+        }
+      : undefined,
     metadata,
   });
 }
@@ -161,11 +173,16 @@ export async function auditCustomerChange(
     resourceType: AuditResourceType.CUSTOMER,
     resourceId: customerId,
     resourceName: customerName,
-    changes: changes ? {
-      before: sanitizeCustomerData(changes.before),
-      after: sanitizeCustomerData(changes.after),
-      fields: changes.before && changes.after ? getChangedFields(changes.before, changes.after) : undefined,
-    } : undefined,
+    changes: changes
+      ? {
+          before: sanitizeCustomerData(changes.before),
+          after: sanitizeCustomerData(changes.after),
+          fields:
+            changes.before && changes.after
+              ? getChangedFields(changes.before, changes.after)
+              : undefined,
+        }
+      : undefined,
     metadata,
   });
 }
@@ -253,10 +270,10 @@ export async function getAuditLogs(filters: {
   limit?: number;
   offset?: number;
 }): Promise<{ logs: AuditLogEntry[]; total: number }> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   try {
-    let query = client.database
+    let query = client
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .eq('shop_id', filters.shopId);
@@ -407,14 +424,17 @@ export async function exportAuditLogsToCSV(filters: {
 /**
  * Clean up old audit logs (data retention)
  */
-export async function cleanupOldAuditLogs(shopId: string, daysToKeep: number = 90): Promise<number> {
-  const client = getInsforgeClient();
+export async function cleanupOldAuditLogs(
+  shopId: string,
+  daysToKeep: number = 90
+): Promise<number> {
+  const client = getSupabaseClient();
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
   try {
-    const { data, error } = await client.database
+    const { data, error } = await client
       .from('audit_logs')
       .delete()
       .eq('shop_id', shopId)

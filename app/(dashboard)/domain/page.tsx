@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { CustomDomain } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { supabaseClient } from '@/lib/supabase';
+import { logger } from '@/lib/utils/logger';
+import type { CustomDomain } from '@/lib/types/database';
 
-export default function Domain(){
+export default function Domain() {
   const [domains, setDomains] = useState<CustomDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
@@ -21,17 +21,19 @@ export default function Domain(){
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch custom domains
-      const { data: domainsData, error: domainsError } = await insforgeClient.database
+      const { data: domainsData, error: domainsError } = await supabaseClient
         .from('custom_domains')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       if (domainsError) throw domainsError;
@@ -54,21 +56,25 @@ export default function Domain(){
       setVerifying(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Create domain record
-      const { data, error: domainError } = await insforgeClient.database
+      const { data, error: domainError } = await supabaseClient
         .from('custom_domains')
-        .insert([{
-          shop_id: user.user.id,
-          domain: newDomain.trim(),
-          is_verified: false,
-          is_active: false
-        }])
+        .insert([
+          {
+            shop_id: user.id,
+            domain: newDomain.trim(),
+            is_verified: false,
+            is_active: false,
+          },
+        ])
         .select()
         .single();
 
@@ -98,12 +104,12 @@ export default function Domain(){
   }
 
   // Get default domain from shop settings or use placeholder
-  const defaultDomain = domains.find(d => d.is_primary)?.domain || 'eterni.shamlai.com';
+  const defaultDomain = domains.find((d) => d.is_primary)?.domain || 'eterni.shamlai.com';
 
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Domain</h1>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
@@ -114,21 +120,19 @@ export default function Domain(){
         <div className="card-pad grid gap-3">
           <div>
             <div className="label">Current Domain</div>
-            <div className="mt-1 rounded-xl border p-3 text-sm bg-gray-50">
-              {defaultDomain}
-            </div>
+            <div className="mt-1 rounded-xl border p-3 text-sm bg-gray-50">{defaultDomain}</div>
           </div>
           <div>
             <div className="label">Custom Domain</div>
             <div className="flex gap-2 mt-1">
-              <input 
-                className="input flex-1" 
+              <input
+                className="input flex-1"
                 placeholder="yourshop.com"
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}
                 disabled={verifying}
               />
-              <button 
+              <button
                 onClick={handleVerify}
                 className="btn btn-outline"
                 disabled={verifying || !newDomain.trim()}
@@ -149,11 +153,14 @@ export default function Domain(){
             <div className="label mb-2">Your Domains</div>
             <div className="space-y-2">
               {domains.map((domain) => (
-                <div key={domain.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div
+                  key={domain.id}
+                  className="flex items-center justify-between py-2 border-b last:border-0"
+                >
                   <div>
                     <div className="font-medium">{domain.domain}</div>
                     <div className="text-xs text-gray-500">
-                      {domain.is_verified ? 'Verified' : 'Pending verification'} • 
+                      {domain.is_verified ? 'Verified' : 'Pending verification'} •
                       {domain.is_primary ? ' Primary' : ' Secondary'}
                     </div>
                   </div>

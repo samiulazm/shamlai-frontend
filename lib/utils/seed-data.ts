@@ -1,5 +1,5 @@
 // Seed Data Utilities - Generate sample data for testing
-import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
+import { supabaseClient, STORAGE_BUCKETS } from '../supabase';
 import type {
   Category,
   Product,
@@ -57,7 +57,7 @@ export async function seedShopSettings(userId: string): Promise<ShopSettings> {
 
     // Ensure uniqueness
     while (attempts < 100) {
-      const { data: existing } = await insforgeClient.database
+      const { data: existing } = await supabaseClient
         .from('shop_settings')
         .select('id')
         .eq('shop_id', shopId)
@@ -95,7 +95,7 @@ export async function seedShopSettings(userId: string): Promise<ShopSettings> {
     };
 
     // Check if shop settings already exist for this user
-    const { data: existing } = await insforgeClient.database
+    const { data: existing } = await supabaseClient
       .from('shop_settings')
       .select('*')
       .eq('user_id', userId)
@@ -103,7 +103,7 @@ export async function seedShopSettings(userId: string): Promise<ShopSettings> {
 
     if (existing) {
       // Update existing settings
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('shop_settings')
         .update(settingsData)
         .eq('user_id', userId)
@@ -115,7 +115,7 @@ export async function seedShopSettings(userId: string): Promise<ShopSettings> {
       return data;
     } else {
       // Create new settings
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('shop_settings')
         .insert([settingsData])
         .select()
@@ -149,7 +149,7 @@ const SAMPLE_CATEGORIES = [
 export async function seedCategories(): Promise<Category[]> {
   try {
     // Check if categories already exist
-    const { data: existing } = await insforgeClient.database.from('categories').select('*');
+    const { data: existing } = await supabaseClient.from('categories').select('*');
 
     if (existing && existing.length > 0) {
       console.log(`ℹ️  ${existing.length} categories already exist, skipping...`);
@@ -165,7 +165,7 @@ export async function seedCategories(): Promise<Category[]> {
       parent_id: null,
     }));
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('categories')
       .insert(categories)
       .select();
@@ -213,7 +213,7 @@ const SAMPLE_PRODUCTS = [
 export async function seedProducts(shopId: string, categories: Category[]): Promise<Product[]> {
   try {
     // Check if products already exist for this shop
-    const { data: existing } = await insforgeClient.database
+    const { data: existing } = await supabaseClient
       .from('products')
       .select('*')
       .eq('shop_id', shopId);
@@ -251,7 +251,7 @@ export async function seedProducts(shopId: string, categories: Category[]): Prom
       };
     });
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('products')
       .insert(products)
       .select();
@@ -306,7 +306,7 @@ export async function seedProductVariants(products: Product[]): Promise<ProductV
     }
 
     if (allVariants.length > 0) {
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('product_variants')
         .insert(allVariants)
         .select();
@@ -374,7 +374,7 @@ export async function seedDiscountCodes(shopId: string): Promise<DiscountCode[]>
       },
     ];
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('discount_codes')
       .insert(discounts)
       .select();
@@ -431,7 +431,7 @@ export async function seedShippingMethods(shopId: string): Promise<ShippingMetho
       },
     ];
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shipping_methods')
       .insert(methods)
       .select();
@@ -461,7 +461,7 @@ export async function seedPaymentMethods(shopId: string): Promise<PaymentMethod[
       },
     ];
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('payment_methods')
       .insert(methods)
       .select();
@@ -547,7 +547,7 @@ export async function clearShopData(shopId: string): Promise<void> {
     ];
 
     for (const table of tables) {
-      const { error } = await insforgeClient.database.from(table).delete().eq('shop_id', shopId);
+      const { error } = await supabaseClient.from(table).delete().eq('shop_id', shopId);
 
       if (error && error.code !== 'PGRST116') {
         console.warn(`Warning deleting from ${table}:`, error);

@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient } from "@/lib/insforge";
-import { logger } from "@/lib/utils/logger";
-import type { User } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { supabaseClient } from '@/lib/supabase';
+import { logger } from '@/lib/utils/logger';
+import type { User } from '@/lib/types/database';
 
-export default function Users(){
+export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
-  
+
   const [inviteForm, setInviteForm] = useState({
     email: '',
-    role: 'manager' as 'admin' | 'manager' | 'support'
+    role: 'manager' as 'admin' | 'manager' | 'support',
   });
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function Users(){
       setError(null);
 
       // Fetch all users (in a real app, you'd filter by shop/team)
-      const { data: usersData, error: usersError } = await insforgeClient.database
+      const { data: usersData, error: usersError } = await supabaseClient
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
@@ -43,7 +43,7 @@ export default function Users(){
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!inviteForm.email) {
       setError('Please enter an email address');
       return;
@@ -56,11 +56,11 @@ export default function Users(){
       // Note: In a real app, you'd send an invitation email
       // For now, we'll just show a message
       alert(`Invitation would be sent to ${inviteForm.email} with role: ${inviteForm.role}`);
-      
+
       // Reset form
       setInviteForm({
         email: '',
-        role: 'manager'
+        role: 'manager',
       });
     } catch (err: any) {
       logger.error('Error inviting user', err instanceof Error ? err : new Error(String(err)));
@@ -84,7 +84,7 @@ export default function Users(){
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Users & Permissions</h1>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
@@ -94,40 +94,39 @@ export default function Users(){
       <div className="card">
         <div className="card-pad grid gap-3">
           <form onSubmit={handleInvite} className="grid md:grid-cols-4 gap-3">
-            <input 
-              className="input" 
+            <input
+              className="input"
               type="email"
               placeholder="Email address"
               value={inviteForm.email}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
               required
               disabled={inviting}
             />
-            <select 
+            <select
               className="input"
               value={inviteForm.role}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value as any }))}
+              onChange={(e) => setInviteForm((prev) => ({ ...prev, role: e.target.value as any }))}
               disabled={inviting}
             >
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
               <option value="support">Support</option>
             </select>
-            <button 
-              type="submit"
-              className="btn btn-primary"
-              disabled={inviting}
-            >
+            <button type="submit" className="btn btn-primary" disabled={inviting}>
               {inviting ? 'Sending...' : 'Invite'}
             </button>
           </form>
-          
+
           <div className="rounded-xl border p-4 text-sm text-gray-600 mt-4">
             <div className="font-medium mb-2">Team Members</div>
             {users.length > 0 ? (
               <div className="space-y-2">
                 {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
                     <div>
                       <div className="font-medium">{user.full_name || user.email || 'No name'}</div>
                       <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>

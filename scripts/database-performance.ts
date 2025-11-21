@@ -17,7 +17,7 @@
  * - Performance recommendations
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { getCacheStats, isRedisConnected } from '../lib/cache';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getShopIdBySubdomain, normalizeSubdomain } from './lib/services/shop';
+import { createClient } from './utils/supabase/middleware';
 
 // Reserved hosts and paths that should bypass subdomain routing
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'static', 'assets', 'localhost']);
@@ -79,34 +80,40 @@ export async function middleware(request: NextRequest) {
 
   const { pathname: finalPathname } = request.nextUrl;
 
+  // --- Supabase Auth Session Refresh ---
+  // Create Supabase client for middleware to refresh user session
+  const { supabase, response } = createClient(request);
+
+  // Refresh session if expired - required for Server Components
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // --- Public storefront and auth routing ---
 
   // Check if it's a storefront route (public)
   if (storefrontPattern.test(finalPathname)) {
-    return NextResponse.next();
+    return response;
   }
 
   // Allow public routes
   if (publicRoutes.some((route) => finalPathname.startsWith(route))) {
-    return NextResponse.next();
+    return response;
   }
 
-  // Check for auth token in cookies
-  const authToken = request.cookies.get('insforge_access_token');
-
   // Redirect to login if trying to access protected route without auth
-  if (protectedRoutes.some((route) => finalPathname.startsWith(route)) && !authToken) {
+  if (protectedRoutes.some((route) => finalPathname.startsWith(route)) && !user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', finalPathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Redirect to dashboard if trying to access auth pages while logged in
-  if ((finalPathname.startsWith('/login') || finalPathname.startsWith('/signup')) && authToken) {
+  if ((finalPathname.startsWith('/login') || finalPathname.startsWith('/signup')) && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

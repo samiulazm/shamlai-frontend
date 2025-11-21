@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 
 interface DeliveryMethodTabsProps {
   shopId: string;
@@ -31,7 +31,7 @@ export default function DeliveryMethodTabs({
       setLoading(true);
 
       // Fetch all orders to count by delivery method
-      const { data: orders, error } = await insforgeClient.database
+      const { data: orders, error } = await supabaseClient
         .from('orders')
         .select('delivery_method')
         .eq('shop_id', shopId);

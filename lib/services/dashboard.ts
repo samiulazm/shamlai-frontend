@@ -1,5 +1,5 @@
 // Dashboard Service - Enhanced analytics and statistics
-import { insforgeClient } from '../insforge';
+import { supabaseClient } from '../supabase';
 import { logger } from '../utils/logger';
 import type { Order, OrderItem, Product } from '../types/database';
 
@@ -55,7 +55,7 @@ export async function getDashboardStats(
     previousEnd.setHours(23, 59, 59, 999);
 
     // Fetch all orders for the shop
-    const { data: allOrders, error: ordersError } = await insforgeClient.database
+    const { data: allOrders, error: ordersError } = await supabaseClient
       .from('orders')
       .select('*, order_items(*)')
       .eq('shop_id', shopId);
@@ -158,7 +158,7 @@ async function calculateProfit(orders: Order[]): Promise<number> {
     const orderIds = orders.map((order) => order.id);
 
     // Fetch all order items at once
-    const { data: allItems } = await insforgeClient.database
+    const { data: allItems } = await supabaseClient
       .from('order_items')
       .select('order_id, product_id, variant_id, quantity')
       .in('order_id', orderIds);
@@ -180,7 +180,7 @@ async function calculateProfit(orders: Order[]): Promise<number> {
     // Batch fetch product costs
     const productCosts = new Map<string, number>();
     if (productIds.size > 0) {
-      const { data: products } = await insforgeClient.database
+      const { data: products } = await supabaseClient
         .from('products')
         .select('id, cost_per_item')
         .in('id', Array.from(productIds));
@@ -195,7 +195,7 @@ async function calculateProfit(orders: Order[]): Promise<number> {
     // Batch fetch variant costs
     const variantCosts = new Map<string, number>();
     if (variantIds.size > 0) {
-      const { data: variants } = await insforgeClient.database
+      const { data: variants } = await supabaseClient
         .from('product_variants')
         .select('id, cost_per_item')
         .in('id', Array.from(variantIds));
@@ -273,7 +273,7 @@ export async function getWebOrderReport(
         break;
     }
 
-    const { data: orders } = await insforgeClient.database
+    const { data: orders } = await supabaseClient
       .from('orders')
       .select('status')
       .eq('shop_id', shopId)
@@ -337,7 +337,7 @@ export async function getOrdersBySource(
         break;
     }
 
-    const { data: orders } = await insforgeClient.database
+    const { data: orders } = await supabaseClient
       .from('orders')
       .select('source, total')
       .eq('shop_id', shopId)

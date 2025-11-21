@@ -3,12 +3,12 @@
  * Provides ACID guarantees for multi-step operations
  */
 
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { InternalServerError } from '@/lib/errors/api-errors';
 
 export interface TransactionContext {
-  client: ReturnType<typeof getInsforgeClient>;
+  client: ReturnType<typeof getSupabaseClient>;
   rollback: () => Promise<void>;
   commit: () => Promise<void>;
 }
@@ -28,7 +28,7 @@ interface TransactionOperation {
 export async function withTransaction<T>(
   callback: (ctx: TransactionContext) => Promise<T>
 ): Promise<T> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
   const operations: TransactionOperation[] = [];
   let committed = false;
 
@@ -48,7 +48,7 @@ export async function withTransaction<T>(
           } else {
             // Default rollback behavior
             if (op.operation === 'insert' && op.data?.id) {
-              await client.database.from(op.table).delete().eq('id', op.data.id);
+              await client.from(op.table).delete().eq('id', op.data.id);
             }
             // For updates, we'd need to store original values (TODO: implement)
           }
@@ -132,7 +132,7 @@ export async function acquireLock(
   lockKey: string,
   timeoutMs: number = 5000
 ): Promise<() => Promise<void>> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
   const lockId = `lock_${lockKey}`;
   const expiresAt = new Date(Date.now() + timeoutMs);
 
@@ -142,7 +142,7 @@ export async function acquireLock(
   while (!acquired && Date.now() - startTime < timeoutMs) {
     try {
       // Try to insert lock record
-      const { data, error } = await client.database
+      const { data, error } = await client
         .from('system_locks')
         .insert({
           lock_id: lockId,
@@ -158,7 +158,7 @@ export async function acquireLock(
       } else if (error.code === '23505') {
         // Unique constraint violation - lock already exists
         // Check if it's expired and clean up
-        await client.database
+        await client
           .from('system_locks')
           .delete()
           .eq('lock_id', lockId)
@@ -182,7 +182,7 @@ export async function acquireLock(
   // Return release function
   return async () => {
     try {
-      await client.database.from('system_locks').delete().eq('lock_id', lockId);
+      await client.from('system_locks').delete().eq('lock_id', lockId);
       logger.info('Lock released', { lockKey, lockId });
     } catch (error) {
       logger.error('Error releasing lock', { error, lockKey });
@@ -234,9 +234,9 @@ export async function updateWithVersion(
   updates: any,
   currentVersion: number
 ): Promise<boolean> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
-  const { data, error } = await client.database
+  const { data, error } = await client
     .from(table)
     .update({
       ...updates,
@@ -264,12 +264,12 @@ export async function atomicIncrement(
   field: string,
   amount: number
 ): Promise<void> {
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Note: This requires RPC function or raw SQL for true atomicity
   // For now, we'll use a fetch-update pattern with retry
   await withRetry(async () => {
-    const { data: current, error: fetchError } = await client.database
+    const { data: current, error: fetchError } = await client
       .from(table)
       .select(`${field}`)
       .eq('id', id)
@@ -279,7 +279,7 @@ export async function atomicIncrement(
 
     const newValue = (current[field] || 0) + amount;
 
-    const { error: updateError } = await client.database
+    const { error: updateError } = await client
       .from(table)
       .update({ [field]: newValue })
       .eq('id', id);
@@ -297,16 +297,16 @@ export async function safeDelete(
   options: { soft?: boolean; field?: string } = {}
 ): Promise<void> {
   const { soft = true, field = 'deleted_at' } = options;
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   if (soft) {
     // Soft delete - mark as deleted
-    await client.database
+    await client
       .from(table)
       .update({ [field]: new Date().toISOString() })
       .eq('id', id);
   } else {
     // Hard delete - actually remove
-    await client.database.from(table).delete().eq('id', id);
+    await client.from(table).delete().eq('id', id);
   }
 }

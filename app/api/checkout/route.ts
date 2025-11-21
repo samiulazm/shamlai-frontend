@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { processNewOrder } from '@/lib/services/order-workflows';
 import { getOrCreateCustomer } from '@/lib/services/orders';
 import { calculateTax, type TaxableItem } from '@/lib/services/tax';
@@ -58,7 +58,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     throw new BadRequestError('No shop associated with user');
   }
 
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Start checkout process with retries for transient failures
   const checkoutResult = await withRetry(async () => {
@@ -78,7 +78,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
       for (const item of items) {
         // Get product details with stock check
-        const { data: product, error: productError } = await client.database
+        const { data: product, error: productError } = await client
           .from('products')
           .select('*')
           .eq('id', item.productId)
@@ -96,7 +96,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         // Get price (from variant or product)
         let price = parseFloat(product.price.toString());
         if (item.variantId) {
-          const { data: variant } = await client.database
+          const { data: variant } = await client
             .from('product_variants')
             .select('price')
             .eq('id', item.variantId)
@@ -144,7 +144,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       // Step 4: Calculate shipping cost
       let shippingCost = 0;
       if (shippingMethodId) {
-        const { data: shippingMethod } = await client.database
+        const { data: shippingMethod } = await client
           .from('shipping_methods')
           .select('cost')
           .eq('id', shippingMethodId)
@@ -159,7 +159,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       let appliedDiscountId: string | null = null;
 
       if (discountCode) {
-        const { data: discount } = await client.database
+        const { data: discount } = await client
           .from('discount_codes')
           .select('*')
           .eq('code', discountCode.toUpperCase())
@@ -213,7 +213,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         appliedDiscountId = discount.id;
 
         // Increment usage count atomically
-        await client.database
+        await client
           .from('discount_codes')
           .update({ usage_count: discount.usage_count + 1 })
           .eq('id', discount.id);

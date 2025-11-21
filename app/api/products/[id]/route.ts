@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 /**
  * Get single product
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
-    const { data: product, error } = await insforgeClient.database
+    const { data: product, error } = await supabaseClient
       .from('products')
-      .select(`
+      .select(
+        `
         *,
         category:categories(id, name),
         images:product_images(*),
         variants:product_variants(*)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -39,15 +38,12 @@ export async function GET(
 /**
  * Update product
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -56,7 +52,7 @@ export async function PATCH(
     const user = data.user;
 
     // Verify ownership
-    const { data: product } = await insforgeClient.database
+    const { data: product } = await supabaseClient
       .from('products')
       .select('shop_id')
       .eq('id', id)
@@ -72,7 +68,7 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     };
 
-    const { data: updatedProduct, error } = await insforgeClient.database
+    const { data: updatedProduct, error } = await supabaseClient
       .from('products')
       .update(updates)
       .eq('id', id)
@@ -93,15 +89,12 @@ export async function PATCH(
 /**
  * Delete product
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -110,7 +103,7 @@ export async function DELETE(
     const user = data.user;
 
     // Verify ownership
-    const { data: product } = await insforgeClient.database
+    const { data: product } = await supabaseClient
       .from('products')
       .select('shop_id')
       .eq('id', id)
@@ -121,7 +114,7 @@ export async function DELETE(
     }
 
     // Soft delete (mark as inactive)
-    const { error } = await insforgeClient.database
+    const { error } = await supabaseClient
       .from('products')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', id);

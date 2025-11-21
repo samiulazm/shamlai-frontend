@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
-const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_INSFORGE_URL ||
+  'http://119.40.88.49:7130';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 
 /**
  * Complete user signup by creating shop settings
@@ -23,15 +27,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create authenticated client
-    const insforgeClient = createClient({
-      baseUrl: INSFORGE_URL,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
     });
 
     // Check if shop settings already exist for this user
-    const { data: existingShop } = await insforgeClient.database
+    const { data: existingShop } = await supabaseClient
       .from('shop_settings')
       .select('shop_id')
       .eq('user_id', userId)
@@ -53,7 +58,7 @@ export async function POST(request: NextRequest) {
     const shopId = crypto.randomUUID();
 
     // Create shop settings in a single transaction
-    const { data: newShop, error: shopError } = await insforgeClient.database
+    const { data: newShop, error: shopError } = await supabaseClient
       .from('shop_settings')
       .insert([
         {
@@ -88,18 +93,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set user profile
+    // Update user metadata (Supabase stores user metadata in auth.users.raw_user_meta_data)
     try {
-      await insforgeClient.auth.setProfile({
-        nickname: shopName || email.split('@')[0],
-        role: 'merchant',
+      await supabaseClient.auth.updateUser({
+        data: {
+          nickname: shopName || email.split('@')[0],
+          role: 'merchant',
+        },
       });
     } catch (profileError) {
       // Non-critical error - log but don't fail
       logger.warn(
-        'Failed to set user profile',
-        { userId },
-        profileError instanceof Error ? profileError : new Error(String(profileError))
+        'Failed to update user metadata',
+        profileError instanceof Error ? profileError : new Error(String(profileError)),
+        { userId }
       );
     }
 

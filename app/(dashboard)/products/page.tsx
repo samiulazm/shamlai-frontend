@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { insforgeClient, ProductService } from "@/lib";
-import { logger } from "@/lib/utils/logger";
-import type { Product } from "@/lib/types/database";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { supabaseClient, ProductService } from '@/lib';
+import { logger } from '@/lib/utils/logger';
+import type { Product } from '@/lib/types/database';
 
-export default function Products(){
+export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,17 +21,19 @@ export default function Products(){
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch products using the service
-      const productsData = await ProductService.getProducts(user.user.id, {
+      const productsData = await ProductService.getProducts(user.id, {
         page: 1,
         pageSize: 50,
-        isActive: true
+        isActive: true,
       });
 
       setProducts(productsData.data || []);
@@ -45,7 +47,9 @@ export default function Products(){
 
   const getStatusBadge = (isActive: boolean) => {
     return (
-      <span className={`badge ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`badge ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+      >
         {isActive ? 'Active' : 'Draft'}
       </span>
     );
@@ -67,13 +71,17 @@ export default function Products(){
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Products</h1>
-          <Link href="/products/new" className="btn btn-primary">Add Product</Link>
+          <Link href="/products/new" className="btn btn-primary">
+            Add Product
+          </Link>
         </div>
         <div className="card">
           <div className="card-pad">
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error: {error}</p>
-              <button onClick={fetchProducts} className="btn btn-outline">Try Again</button>
+              <button onClick={fetchProducts} className="btn btn-outline">
+                Try Again
+              </button>
             </div>
           </div>
         </div>
@@ -85,9 +93,11 @@ export default function Products(){
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Products</h1>
-        <Link href="/products/new" className="btn btn-primary">Add Product</Link>
+        <Link href="/products/new" className="btn btn-primary">
+          Add Product
+        </Link>
       </div>
-      
+
       <div className="card">
         <div className="card-pad overflow-x-auto">
           {products.length > 0 ? (
@@ -103,7 +113,7 @@ export default function Products(){
                 </tr>
               </thead>
               <tbody>
-                {products.map(product => (
+                {products.map((product) => (
                   <tr key={product.id}>
                     <td className="py-3">
                       <div className="flex items-center gap-3">
@@ -124,13 +134,13 @@ export default function Products(){
                     <td>{getStatusBadge(product.is_active)}</td>
                     <td>
                       <div className="flex gap-2">
-                        <Link 
+                        <Link
                           href={`/products/${product.id}`}
                           className="text-brand-indigo hover:underline"
                         >
                           View
                         </Link>
-                        <Link 
+                        <Link
                           href={`/products/${product.id}?edit=true`}
                           className="text-gray-600 hover:underline"
                         >
@@ -145,12 +155,24 @@ export default function Products(){
           ) : (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                <svg
+                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
                 </svg>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
                 <p className="text-gray-500 mb-4">Get started by adding your first product</p>
-                <Link href="/products/new" className="btn btn-primary">Add Product</Link>
+                <Link href="/products/new" className="btn btn-primary">
+                  Add Product
+                </Link>
               </div>
             </div>
           )}

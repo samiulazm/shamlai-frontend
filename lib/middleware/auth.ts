@@ -4,7 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '@/lib/errors/api-errors';
 import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { logger } from '@/lib/utils/logger';
@@ -137,7 +137,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
  */
 export function getAuthToken(request: NextRequest): string | null {
   // Priority 1: Cookie (most secure)
-  const cookieToken = request.cookies.get('insforge_access_token')?.value;
+  const cookieToken =
+    request.cookies.get('supabase_access_token')?.value ||
+    request.cookies.get('insforge_access_token')?.value;
   if (cookieToken) return cookieToken;
 
   // Priority 2: Authorization header
@@ -157,12 +159,24 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
   if (!token) return null;
 
   try {
-    const client = getInsforgeClient();
+    const client = getSupabaseClient();
 
-    // Set the token for this request
-    client.auth.setAccessToken(token);
+    // For Supabase, we need to set the session or create a client with the token
+    // Create a temporary client with the token for validation
+    const { createClient } = await import('@supabase/supabase-js');
+    const tempClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
 
-    const { data, error } = await client.auth.getCurrentUser();
+    const { data, error } = await tempClient.auth.getUser();
 
     if (error || !data?.user) {
       logger.warn('Failed to get current user', { error });
@@ -172,7 +186,7 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
     const user = data.user;
 
     // Get user's shop associations and role
-    const { data: userShops } = await client.database
+    const { data: userShops } = await client
       .from('shop_users')
       .select('shop_id, role')
       .eq('user_id', user.id);
@@ -261,7 +275,7 @@ export async function requireResourceOwnership(
   resourceId: string
 ): Promise<AuthUser> {
   const user = await requireAuth(request);
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Super admin can access everything
   if (user.role === UserRole.SUPER_ADMIN) {
@@ -269,7 +283,7 @@ export async function requireResourceOwnership(
   }
 
   // Check if resource belongs to user's shop
-  const { data: resource, error } = await client.database
+  const { data: resource, error } = await client
     .from(resourceType === 'shop' ? 'shop_settings' : `${resourceType}s`)
     .select('shop_id')
     .eq('id', resourceId)

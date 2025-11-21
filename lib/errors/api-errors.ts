@@ -162,7 +162,7 @@ export function normalizeError(error: unknown): ApiError {
 
   // Zod validation error
   if (error instanceof ZodError) {
-    return new ValidationError('Validation failed', error.errors);
+    return new ValidationError('Validation failed', error.issues);
   }
 
   // Standard Error

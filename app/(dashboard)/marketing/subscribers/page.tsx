@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface EmailSubscriber {
@@ -32,17 +32,19 @@ export default function EmailSubscribers() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Build query
-      let query = insforgeClient.database
+      let query = supabaseClient
         .from('email_subscribers')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('subscribed_at', { ascending: false });
 
       // Apply filter
@@ -61,7 +63,10 @@ export default function EmailSubscribers() {
 
       setSubscribers(subscribersData || []);
     } catch (err: any) {
-      logger.error('Error fetching email subscribers', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching email subscribers',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch email subscribers');
     } finally {
       setLoading(false);
@@ -229,7 +234,10 @@ export default function EmailSubscribers() {
                         {subscriber.tags && subscriber.tags.length > 0 ? (
                           <div className="flex gap-1 flex-wrap">
                             {subscriber.tags.map((tag, idx) => (
-                              <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                              <span
+                                key={idx}
+                                className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded"
+                              >
                                 {tag}
                               </span>
                             ))}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Search, Package } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import type { Product } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';
@@ -25,15 +25,17 @@ export default function IncreaseStock() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
 
-      const { data: productsData } = await insforgeClient.database
+      const { data: productsData } = await supabaseClient
         .from('products')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .eq('is_active', true)
         .order('name');
 
@@ -72,7 +74,7 @@ export default function IncreaseStock() {
       // Update inventory
       const newQuantity = (product.inventory_quantity || 0) + quantity;
 
-      await insforgeClient.database
+      await supabaseClient
         .from('products')
         .update({
           inventory_quantity: newQuantity,
@@ -81,7 +83,7 @@ export default function IncreaseStock() {
         .eq('id', selectedProduct);
 
       // Create adjustment record (would go to stock_adjustments table)
-      // await insforgeClient.database
+      // await supabaseClient
       //   .from('stock_adjustments')
       //   .insert([{
       //     shop_id: shopId,

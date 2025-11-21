@@ -3,7 +3,7 @@
  * Run this file to create a test user for development
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 const insforgeClient = createClient({
   baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',

@@ -1,4 +1,4 @@
-import { insforgeClient } from '../insforge';
+import { supabaseClient } from '../supabase';
 import { logger } from '../utils/logger';
 import {
   createOrder as createOrderBase,
@@ -33,7 +33,7 @@ export async function processNewOrder(
     const order = await createOrderBase(orderData, items);
 
     // 2. Create payment record
-    const { error: paymentError } = await insforgeClient.database.from('payments').insert({
+    const { error: paymentError } = await supabaseClient.from('payments').insert({
       order_id: order.id,
       amount: order.total,
       payment_method: options?.paymentMethod || 'cod',
@@ -46,7 +46,7 @@ export async function processNewOrder(
     }
 
     // 3. Get shop settings for notifications
-    const { data: shopSettings } = await insforgeClient.database
+    const { data: shopSettings } = await supabaseClient
       .from('shop_settings')
       .select('shop_name, shop_email')
       .eq('shop_id', order.shop_id)
@@ -56,14 +56,14 @@ export async function processNewOrder(
     const shopEmail = shopSettings?.shop_email || 'noreply@example.com';
 
     // 4. Get customer details
-    const { data: customer } = await insforgeClient.database
+    const { data: customer } = await supabaseClient
       .from('customers')
       .select('*')
       .eq('id', order.customer_id)
       .single();
 
     // 5. Get order items with product details
-    const { data: orderItems } = await insforgeClient.database
+    const { data: orderItems } = await supabaseClient
       .from('order_items')
       .select(
         `
@@ -157,7 +157,7 @@ export async function updateOrderWithWorkflow(
     // 2. Get order details, customer, and shop info
     const [orderWithDetails, { data: shopSettings }] = await Promise.all([
       getOrderById(orderId),
-      insforgeClient.database
+      supabaseClient
         .from('shop_settings')
         .select('shop_name, shop_email')
         .eq('shop_id', order.shop_id)
@@ -178,7 +178,7 @@ export async function updateOrderWithWorkflow(
       case 'shipped':
         // Update tracking info if provided
         if (options?.trackingNumber) {
-          await insforgeClient.database
+          await supabaseClient
             .from('orders')
             .update({
               tracking_number: options.trackingNumber,
@@ -275,14 +275,14 @@ export async function cancelOrderWithWorkflow(
 
     // 3. Process refund if requested and payment was made
     if (options?.processRefund && orderBefore.payment_status === 'paid') {
-      const { data: payment } = await insforgeClient.database
+      const { data: payment } = await supabaseClient
         .from('payments')
         .select('*')
         .eq('order_id', orderId)
         .single();
 
       if (payment) {
-        await insforgeClient.database
+        await supabaseClient
           .from('payments')
           .update({
             payment_status: 'refunded',
@@ -290,7 +290,7 @@ export async function cancelOrderWithWorkflow(
           })
           .eq('order_id', orderId);
 
-        await insforgeClient.database
+        await supabaseClient
           .from('orders')
           .update({
             payment_status: 'refunded',
@@ -299,7 +299,7 @@ export async function cancelOrderWithWorkflow(
           })
           .eq('id', orderId);
 
-        await insforgeClient.database.from('order_status_history').insert({
+        await supabaseClient.from('order_status_history').insert({
           order_id: orderId,
           status: 'refunded',
           notes: 'Refund processed manually',
@@ -311,7 +311,7 @@ export async function cancelOrderWithWorkflow(
 
     // 4. Send notifications
     if (options?.notifyCustomer !== false && orderBefore.customer) {
-      const { data: shopSettings } = await insforgeClient.database
+      const { data: shopSettings } = await supabaseClient
         .from('shop_settings')
         .select('shop_name')
         .eq('shop_id', order.shop_id)
@@ -394,7 +394,7 @@ export async function batchUpdateOrderStatus(
 export async function autoTransitionOrders(shopId: string) {
   try {
     // Example: Auto-mark paid orders as processing
-    const { data: paidOrders } = await insforgeClient.database
+    const { data: paidOrders } = await supabaseClient
       .from('orders')
       .select('id')
       .eq('shop_id', shopId)
@@ -412,7 +412,7 @@ export async function autoTransitionOrders(shopId: string) {
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-    const { data: oldPendingOrders } = await insforgeClient.database
+    const { data: oldPendingOrders } = await supabaseClient
       .from('orders')
       .select('id')
       .eq('shop_id', shopId)

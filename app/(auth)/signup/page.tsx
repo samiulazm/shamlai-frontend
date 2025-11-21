@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { normalizeSubdomain } from '@/lib/services/shop';
 
@@ -174,10 +174,11 @@ export default function Signup() {
   const handleOAuthSignup = async (provider: 'google' | 'github') => {
     try {
       setLoading(true);
-      const { data, error } = await insforgeClient.auth.signInWithOAuth({
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
-        redirectTo: window.location.origin + '/dashboard',
-        skipBrowserRedirect: true,
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
       });
 
       if (error) {

@@ -86,15 +86,15 @@ class Logger {
     this.log('info', message, context);
   }
 
-  warn(message: string, context?: LogContext, error?: Error) {
+  warn(message: string, error?: Error, context?: LogContext) {
     this.log('warn', message, context, error);
   }
 
-  error(message: string, context?: LogContext, error?: Error) {
+  error(message: string, error?: Error, context?: LogContext) {
     this.log('error', message, context, error);
   }
 
-  fatal(message: string, context?: LogContext, error?: Error) {
+  fatal(message: string, error?: Error, context?: LogContext) {
     this.log('fatal', message, context, error);
   }
 
@@ -168,7 +168,7 @@ export function measurePerformance<T>(
         })
         .catch((error) => {
           const duration = performance.now() - startTime;
-          logger.error(`${operationName} failed after ${duration}ms`, context, error);
+          logger.error(`${operationName} failed after ${duration}ms`, error, context);
           throw error;
         });
     } else {
@@ -178,7 +178,7 @@ export function measurePerformance<T>(
     }
   } catch (error) {
     const duration = performance.now() - startTime;
-    logger.error(`${operationName} failed after ${duration}ms`, context, error as Error);
+    logger.error(`${operationName} failed after ${duration}ms`, error as Error, context);
     throw error;
   }
 }

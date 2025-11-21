@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 export default function Login() {
@@ -47,10 +47,10 @@ export default function Login() {
         console.log('✅ API login successful!', user);
 
         // CRITICAL: Also authenticate the client-side SDK so it has the session
-        // This is needed because the dashboard checks getCurrentUser() which requires SDK session
+        // This is needed because the dashboard checks getUser() which requires SDK session
         try {
           console.log('🔐 Authenticating client SDK...');
-          const { data: sdkData, error: sdkError } = await insforgeClient.auth.signInWithPassword({
+          const { data: sdkData, error: sdkError } = await supabaseClient.auth.signInWithPassword({
             email,
             password,
           });
@@ -61,7 +61,7 @@ export default function Login() {
             if (accessToken) {
               // Store token in localStorage as fallback
               try {
-                localStorage.setItem('insforge_access_token', accessToken);
+                localStorage.setItem('supabase_access_token', accessToken);
                 console.log('✅ Stored access token in localStorage as fallback');
               } catch (storageErr) {
                 console.warn('⚠️ Could not store token:', storageErr);
@@ -130,10 +130,11 @@ export default function Login() {
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
     try {
       setLoading(true);
-      const { data, error } = await insforgeClient.auth.signInWithOAuth({
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
-        redirectTo: window.location.origin + '/dashboard',
-        skipBrowserRedirect: true,
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
       });
 
       if (error) {

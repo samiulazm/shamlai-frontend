@@ -29,10 +29,16 @@
       "Bash(npx @insforge/install:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx tsx:*)",
-      "Bash(NEXT_PUBLIC_INSFORGE_URL=http://119.40.88.49:7131 npx tsx:*)"
+      "Bash(NEXT_PUBLIC_INSFORGE_URL=http://119.40.88.49:7131 npx tsx:*)",
+      "Bash(git -c user.useConfigOnly=true commit -m \"Fix TypeScript errors: add getInsforgeClient, fix logger signatures, fix type issues\")",
+      "Bash(if exist nul del /f nul)",
+      "Bash(git reset:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
   },
-  "enabledMcpjsonServers": ["insforge"]
+  "enabledMcpjsonServers": [
+    "insforge"
+  ]
 }
