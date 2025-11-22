@@ -8,21 +8,24 @@ import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { getClientIP } from '@/lib/redis/rate-limiter';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Use fallback pattern consistent with lib/supabase.ts
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 
 // Create Supabase client for server-side use
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '');
+const supabaseClient = SUPABASE_ANON_KEY ? createClient(SUPABASE_URL!, SUPABASE_ANON_KEY) : null;
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   // Apply rate limiting
   const rateLimitResponse = await rateLimitEndpoint.auth(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
+  }
+
+  // Check if Supabase client is available
+  if (!supabaseClient) {
+    throw new Error('Supabase client is not configured');
   }
 
   // Validate request body
