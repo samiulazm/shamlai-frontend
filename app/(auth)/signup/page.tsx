@@ -83,6 +83,8 @@ export default function Signup() {
         body: JSON.stringify({
           email,
           password,
+          confirmPassword: password, // Required by backend validation
+          shopName,
         }),
       });
 
@@ -282,7 +284,9 @@ export default function Signup() {
                 minLength={8}
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
             </div>
             <button className="btn btn-primary w-full" type="submit" disabled={loading}>
               {loading ? 'Creating account...' : 'Create account'}
