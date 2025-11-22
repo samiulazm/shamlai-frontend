@@ -1,4 +1,4 @@
-// Database TypeScript Types for InsForge E-Commerce Platform
+// Database TypeScript Types for Supabase E-Commerce Platform
 // Auto-generated from DATABASE_SCHEMA.md
 
 // ============================================================================

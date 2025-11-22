@@ -13,8 +13,6 @@
 import { supabaseClient } from '../lib/supabase';
 import { seedAllData, clearShopData } from '../lib/utils/seed-data';
 
-const insforgeClient = supabaseClient; // Alias for compatibility
-
 async function main() {
   console.log('🌱 Database Seeding Script');
   console.log('==========================\n');
@@ -25,7 +23,7 @@ async function main() {
     const testEmail = 'test@shamlai.com';
     const testPassword = 'Test123456!';
 
-    const { data: authData, error: authError } = await insforgeClient.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
       email: testEmail,
       password: testPassword,
     });

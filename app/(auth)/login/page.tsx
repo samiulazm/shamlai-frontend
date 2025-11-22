@@ -76,7 +76,7 @@ export default function Login() {
           // Try to store token as fallback
           if (accessToken) {
             try {
-              localStorage.setItem('insforge_access_token', accessToken);
+              localStorage.setItem('supabase_access_token', accessToken);
               console.log('✅ Stored access token in localStorage as fallback');
             } catch (storageErr) {
               // Ignore storage errors
@@ -89,7 +89,7 @@ export default function Login() {
         // Store token in localStorage for immediate access
         if (accessToken) {
           try {
-            localStorage.setItem('insforge_access_token', accessToken);
+            localStorage.setItem('supabase_access_token', accessToken);
             console.log('✅ Stored access token in localStorage');
           } catch (storageErr) {
             console.warn('⚠️ Could not store token in localStorage:', storageErr);

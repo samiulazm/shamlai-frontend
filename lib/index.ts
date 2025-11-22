@@ -2,7 +2,7 @@
 // Provides easy access to all services, types, and utilities
 
 // Core client
-export { supabaseClient, insforgeClient, default } from './supabase';
+export { supabaseClient, default } from './supabase';
 
 // Services
 export * as ProductService from './services/products';

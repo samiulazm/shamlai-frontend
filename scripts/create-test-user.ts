@@ -15,7 +15,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const insforgeClient = supabaseClient; // Alias for compatibility
+
 async function createTestUser() {
   console.log('🚀 Creating test user...\n');
 
@@ -28,7 +28,7 @@ async function createTestUser() {
   try {
     // 1. Sign up the user
     console.log('📝 Signing up user:', testUser.email);
-    const { data: authData, error: signupError } = await insforgeClient.auth.signUp({
+    const { data: authData, error: signupError } = await supabaseClient.auth.signUp({
       email: testUser.email,
       password: testUser.password,
     });
@@ -42,7 +42,7 @@ async function createTestUser() {
         signupError.message?.includes('ALREADY_EXISTS')
       ) {
         console.log('⚠️  User already exists, attempting to login...');
-        const { data: loginData, error: loginError } = await insforgeClient.auth.signInWithPassword(
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword(
           {
             email: testUser.email,
             password: testUser.password,
@@ -75,7 +75,7 @@ async function createTestUser() {
     // 2. Update user profile with additional info (only if user was just created)
     if (!signupError || !signupError.message?.includes('already exists')) {
       console.log('\n📝 Setting up user profile...');
-      const { data: profileData, error: profileError } = await insforgeClient.auth.updateUser({
+      const { data: profileData, error: profileError } = await supabaseClient.auth.updateUser({
         data: {
           nickname: 'Test User',
           bio: 'Test account for development',
@@ -104,7 +104,7 @@ async function createTestUser() {
     let attempts = 0;
 
     // Check if shop settings already exist
-    const { data: existingShop } = await insforgeClient
+    const { data: existingShop } = await supabaseClient
       .from('shop_settings')
       .select('*')
       .eq('user_id', userId)
@@ -119,7 +119,7 @@ async function createTestUser() {
 
       // Ensure uniqueness
       while (attempts < 100) {
-        const { data: existing } = await insforgeClient
+        const { data: existing } = await supabaseClient
           .from('shop_settings')
           .select('id')
           .eq('shop_id', shopId)
@@ -135,7 +135,7 @@ async function createTestUser() {
       const subdomain = 'test-shop';
       const shopUsername = 'test-shop';
 
-      const { data: shopData, error: shopError } = await insforgeClient
+      const { data: shopData, error: shopError } = await supabaseClient
         .from('shop_settings')
         .insert([
           {
@@ -176,7 +176,7 @@ async function createTestUser() {
     console.log('\n💡 Tip: Save these credentials for testing!\n');
 
     // Sign out to clean up
-    await insforgeClient.auth.signOut();
+    await supabaseClient.auth.signOut();
   } catch (error) {
     console.error('\n❌ Error creating test user:', error);
     console.log('\n💡 Note: If user already exists, you can use the credentials above to login.');

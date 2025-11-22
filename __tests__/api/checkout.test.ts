@@ -2,7 +2,7 @@ import { describe, it, expect, jest, beforeEach, beforeAll } from '@jest/globals
 import { NextRequest } from 'next/server';
 
 // Mock dependencies
-jest.mock('@/lib/insforge', () => {
+jest.mock('@/lib/supabase', () => {
   const mockProducts = {
     prod_123: {
       id: 'prod_123',
@@ -81,8 +81,8 @@ jest.mock('@/lib/insforge', () => {
   };
 
   return {
-    insforgeClient: mockClient,
-    getInsforgeClient: jest.fn(() => mockClient),
+    supabaseClient: mockClient,
+    getSupabaseClient: jest.fn(() => mockClient),
   };
 });
 

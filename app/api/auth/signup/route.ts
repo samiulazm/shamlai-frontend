@@ -8,12 +8,12 @@ import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { getClientIP } from '@/lib/redis/rate-limiter';
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_INSFORGE_URL ||
-  'http://119.40.88.49:7130';
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 // Create Supabase client for server-side use
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '');
@@ -42,7 +42,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   if (error) {
     const ip = getClientIP(request.headers);
-    logger.warn('Signup failed', error, {
+    const errorObj =
+      error instanceof Error ? error : new Error((error as any)?.message || 'Unknown error');
+    logger.warn('Signup failed', errorObj, {
       email,
       ip,
     });

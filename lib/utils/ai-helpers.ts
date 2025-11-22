@@ -1,5 +1,5 @@
 // AI helper utilities for common e-commerce tasks
-// Note: AI helpers temporarily disabled - Supabase doesn't have built-in AI functions like Insforge
+// Note: AI helpers temporarily disabled - Supabase doesn't have built-in AI functions
 // import { generateAIContent, chatCompletion } from '../supabase';
 import { logger } from './logger';
 

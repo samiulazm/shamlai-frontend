@@ -73,7 +73,6 @@ export const getSupabaseClient = () => supabaseClient;
 
 // Backwards compatibility aliases
 export const getInsforgeClient = () => supabaseClient;
-export const insforgeClient = supabaseClient;
 export const getInsforgeServerClient = () => getSupabaseServerClient();
 
 // Helper function to handle errors consistently

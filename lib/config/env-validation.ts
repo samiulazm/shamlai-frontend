@@ -6,7 +6,7 @@
 interface EnvConfig {
   // Required
   NEXT_PUBLIC_APP_URL: string;
-  NEXT_PUBLIC_INSFORGE_URL: string;
+  NEXT_PUBLIC_SUPABASE_URL: string;
   NODE_ENV: 'development' | 'production' | 'test';
 
   // Optional but recommended for production
@@ -26,7 +26,7 @@ export function validateEnv(): EnvConfig {
   // Required variables
   const required = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_INSFORGE_URL: process.env.NEXT_PUBLIC_INSFORGE_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   };
 
@@ -40,40 +40,34 @@ export function validateEnv(): EnvConfig {
   // Production checks
   if (process.env.NODE_ENV === 'production') {
     // Warn about missing Redis (not required but highly recommended)
-    const hasRedis =
-      process.env.UPSTASH_REDIS_REST_URL ||
-      process.env.REDIS_URL;
+    const hasRedis = process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL;
 
     if (!hasRedis) {
       console.warn(
         '⚠️  WARNING: Redis not configured. Caching and rate limiting will be disabled. ' +
-        'For production scaling to 1k-10k users, Redis is HIGHLY RECOMMENDED.'
+          'For production scaling to 1k-10k users, Redis is HIGHLY RECOMMENDED.'
       );
     }
 
     // Warn about missing Sentry
     if (!process.env.SENTRY_DSN) {
-      console.warn(
-        '⚠️  WARNING: Sentry not configured. Error tracking will be limited.'
-      );
+      console.warn('⚠️  WARNING: Sentry not configured. Error tracking will be limited.');
     }
 
     // Warn if using development API URL in production
-    if (process.env.NEXT_PUBLIC_INSFORGE_URL?.includes('localhost')) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost')) {
       errors.push('Production build using localhost API URL!');
     }
   }
 
   // Throw if any required vars missing
   if (errors.length > 0) {
-    throw new Error(
-      `Environment validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}`
-    );
+    throw new Error(`Environment validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`);
   }
 
   return {
     NEXT_PUBLIC_APP_URL: required.NEXT_PUBLIC_APP_URL!,
-    NEXT_PUBLIC_INSFORGE_URL: required.NEXT_PUBLIC_INSFORGE_URL!,
+    NEXT_PUBLIC_SUPABASE_URL: required.NEXT_PUBLIC_SUPABASE_URL!,
     NODE_ENV: required.NODE_ENV as 'development' | 'production' | 'test',
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -94,7 +88,7 @@ export function getEnvConfig() {
     isProduction: env.NODE_ENV === 'production',
     isTest: env.NODE_ENV === 'test',
     appUrl: env.NEXT_PUBLIC_APP_URL,
-    apiUrl: env.NEXT_PUBLIC_INSFORGE_URL,
+    apiUrl: env.NEXT_PUBLIC_SUPABASE_URL,
     hasRedis: !!(env.UPSTASH_REDIS_REST_URL || env.REDIS_URL),
     hasSentry: !!env.SENTRY_DSN,
   };

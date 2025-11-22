@@ -15,7 +15,6 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const insforgeClient = supabaseClient; // Alias for compatibility
 
 async function main() {
   console.log("🌱 Seeding Current User's Shop\n");
@@ -23,7 +22,7 @@ async function main() {
   try {
     // Login with test credentials
     console.log('Logging in as test@shamlai.com...');
-    const { data: authData, error: authError } = await insforgeClient.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
       email: 'test@shamlai.com',
       password: 'Test123456!',
     });
