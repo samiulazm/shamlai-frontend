@@ -21,6 +21,12 @@ async function testTokenValidation() {
   try {
     // Step 1: Login to get a valid token
     console.log('1️⃣  Logging in to get access token...');
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error('❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+      return false;
+    }
+
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const { data: loginData, error: loginError } = await client.auth.signInWithPassword({

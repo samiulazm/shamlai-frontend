@@ -257,7 +257,11 @@ export async function createTaxRate(
     .single();
 
   if (error) {
-    logger.error('Error creating tax rate', error, { shopId });
+    const errorObj =
+      error instanceof Error
+        ? error
+        : new Error((error as any)?.message || 'Failed to create tax rate');
+    logger.error('Error creating tax rate', errorObj, { shopId });
     throw new BadRequestError('Failed to create tax rate');
   }
 
@@ -288,7 +292,11 @@ export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
     .order('priority', { ascending: false });
 
   if (error) {
-    logger.error('Error fetching tax rates', error, { shopId });
+    const errorObj =
+      error instanceof Error
+        ? error
+        : new Error((error as any)?.message || 'Failed to fetch tax rates');
+    logger.error('Error fetching tax rates', errorObj, { shopId });
     throw new BadRequestError('Failed to fetch tax rates');
   }
 
@@ -319,7 +327,11 @@ export async function deleteTaxRate(shopId: string, taxRateId: string): Promise<
     .eq('shop_id', shopId);
 
   if (error) {
-    logger.error('Error deleting tax rate', error, { taxRateId });
+    const errorObj =
+      error instanceof Error
+        ? error
+        : new Error((error as any)?.message || 'Failed to delete tax rate');
+    logger.error('Error deleting tax rate', errorObj, { taxRateId });
     throw new BadRequestError('Failed to delete tax rate');
   }
 }

@@ -85,7 +85,7 @@ jest.mock('@/lib/supabase', () => {
 });
 
 jest.mock('@/lib/services/order-workflows', () => ({
-  processNewOrder: jest.fn(async (_orderData, _items) => ({
+  processNewOrder: jest.fn(async (_orderData: any, _items: any) => ({
     success: true,
     order: {
       id: 'order_123',
@@ -136,11 +136,11 @@ jest.mock('@/lib/services/audit', () => ({
 
 jest.mock('@/lib/database/transaction', () => ({
   acquireLock: jest.fn(async () => async () => {}), // Returns a release function
-  withRetry: jest.fn(async (fn) => fn()), // Just execute the function
+  withRetry: jest.fn(async (fn: any) => fn()), // Just execute the function
 }));
 
 jest.mock('@/lib/validation/validator', () => ({
-  validateBody: jest.fn(async (request, schema) => {
+  validateBody: jest.fn(async (request: any, schema: any) => {
     const body = await request.json();
     // Basic validation - check for required fields
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
