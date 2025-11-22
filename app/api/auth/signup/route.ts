@@ -68,5 +68,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   logger.info('User signup successful', { email, userId: data.user.id });
-  return NextResponse.json(data, { status: 201 });
+
+  // Transform response to match frontend expectations
+  const response = {
+    user: data.user,
+    session: data.session,
+    accessToken: data.session?.access_token,
+  };
+
+  return NextResponse.json(response, { status: 201 });
 });
