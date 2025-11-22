@@ -629,6 +629,146 @@ export interface AnalyticsEvent {
 }
 
 // ============================================================================
+// Workflow & Automation Types
+// ============================================================================
+
+export type TriggerEvent =
+  | 'order_created'
+  | 'order_status_changed'
+  | 'payment_received'
+  | 'customer_created'
+  | 'product_low_stock'
+  | 'custom';
+
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'greater_than'
+  | 'less_than'
+  | 'contains'
+  | 'not_contains'
+  | 'starts_with'
+  | 'ends_with';
+
+export type LogicOperator = 'AND' | 'OR';
+
+export interface TriggerCondition {
+  id: string;
+  field: string;
+  operator: ConditionOperator;
+  value: any;
+  logic?: LogicOperator;
+}
+
+export type ActionType =
+  | 'send_email'
+  | 'send_sms'
+  | 'update_order_status'
+  | 'send_notification'
+  | 'create_task'
+  | 'wait'
+  | 'conditional'
+  | 'webhook';
+
+export interface WorkflowAction {
+  id: string;
+  type: ActionType;
+  config: Record<string, any>;
+  order: number;
+}
+
+// Email action config
+export interface EmailActionConfig {
+  to: string; // Can be template variable like {{customer.email}}
+  subject: string;
+  body: string; // HTML or template
+  cc?: string;
+  bcc?: string;
+}
+
+// SMS action config
+export interface SMSActionConfig {
+  to: string; // Can be template variable like {{customer.phone}}
+  message: string; // Template with variables
+}
+
+// Status change action config
+export interface StatusChangeActionConfig {
+  status: OrderStatus;
+  notify_customer?: boolean;
+}
+
+// Wait action config
+export interface WaitActionConfig {
+  duration: number; // in minutes
+  unit: 'minutes' | 'hours' | 'days';
+}
+
+// Conditional action config
+export interface ConditionalActionConfig {
+  conditions: TriggerCondition[];
+  if_true_actions: WorkflowAction[];
+  if_false_actions?: WorkflowAction[];
+}
+
+// Webhook action config
+export interface WebhookActionConfig {
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: Record<string, any>;
+}
+
+export interface Workflow {
+  id: string;
+  shop_id: string;
+  name: string;
+  description?: string;
+  trigger_event: TriggerEvent;
+  trigger_conditions?: TriggerCondition[];
+  actions: WorkflowAction[];
+  is_active: boolean;
+  execution_count: number;
+  last_executed_at?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+
+export interface WorkflowExecution {
+  id: string;
+  workflow_id: string;
+  shop_id: string;
+  trigger_event: string;
+  trigger_data?: Record<string, any>;
+  status: WorkflowExecutionStatus;
+  started_at: string;
+  completed_at?: string;
+  execution_time_ms?: number;
+  actions_executed?: Record<string, any>[];
+  error_message?: string;
+  error_details?: Record<string, any>;
+}
+
+export type WorkflowCategory = 'orders' | 'marketing' | 'inventory' | 'customer' | 'other';
+
+export interface WorkflowTemplate {
+  id: string;
+  template_name: string;
+  description?: string;
+  category: WorkflowCategory;
+  trigger_event: TriggerEvent;
+  trigger_conditions?: TriggerCondition[];
+  actions: WorkflowAction[];
+  is_system_template: boolean;
+  usage_count: number;
+  created_by?: string;
+  created_at: string;
+}
+
+// ============================================================================
 // Database Insert Types (without auto-generated fields)
 // ============================================================================
 
@@ -644,6 +784,14 @@ export type DiscountCodeInsert = Omit<
   DiscountCode,
   'id' | 'created_at' | 'updated_at' | 'usage_count'
 >;
+export type WorkflowInsert = Omit<
+  Workflow,
+  'id' | 'created_at' | 'updated_at' | 'execution_count' | 'last_executed_at'
+>;
+export type WorkflowTemplateInsert = Omit<
+  WorkflowTemplate,
+  'id' | 'created_at' | 'usage_count'
+>;
 
 // ============================================================================
 // Database Update Types (all fields optional except id)
@@ -652,6 +800,9 @@ export type DiscountCodeInsert = Omit<
 export type ProductUpdate = Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>;
 export type CategoryUpdate = Partial<Omit<Category, 'id' | 'created_at' | 'updated_at'>>;
 export type OrderUpdate = Partial<Omit<Order, 'id' | 'created_at' | 'updated_at'>>;
+export type WorkflowUpdate = Partial<
+  Omit<Workflow, 'id' | 'shop_id' | 'created_at' | 'updated_at' | 'execution_count' | 'created_by'>
+>;
 
 // ============================================================================
 // Utility Types
