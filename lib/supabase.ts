@@ -8,7 +8,9 @@ const SUPABASE_URL =
   process.env.NEXT_PUBLIC_INSFORGE_URL ||
   'http://119.40.88.49:7130';
 const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY ||
+  '';
 
 // Validate environment variable at runtime (not during build)
 if (
@@ -20,15 +22,29 @@ if (
   console.warn('NEXT_PUBLIC_SUPABASE_URL environment variable is not set in production');
 }
 
+// Lazy initialization of Supabase client to avoid build-time errors
+let _supabaseClient: SupabaseClient | null = null;
+
+function getClient(): SupabaseClient {
+  if (!_supabaseClient) {
+    _supabaseClient = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY || 'dummy-key', {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
+  return _supabaseClient;
+}
+
 // Create and export the Supabase client with latest configuration
 // NOTE: For client components, use createClient from '@/utils/supabase/client'
 // For server components, use createClient from '@/utils/supabase/server'
 // This is kept for backwards compatibility but new code should use the SSR pattern
-export const supabaseClient = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+export const supabaseClient = new Proxy({} as SupabaseClient, {
+  get(target, prop) {
+    return (getClient() as any)[prop];
   },
 });
 
@@ -69,10 +85,10 @@ export const getSupabaseServerClient = () => {
 export type SupabaseClientType = typeof supabaseClient;
 
 // Export a function to get a new client instance (alias for backwards compatibility)
-export const getSupabaseClient = () => supabaseClient;
+export const getSupabaseClient = () => getClient();
 
 // Backwards compatibility aliases
-export const getInsforgeClient = () => supabaseClient;
+export const getInsforgeClient = () => getClient();
 export const getInsforgeServerClient = () => getSupabaseServerClient();
 
 // Helper function to handle errors consistently

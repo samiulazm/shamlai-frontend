@@ -1,6 +1,35 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getShopIdBySubdomain, normalizeSubdomain } from './lib/services/shop';
 import { createClient } from './utils/supabase/middleware';
+
+// Edge-compatible subdomain normalization (copied from lib/services/shop.ts)
+function normalizeSubdomain(source: string): string {
+  const normalized = (source || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumerics with hyphen
+    .replace(/^-+|-+$/g, '') // trim hyphens
+    .slice(0, 50); // enforce max length
+
+  return normalized || 'shop';
+}
+
+// Edge-compatible shop ID lookup (uses Edge-compatible Supabase client)
+async function getShopIdBySubdomain(
+  subdomain: string,
+  supabase: any
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('subdomain', subdomain)
+      .single();
+    if (error) return null;
+    return data?.shop_id || null;
+  } catch {
+    return null;
+  }
+}
 
 // Reserved hosts and paths that should bypass subdomain routing
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'static', 'assets', 'localhost']);
@@ -51,6 +80,9 @@ export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
   const { pathname, hostname } = nextUrl;
 
+  // Create Supabase client for middleware (Edge-compatible)
+  const { supabase, response } = createClient(request);
+
   // --- Subdomain routing for storefronts ---
   if (!isReservedPath(pathname)) {
     // Configure your root domain via env. Example: "yourdomain.com"
@@ -62,7 +94,7 @@ export async function middleware(request: NextRequest) {
       // Shop IDs are now 8-10 digit numbers
       const alreadyShopRouted = /^\/\d{8,10}(?:\/|$)/.test(pathname);
       if (!alreadyShopRouted) {
-        const shopId = await getShopIdBySubdomain(sub);
+        const shopId = await getShopIdBySubdomain(sub, supabase);
         if (shopId) {
           const rewritePath = pathname === '/' ? `/${shopId}` : `/${shopId}${pathname}`;
           const url = nextUrl.clone();
@@ -81,8 +113,6 @@ export async function middleware(request: NextRequest) {
   const { pathname: finalPathname } = request.nextUrl;
 
   // --- Supabase Auth Session Refresh ---
-  // Create Supabase client for middleware to refresh user session
-  const { supabase, response } = createClient(request);
 
   // Refresh session if expired - required for Server Components
   const {
