@@ -137,9 +137,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
  */
 export function getAuthToken(request: NextRequest): string | null {
   // Priority 1: Cookie (most secure)
-  const cookieToken =
-    request.cookies.get('supabase_access_token')?.value ||
-    request.cookies.get('insforge_access_token')?.value;
+  const cookieToken = request.cookies.get('supabase_access_token')?.value;
   if (cookieToken) return cookieToken;
 
   // Priority 2: Authorization header
@@ -165,8 +163,8 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
     // Create a temporary client with the token for validation
     const { createClient } = await import('@supabase/supabase-js');
     const tempClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '',
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
       {
         global: {
           headers: {
@@ -179,7 +177,10 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
     const { data, error } = await tempClient.auth.getUser();
 
     if (error || !data?.user) {
-      logger.warn('Failed to get current user', { error });
+      logger.warn(
+        'Failed to get current user',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return null;
     }
 
@@ -203,7 +204,10 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
       permissions,
     };
   } catch (error) {
-    logger.error('Error getting current user', { error });
+    logger.error(
+      'Error getting current user',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return null;
   }
 }

@@ -8,6 +8,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
 
 console.log('🧪 Testing Token Validation');
 console.log('='.repeat(60));
@@ -17,19 +21,19 @@ async function testTokenValidation() {
   try {
     // Step 1: Login to get a valid token
     console.log('1️⃣  Logging in to get access token...');
-    const client = createClient({ baseUrl: BACKEND_URL });
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const { data: loginData, error: loginError } = await client.auth.signInWithPassword({
       email: 'test@shamlai.com',
       password: 'Test123456!',
     });
 
-    if (loginError || !loginData?.accessToken) {
+    if (loginError || !loginData?.session?.access_token) {
       console.log(`   ❌ Login failed: ${loginError?.message || 'No access token'}`);
       return false;
     }
 
-    const token = loginData.accessToken;
+    const token = loginData.session.access_token;
     console.log(`   ✅ Login successful`);
     console.log(`   Token: ${token.substring(0, 50)}...`);
 

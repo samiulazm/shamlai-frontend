@@ -130,7 +130,11 @@ export async function calculateTax(
       breakdown,
     };
   } catch (error) {
-    logger.error('Tax calculation error', { error, shopId, shippingAddress });
+    logger.error(
+      'Tax calculation error',
+      error instanceof Error ? error : new Error(String(error)),
+      { shopId, shippingAddress }
+    );
     throw new BadRequestError('Failed to calculate tax');
   }
 }
@@ -195,7 +199,11 @@ async function getApplicableTaxRates(
       shopId: rate.shop_id,
     }));
   } catch (error) {
-    logger.error('Error fetching tax rates', { error, shopId });
+    logger.error(
+      'Error fetching tax rates',
+      error instanceof Error ? error : new Error(String(error)),
+      { shopId }
+    );
     return [];
   }
 }
@@ -249,7 +257,7 @@ export async function createTaxRate(
     .single();
 
   if (error) {
-    logger.error('Error creating tax rate', { error, shopId });
+    logger.error('Error creating tax rate', error, { shopId });
     throw new BadRequestError('Failed to create tax rate');
   }
 
@@ -280,7 +288,7 @@ export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
     .order('priority', { ascending: false });
 
   if (error) {
-    logger.error('Error fetching tax rates', { error, shopId });
+    logger.error('Error fetching tax rates', error, { shopId });
     throw new BadRequestError('Failed to fetch tax rates');
   }
 
@@ -311,7 +319,7 @@ export async function deleteTaxRate(shopId: string, taxRateId: string): Promise<
     .eq('shop_id', shopId);
 
   if (error) {
-    logger.error('Error deleting tax rate', { error, taxRateId });
+    logger.error('Error deleting tax rate', error, { taxRateId });
     throw new BadRequestError('Failed to delete tax rate');
   }
 }

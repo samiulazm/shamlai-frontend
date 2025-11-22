@@ -5,9 +5,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { seedAllData } from '../lib/utils/seed-data';
 
-const insforgeClient = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
-});
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  );
+}
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const insforgeClient = supabaseClient; // Alias for compatibility
 
 async function main() {
   console.log("🌱 Seeding Current User's Shop\n");

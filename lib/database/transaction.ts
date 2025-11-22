@@ -53,7 +53,11 @@ export async function withTransaction<T>(
             // For updates, we'd need to store original values (TODO: implement)
           }
         } catch (error) {
-          logger.error('Rollback operation failed', { error, operation: op });
+          logger.error(
+            'Rollback operation failed',
+            error instanceof Error ? error : new Error(String(error)),
+            { operation: op }
+          );
         }
       }
     },
@@ -72,7 +76,10 @@ export async function withTransaction<T>(
 
     return result;
   } catch (error) {
-    logger.error('Transaction failed, rolling back', { error });
+    logger.error(
+      'Transaction failed, rolling back',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.rollback();
     throw error;
   }
@@ -111,7 +118,7 @@ export async function withRetry<T>(
         break;
       }
 
-      logger.warn('Retrying operation', {
+      logger.warn('Retrying operation', undefined, {
         attempt: attempt + 1,
         maxRetries,
         error: error?.message,
@@ -170,7 +177,11 @@ export async function acquireLock(
         throw error;
       }
     } catch (error) {
-      logger.error('Error acquiring lock', { error, lockKey });
+      logger.error(
+        'Error acquiring lock',
+        error instanceof Error ? error : new Error(String(error)),
+        { lockKey }
+      );
       throw new InternalServerError('Failed to acquire lock');
     }
   }
@@ -185,7 +196,11 @@ export async function acquireLock(
       await client.from('system_locks').delete().eq('lock_id', lockId);
       logger.info('Lock released', { lockKey, lockId });
     } catch (error) {
-      logger.error('Error releasing lock', { error, lockKey });
+      logger.error(
+        'Error releasing lock',
+        error instanceof Error ? error : new Error(String(error)),
+        { lockKey }
+      );
     }
   };
 }
@@ -277,7 +292,7 @@ export async function atomicIncrement(
 
     if (fetchError) throw fetchError;
 
-    const newValue = (current[field] || 0) + amount;
+    const newValue = ((current as any)[field] || 0) + amount;
 
     const { error: updateError } = await client
       .from(table)

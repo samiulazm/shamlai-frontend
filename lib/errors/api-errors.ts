@@ -130,12 +130,11 @@ export class ServiceUnavailableError extends ApiError {
  */
 export class InsufficientStockError extends ApiError {
   constructor(productName: string, available: number, requested: number) {
-    super(
-      `Insufficient stock for ${productName}`,
-      400,
-      'INSUFFICIENT_STOCK',
-      { productName, available, requested }
-    );
+    super(`Insufficient stock for ${productName}`, 400, 'INSUFFICIENT_STOCK', {
+      productName,
+      available,
+      requested,
+    });
   }
 }
 
@@ -197,7 +196,7 @@ export function handleError(error: unknown, requestId?: string): NextResponse {
 
   // Log the error
   if (apiError.isOperational) {
-    logger.warn('Operational error', {
+    logger.warn('Operational error', undefined, {
       code: apiError.code,
       message: apiError.message,
       statusCode: apiError.statusCode,
@@ -205,11 +204,9 @@ export function handleError(error: unknown, requestId?: string): NextResponse {
       requestId,
     });
   } else {
-    logger.error('System error', {
+    logger.error('System error', apiError, {
       code: apiError.code,
-      message: apiError.message,
       statusCode: apiError.statusCode,
-      stack: apiError.stack,
       requestId,
     });
   }
@@ -217,9 +214,7 @@ export function handleError(error: unknown, requestId?: string): NextResponse {
   // Don't expose internal error details in production
   const isProduction = process.env.NODE_ENV === 'production';
   const errorResponse = createErrorResponse(
-    isProduction && !apiError.isOperational
-      ? new InternalServerError()
-      : apiError,
+    isProduction && !apiError.isOperational ? new InternalServerError() : apiError,
     requestId
   );
 
@@ -235,9 +230,7 @@ export function handleError(error: unknown, requestId?: string): NextResponse {
 /**
  * Error handler wrapper for API routes
  */
-export function withErrorHandler<T extends any[], R>(
-  handler: (...args: T) => Promise<R>
-) {
+export function withErrorHandler<T extends any[], R>(handler: (...args: T) => Promise<R>) {
   return async (...args: T): Promise<R | NextResponse> => {
     try {
       return await handler(...args);
@@ -262,10 +255,7 @@ export function assert(condition: boolean, error: ApiError): asserts condition {
 /**
  * Assert value is not null/undefined
  */
-export function assertExists<T>(
-  value: T | null | undefined,
-  error: ApiError
-): asserts value is T {
+export function assertExists<T>(value: T | null | undefined, error: ApiError): asserts value is T {
   if (value === null || value === undefined) {
     throw error;
   }

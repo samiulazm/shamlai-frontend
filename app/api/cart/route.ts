@@ -102,7 +102,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     .single();
 
   if (cartError || !cart) {
-    logger.error('Failed to create/get cart', { error: cartError, sessionId });
+    logger.error('Failed to create/get cart', cartError || new Error('Cart not found'), {
+      sessionId,
+    });
     throw new BadRequestError('Failed to create cart');
   }
 
@@ -155,7 +157,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   );
 
   if (itemError) {
-    logger.error('Failed to add item to cart', { error: itemError, productId });
+    logger.error('Failed to add item to cart', itemError, { productId });
     throw new BadRequestError('Failed to add item to cart');
   }
 
@@ -195,7 +197,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
     const { error } = await client.from('cart_items').delete().eq('id', cartItemId);
 
     if (error) {
-      logger.error('Failed to remove cart item', { error, cartItemId });
+      logger.error('Failed to remove cart item', error, { cartItemId });
       throw new BadRequestError('Failed to remove item from cart');
     }
 
@@ -240,7 +242,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
     .eq('id', cartItemId);
 
   if (updateError) {
-    logger.error('Failed to update cart item', { error: updateError, cartItemId });
+    logger.error('Failed to update cart item', updateError, { cartItemId });
     throw new BadRequestError('Failed to update cart item');
   }
 
@@ -292,7 +294,7 @@ export const DELETE = withErrorHandler(async (request: NextRequest) => {
   const { error } = await client.from('cart_items').delete().eq('cart_id', cart.id);
 
   if (error) {
-    logger.error('Failed to clear cart', { error, cartId: cart.id });
+    logger.error('Failed to clear cart', error, { cartId: cart.id });
     throw new BadRequestError('Failed to clear cart');
   }
 

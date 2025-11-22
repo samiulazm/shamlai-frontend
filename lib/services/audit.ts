@@ -84,7 +84,11 @@ export async function createAuditLog(
     });
   } catch (error) {
     // Don't throw - audit logging failures shouldn't break the main operation
-    logger.error('Failed to create audit log', { error, entry });
+    logger.error(
+      'Failed to create audit log',
+      error instanceof Error ? error : new Error(String(error)),
+      { entry }
+    );
   }
 }
 
@@ -328,7 +332,11 @@ export async function getAuditLogs(filters: {
 
     return { logs, total: count || 0 };
   } catch (error) {
-    logger.error('Failed to fetch audit logs', { error, filters });
+    logger.error(
+      'Failed to fetch audit logs',
+      error instanceof Error ? error : new Error(String(error)),
+      { filters }
+    );
     return { logs: [], total: 0 };
   }
 }
@@ -450,7 +458,11 @@ export async function cleanupOldAuditLogs(
 
     return deletedCount;
   } catch (error) {
-    logger.error('Failed to cleanup audit logs', { error, shopId });
+    logger.error(
+      'Failed to cleanup audit logs',
+      error instanceof Error ? error : new Error(String(error)),
+      { shopId }
+    );
     return 0;
   }
 }

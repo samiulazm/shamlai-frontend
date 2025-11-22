@@ -5,10 +5,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const insforgeClient = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
-});
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  );
+}
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const insforgeClient = supabaseClient; // Alias for compatibility
 async function createTestUser() {
   console.log('🚀 Creating test user...\n');
 
@@ -68,9 +75,11 @@ async function createTestUser() {
     // 2. Update user profile with additional info (only if user was just created)
     if (!signupError || !signupError.message?.includes('already exists')) {
       console.log('\n📝 Setting up user profile...');
-      const { data: profileData, error: profileError } = await insforgeClient.auth.setProfile({
-        nickname: 'Test User',
-        bio: 'Test account for development',
+      const { data: profileData, error: profileError } = await insforgeClient.auth.updateUser({
+        data: {
+          nickname: 'Test User',
+          bio: 'Test account for development',
+        },
       });
 
       if (profileError) {
@@ -95,7 +104,7 @@ async function createTestUser() {
     let attempts = 0;
 
     // Check if shop settings already exist
-    const { data: existingShop } = await insforgeClient.database
+    const { data: existingShop } = await insforgeClient
       .from('shop_settings')
       .select('*')
       .eq('user_id', userId)
@@ -110,7 +119,7 @@ async function createTestUser() {
 
       // Ensure uniqueness
       while (attempts < 100) {
-        const { data: existing } = await insforgeClient.database
+        const { data: existing } = await insforgeClient
           .from('shop_settings')
           .select('id')
           .eq('shop_id', shopId)
@@ -126,7 +135,7 @@ async function createTestUser() {
       const subdomain = 'test-shop';
       const shopUsername = 'test-shop';
 
-      const { data: shopData, error: shopError } = await insforgeClient.database
+      const { data: shopData, error: shopError } = await insforgeClient
         .from('shop_settings')
         .insert([
           {

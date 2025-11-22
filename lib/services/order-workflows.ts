@@ -169,7 +169,7 @@ export async function updateOrderWithWorkflow(
     const customer = orderWithDetails.customer;
 
     if (!customer) {
-      logger.warn('Customer not found for order', { orderId });
+      logger.warn('Customer not found for order', undefined, { orderId });
       return { order, success: true };
     }
 

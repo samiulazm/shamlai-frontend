@@ -82,7 +82,12 @@ interface OrderItem {
   created_at: string;
 }
 
-const client = createClient({ baseUrl: INSFORGE_URL });
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
+
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Parse command-line arguments
 const args = process.argv.slice(2);
@@ -98,7 +103,7 @@ async function getOldOrders(years: number): Promise<Order[]> {
 
   console.log(`Fetching orders older than ${cutoffDate.toISOString()}...`);
 
-  const { data, error } = await client.database
+  const { data, error } = await client
     .from('orders')
     .select('*')
     .lt('created_at', cutoffDate.toISOString())
@@ -121,10 +126,7 @@ async function getOrderItems(orderIds: string[]): Promise<OrderItem[]> {
 
   console.log(`Fetching order items for ${orderIds.length} orders...`);
 
-  const { data, error } = await client.database
-    .from('order_items')
-    .select('*')
-    .in('order_id', orderIds);
+  const { data, error } = await client.from('order_items').select('*').in('order_id', orderIds);
 
   if (error) {
     throw new Error(`Failed to fetch order items: ${error.message}`);
@@ -140,7 +142,7 @@ async function archiveOrders(orders: Order[], orderItems: OrderItem[]): Promise<
   console.log(`Archiving ${orders.length} orders and ${orderItems.length} order items...`);
 
   // Insert into archived_orders
-  const { error: ordersError } = await client.database.from('archived_orders').insert(orders);
+  const { error: ordersError } = await client.from('archived_orders').insert(orders);
 
   if (ordersError) {
     throw new Error(`Failed to insert archived orders: ${ordersError.message}`);
@@ -150,9 +152,7 @@ async function archiveOrders(orders: Order[], orderItems: OrderItem[]): Promise<
 
   // Insert into archived_order_items
   if (orderItems.length > 0) {
-    const { error: itemsError } = await client.database
-      .from('archived_order_items')
-      .insert(orderItems);
+    const { error: itemsError } = await client.from('archived_order_items').insert(orderItems);
 
     if (itemsError) {
       throw new Error(`Failed to insert archived order items: ${itemsError.message}`);
@@ -169,10 +169,7 @@ async function deleteArchivedOrders(orderIds: string[]): Promise<void> {
   console.log(`Deleting ${orderIds.length} orders from active tables...`);
 
   // Delete order items first (foreign key constraint)
-  const { error: itemsError } = await client.database
-    .from('order_items')
-    .delete()
-    .in('order_id', orderIds);
+  const { error: itemsError } = await client.from('order_items').delete().in('order_id', orderIds);
 
   if (itemsError) {
     throw new Error(`Failed to delete order items: ${itemsError.message}`);
@@ -181,7 +178,7 @@ async function deleteArchivedOrders(orderIds: string[]): Promise<void> {
   console.log(`✓ Deleted order items for ${orderIds.length} orders`);
 
   // Delete orders
-  const { error: ordersError } = await client.database.from('orders').delete().in('id', orderIds);
+  const { error: ordersError } = await client.from('orders').delete().in('id', orderIds);
 
   if (ordersError) {
     throw new Error(`Failed to delete orders: ${ordersError.message}`);

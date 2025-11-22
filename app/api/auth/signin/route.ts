@@ -9,12 +9,12 @@ import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { auditAuthEvent, AuditAction } from '@/lib/services/audit';
 import { getClientIP } from '@/lib/redis/rate-limiter';
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_INSFORGE_URL ||
-  'http://119.40.88.49:7130';
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 // Create Supabase client for server-side use (no mixed content issues here)
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '');
@@ -38,16 +38,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   if (error || !data) {
     // Audit failed login attempt
     const ip = getClientIP(request.headers);
+    const errorMessage = error
+      ? error instanceof Error
+        ? error.message
+        : String(error)
+      : 'Unknown error';
     await auditAuthEvent(AuditAction.FAILED_LOGIN, 'unknown', email, {
       ip,
       userAgent: request.headers.get('user-agent') || undefined,
-      reason: error?.message || 'Unknown error',
+      reason: errorMessage,
     });
 
-    logger.warn('Failed signin attempt', {
+    const errorObj = error instanceof Error ? error : new Error(errorMessage);
+    logger.warn('Failed signin attempt', errorObj, {
       email,
       ip,
-      errorMessage: error?.message || 'Unknown error',
     });
 
     throw new UnauthorizedError(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);

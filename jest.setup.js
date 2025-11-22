@@ -115,7 +115,6 @@ if (typeof window !== 'undefined') {
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://bnkphlsfgzzaefxebbkk.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJua3BobHNmZ3p6YWVmeGViYmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NjA1NTMsImV4cCI6MjA3OTIzNjU1M30.nMhDSFeuVTNhkICpjGDXFdqXoaN1weKINI-4b4Qg-Lc';
-process.env.NEXT_PUBLIC_INSFORGE_URL = 'https://bnkphlsfgzzaefxebbkk.supabase.co';
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 process.env.NEXT_PUBLIC_APP_NAME = 'Shamlai';
 

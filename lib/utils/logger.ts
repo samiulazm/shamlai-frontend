@@ -130,7 +130,7 @@ class Logger {
   // Database query logging
   dbQuery(query: string, duration: number, context?: LogContext) {
     if (duration > 1000) {
-      this.warn(`Slow database query: ${duration}ms`, {
+      this.warn(`Slow database query: ${duration}ms`, undefined, {
         ...context,
         query: query.substring(0, 100), // Truncate long queries
         duration,

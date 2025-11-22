@@ -42,10 +42,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   if (error) {
     const ip = getClientIP(request.headers);
-    logger.warn('Signup failed', {
+    logger.warn('Signup failed', error, {
       email,
       ip,
-      error: error.message,
     });
 
     // Handle specific error cases

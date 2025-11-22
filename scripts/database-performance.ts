@@ -21,8 +21,12 @@ import { createClient } from '@supabase/supabase-js';
 import { getCacheStats, isRedisConnected } from '../lib/cache';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
 
-const client = createClient({ baseUrl: INSFORGE_URL });
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 interface TableStats {
   tablename: string;
@@ -81,7 +85,7 @@ async function getTableStats(): Promise<void> {
     // Get estimated row counts using the select API
     try {
       for (const table of tables) {
-        const { count, error } = await client.database
+        const { count, error } = await client
           .from(table)
           .select('*', { count: 'estimated', head: true });
         if (!error && count !== null) {

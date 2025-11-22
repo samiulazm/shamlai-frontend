@@ -12,12 +12,16 @@
 import { createClient } from '@supabase/supabase-js';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || '';
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
 
 console.log('🔍 Testing Backend Connection');
 console.log('='.repeat(60));
 console.log(`Backend URL: ${BACKEND_URL}\n`);
 
-const client = createClient({ baseUrl: BACKEND_URL });
+const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function testConnection() {
   try {
@@ -70,7 +74,7 @@ async function testConnection() {
 
     // Test 3: Check shop settings
     console.log('\n3️⃣  Checking shop settings...');
-    const { data: shopData, error: shopError } = await client.database
+    const { data: shopData, error: shopError } = await client
       .from('shop_settings')
       .select('*')
       .eq('user_id', data.user.id)
@@ -87,7 +91,7 @@ async function testConnection() {
 
     // Test 4: Check products
     console.log('\n4️⃣  Checking products...');
-    const { count: productCount } = await client.database
+    const { count: productCount } = await client
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('shop_id', data.user.id);
