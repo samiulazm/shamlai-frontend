@@ -10,16 +10,53 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'products' | 'orders' | 'customers'>('all');
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!query.trim() || query.trim().length < 2) return;
 
-    setLoading(true);
-    // TODO: Implement global search
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      setLoading(true);
+
+      // Get user/shop ID
+      const { supabaseClient } = await import('@/lib/supabase');
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Import search service dynamically
+      const { globalSearch } = await import('@/lib/services/search');
+
+      // Determine search types based on active tab
+      const types =
+        activeTab === 'all'
+          ? undefined
+          : activeTab === 'products'
+            ? ['product' as const]
+            : activeTab === 'orders'
+              ? ['order' as const]
+              : ['customer' as const];
+
+      // Perform search
+      const { results: searchResults, error } = await globalSearch(query, {
+        shopId: user.id,
+        types,
+        limit: 50,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResults(searchResults);
+    } catch (err) {
+      console.error('Search error:', err);
       setResults([]);
-    }, 1000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -112,11 +149,42 @@ export default function SearchPage() {
             <p className="text-gray-500">Enter a search query to get started</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {results.map((result, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                {result.title}
-              </div>
+          <div className="space-y-3">
+            {results.map((result) => (
+              <Link
+                key={result.id}
+                href={result.url}
+                className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-indigo-300 transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  {result.imageUrl && (
+                    <img
+                      src={result.imageUrl}
+                      alt={result.title}
+                      className="w-12 h-12 rounded object-cover"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {result.type === 'product' && <Package className="h-4 w-4 text-blue-500" />}
+                      {result.type === 'order' && (
+                        <ShoppingBag className="h-4 w-4 text-green-500" />
+                      )}
+                      {result.type === 'customer' && <Users className="h-4 w-4 text-purple-500" />}
+                      <h3 className="font-medium text-gray-900 truncate">{result.title}</h3>
+                      <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                        {result.type}
+                      </span>
+                    </div>
+                    {result.subtitle && (
+                      <p className="text-sm text-gray-600 mb-1">{result.subtitle}</p>
+                    )}
+                    {result.description && (
+                      <p className="text-sm text-gray-500 truncate">{result.description}</p>
+                    )}
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         )}

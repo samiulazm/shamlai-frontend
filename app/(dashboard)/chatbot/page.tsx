@@ -89,12 +89,32 @@ export default function Chatbot() {
       setTraining(true);
       setError(null);
 
-      // Note: AI integration needs external service (OpenAI, etc.)
-      // For now, we'll just store the training text
-      // TODO: Implement AI integration with external service
-      // For now, just show a success message
-      alert('Bot training initiated! The AI will learn from this content.');
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
+        setError('User not authenticated');
+        return;
+      }
 
+      // Import AI service dynamically to avoid client-side bundling issues
+      const { trainChatbot } = await import('@/lib/services/ai');
+
+      // Train the chatbot with the provided content
+      const result = await trainChatbot(trainingText, user.id);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Store training data in database for future reference
+      await supabaseClient.from('chatbot_training').insert({
+        shop_id: user.id,
+        training_content: trainingText,
+        created_at: new Date().toISOString(),
+      });
+
+      alert('Bot trained successfully! The AI has learned from your content.');
       setTrainingText('');
     } catch (err: any) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
