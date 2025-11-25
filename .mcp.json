@@ -7,6 +7,13 @@
         "API_KEY": "ik_9c7e2f5a8b1d4e6a9c3f7b2e5d8a1f4c6b9e3a7f2d5c8e1b4a7",
         "API_BASE_URL": "http://119.40.88.49:7130"
       }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=rcnlwyofzyqjovifxzcf",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjbmx3eW9menlxam92aWZ4emNmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDA5NDUyMCwiZXhwIjoyMDc5NjcwNTIwfQ.yd1Y9msJIL5SnGIoPqqabPYvEMzDGiGfcBVyt9CcZyQ"
+      }
     }
   }
 }
