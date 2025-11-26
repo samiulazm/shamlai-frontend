@@ -44,6 +44,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Try to use admin client for auto-confirmed signup if available
   let data, error;
+  let useRegularSignup = !supabaseAdmin;
 
   if (supabaseAdmin) {
     // Use admin client to create user with email auto-confirmed
@@ -58,7 +59,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     });
 
     if (signupResult.error) {
-      error = signupResult.error;
+      // If admin signup fails (e.g., 401 unauthorized), fallback to regular signup
+      logger.warn('Admin signup failed, falling back to regular signup', signupResult.error);
+      useRegularSignup = true;
     } else {
       // Now sign in the user to get a session
       const signInResult = await supabaseClient.auth.signInWithPassword({
@@ -69,7 +72,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       data = signInResult.data;
       error = signInResult.error;
     }
-  } else {
+  }
+
+  if (useRegularSignup) {
     // Fallback to regular signup (will require email confirmation if enabled)
     const signupResult = await supabaseClient.auth.signUp({
       email,
