@@ -311,7 +311,44 @@ export default function Checkout() {
         orderItems
       );
 
-      // Clear cart after successful order
+      // Handle payment based on selected method
+      if (formData.paymentMethod === 'online') {
+        // Initiate uddoktaPay payment
+        const paymentResponse = await fetch('/api/payments/uddoktapay/initiate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: order.id,
+            amount: total,
+            currency: 'BDT',
+            customerName: `${formData.firstName} ${formData.lastName}`,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            metadata: {
+              customerId: customer.id,
+              shopId,
+            },
+          }),
+        });
+
+        const paymentData = await paymentResponse.json();
+
+        if (!paymentData.success || !paymentData.paymentUrl) {
+          throw new Error(paymentData.error || 'Failed to initiate payment');
+        }
+
+        // Clear cart before redirecting to payment
+        await CartService.clearCart(cart.id);
+        dispatchCartUpdatedEvent({ action: 'checkout-complete' });
+
+        // Redirect to uddoktaPay payment page
+        window.location.href = paymentData.paymentUrl;
+        return;
+      }
+
+      // For COD, clear cart and redirect to order confirmation
       await CartService.clearCart(cart.id);
       dispatchCartUpdatedEvent({ action: 'checkout-complete' });
 

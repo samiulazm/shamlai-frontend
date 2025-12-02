@@ -128,6 +128,35 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   refunded: 'Refunded',
 };
 
+export const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  paid: 'bg-green-100 text-green-800',
+  failed: 'bg-red-100 text-red-800',
+  refunded: 'bg-gray-100 text-gray-800',
+};
+
+// ============================================================================
+// Payment Providers
+// ============================================================================
+
+export const PAYMENT_PROVIDERS = {
+  COD: 'cod',
+  UDDOKTAPAY: 'uddoktapay',
+  STRIPE: 'stripe',
+  BKASH: 'bkash',
+  NAGAD: 'nagad',
+  SSLCOMMERZ: 'sslcommerz',
+} as const;
+
+export const PAYMENT_PROVIDER_LABELS: Record<string, string> = {
+  cod: 'Cash on Delivery',
+  uddoktapay: 'uddoktaPay',
+  stripe: 'Stripe',
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  sslcommerz: 'SSLCommerz',
+};
+
 // ============================================================================
 // Fulfillment Status
 // ============================================================================
@@ -182,6 +211,7 @@ export const FEATURES = {
   WISHLISTS: process.env.NEXT_PUBLIC_ENABLE_WISHLISTS === 'true',
   GUEST_CHECKOUT: process.env.NEXT_PUBLIC_ENABLE_GUEST_CHECKOUT === 'true',
   PWA: process.env.NEXT_PUBLIC_ENABLE_PWA === 'true',
+  UDDOKTAPAY_PAYMENTS: process.env.NEXT_PUBLIC_UDDOKTAPAY_ENABLED === 'true',
 } as const;
 
 // ============================================================================
