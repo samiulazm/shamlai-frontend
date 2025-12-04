@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface OrderCountsWidgetProps {
@@ -46,7 +46,7 @@ export default function OrderCountsWidget({ shopId }: OrderCountsWidgetProps) {
       startDate.setHours(0, 0, 0, 0);
 
       // Fetch orders
-      const { data: orders, error } = await insforgeClient.database
+      const { data: orders, error } = await supabaseClient
         .from('orders')
         .select('id, created_at, sent_to_courier_at')
         .eq('shop_id', shopId)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface Payment {
@@ -29,7 +29,9 @@ export default function OrderPayments() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed' | 'refunded'>('all');
+  const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed' | 'refunded'>(
+    'all'
+  );
 
   useEffect(() => {
     fetchPayments();
@@ -41,20 +43,24 @@ export default function OrderPayments() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Build query
-      let query = insforgeClient.database
+      let query = supabaseClient
         .from('payments')
-        .select(`
+        .select(
+          `
           *,
           order:orders(order_number, customer_id)
-        `)
-        .eq('shop_id', user.user.id)
+        `
+        )
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       // Apply filter
@@ -87,7 +93,9 @@ export default function OrderPayments() {
     };
 
     return (
-      <span className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className={`badge ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -180,19 +188,25 @@ export default function OrderPayments() {
         <div className="card">
           <div className="card-pad">
             <div className="text-sm text-gray-600">Completed</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">৳{totalCompleted.toLocaleString()}</div>
+            <div className="text-2xl font-bold mt-1 text-green-600">
+              ৳{totalCompleted.toLocaleString()}
+            </div>
           </div>
         </div>
         <div className="card">
           <div className="card-pad">
             <div className="text-sm text-gray-600">Pending</div>
-            <div className="text-2xl font-bold mt-1 text-yellow-600">৳{totalPending.toLocaleString()}</div>
+            <div className="text-2xl font-bold mt-1 text-yellow-600">
+              ৳{totalPending.toLocaleString()}
+            </div>
           </div>
         </div>
         <div className="card">
           <div className="card-pad">
             <div className="text-sm text-gray-600">Refunded</div>
-            <div className="text-2xl font-bold mt-1 text-gray-500">৳{totalRefunded.toLocaleString()}</div>
+            <div className="text-2xl font-bold mt-1 text-gray-500">
+              ৳{totalRefunded.toLocaleString()}
+            </div>
           </div>
         </div>
       </div>
@@ -220,7 +234,8 @@ export default function OrderPayments() {
                         href={`/orders/${payment.order_id}`}
                         className="text-brand-indigo hover:underline"
                       >
-                        {(payment.order as any)?.order_number || `Order #${payment.order_id.slice(0, 8)}`}
+                        {(payment.order as any)?.order_number ||
+                          `Order #${payment.order_id.slice(0, 8)}`}
                       </Link>
                     </td>
                     <td className="font-medium">
@@ -234,7 +249,9 @@ export default function OrderPayments() {
                       </code>
                     </td>
                     <td>
-                      {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}
+                      {payment.payment_date
+                        ? new Date(payment.payment_date).toLocaleDateString()
+                        : 'N/A'}
                     </td>
                     <td>
                       <Link

@@ -37,12 +37,13 @@ async function getMigrations(): Promise<MigrationFile[]> {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get API key from environment or request
-    const apiKey = process.env.INSFORGE_API_KEY || request.headers.get('x-insforge-api-key');
+    // Get service role key for Supabase
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || request.headers.get('x-supabase-service-key');
 
-    if (!apiKey) {
+    if (!serviceRoleKey) {
       return NextResponse.json(
-        { success: false, error: 'INSFORGE_API_KEY is required' },
+        { success: false, error: 'SUPABASE_SERVICE_ROLE_KEY is required' },
         { status: 401 }
       );
     }
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Run migrations
-    // Note: Actual SQL execution should be done via MCP tools
+    // Note: Actual SQL execution should be done via Supabase
     // This is a placeholder that returns migration info
 
     const results = migrations.map((migration) => ({

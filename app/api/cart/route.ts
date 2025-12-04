@@ -8,15 +8,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getInsforgeClient } from '@/lib/insforge';
+import { getSupabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { validateBody, validateSearchParams } from '@/lib/validation/validator';
 import { addToCartSchema, updateCartItemSchema } from '@/lib/validation/schemas';
-import {
-  withErrorHandler,
-  NotFoundError,
-  BadRequestError,
-} from '@/lib/errors/api-errors';
+import { withErrorHandler, NotFoundError, BadRequestError } from '@/lib/errors/api-errors';
 import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { z } from 'zod';
 
@@ -31,34 +27,30 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Validate query parameters
-  const { sessionId } = validateSearchParams(
-    request,
-    z.object({ sessionId: z.string().min(1) })
-  );
+  const { sessionId } = validateSearchParams(request, z.object({ sessionId: z.string().min(1) }));
 
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Get cart
-  const { data: cart } = await client.database
-    .from('cart')
-    .select('*')
-    .eq('session_id', sessionId)
-    .single();
+  const { data: cart } = await client.from('cart').select('*').eq('session_id', sessionId).single();
 
   if (!cart) {
     return NextResponse.json({ items: [], total: 0 });
   }
 
   // Get cart items with product details
-  const { data: items } = await client.database
+  const { data: items } = await client
     .from('cart_items')
-    .select(`
+    .select(
+      `
       *,
       product:products(id, name, price, image_url, stock_quantity)
-    `)
+    `
+    )
     .eq('cart_id', cart.id);
 
-  const total = items?.reduce((sum, item) => sum + parseFloat(item.subtotal.toString()), 0) || 0;
+  const total =
+    items?.reduce((sum: number, item: any) => sum + parseFloat(item.subtotal.toString()), 0) || 0;
 
   return NextResponse.json({
     cart: {
@@ -92,10 +84,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   const { sessionId, productId, variantId, quantity } = validatedData;
 
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Get or create cart (UPSERT)
-  const { data: cart, error: cartError } = await client.database
+  const { data: cart, error: cartError } = await client
     .from('cart')
     .upsert(
       {
@@ -110,12 +102,19 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     .single();
 
   if (cartError || !cart) {
-    logger.error('Failed to create/get cart', { error: cartError, sessionId });
+    const errorObj = cartError
+      ? cartError instanceof Error
+        ? cartError
+        : new Error((cartError as any)?.message || 'Failed to create/get cart')
+      : new Error('Cart not found');
+    logger.error('Failed to create/get cart', errorObj, {
+      sessionId,
+    });
     throw new BadRequestError('Failed to create cart');
   }
 
   // Get product details
-  const { data: product, error: productError } = await client.database
+  const { data: product, error: productError } = await client
     .from('products')
     .select('*')
     .eq('id', productId)
@@ -134,7 +133,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // UPSERT cart item to prevent race conditions
   // If item exists, increment quantity. Otherwise, create new.
-  const { data: existingItem } = await client.database
+  const { data: existingItem } = await client
     .from('cart_items')
     .select('*')
     .eq('cart_id', cart.id)
@@ -146,34 +145,33 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const newSubtotal = price * newQuantity;
 
   // Use upsert to handle concurrent requests atomically
-  const { error: itemError } = await client.database
-    .from('cart_items')
-    .upsert(
-      {
-        id: existingItem?.id,
-        cart_id: cart.id,
-        product_id: productId,
-        variant_id: variantId || null,
-        quantity: newQuantity,
-        price,
-        subtotal: newSubtotal,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: existingItem ? 'id' : undefined,
-      }
-    );
+  const { error: itemError } = await client.from('cart_items').upsert(
+    {
+      id: existingItem?.id,
+      cart_id: cart.id,
+      product_id: productId,
+      variant_id: variantId || null,
+      quantity: newQuantity,
+      price,
+      subtotal: newSubtotal,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: existingItem ? 'id' : undefined,
+    }
+  );
 
   if (itemError) {
-    logger.error('Failed to add item to cart', { error: itemError, productId });
+    const errorObj =
+      itemError instanceof Error
+        ? itemError
+        : new Error((itemError as any)?.message || 'Failed to add item to cart');
+    logger.error('Failed to add item to cart', errorObj, { productId });
     throw new BadRequestError('Failed to add item to cart');
   }
 
   // Update cart timestamp
-  await client.database
-    .from('cart')
-    .update({ updated_at: new Date().toISOString() })
-    .eq('id', cart.id);
+  await client.from('cart').update({ updated_at: new Date().toISOString() }).eq('id', cart.id);
 
   logger.info('Item added to cart', {
     cartId: cart.id,
@@ -201,17 +199,18 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
   // Validate request body
   const { cartItemId, quantity } = await validateBody(request, updateCartItemSchema);
 
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // If quantity is 0, delete the item
   if (quantity === 0) {
-    const { error } = await client.database
-      .from('cart_items')
-      .delete()
-      .eq('id', cartItemId);
+    const { error } = await client.from('cart_items').delete().eq('id', cartItemId);
 
     if (error) {
-      logger.error('Failed to remove cart item', { error, cartItemId });
+      const errorObj =
+        error instanceof Error
+          ? error
+          : new Error((error as any)?.message || 'Failed to remove cart item');
+      logger.error('Failed to remove cart item', errorObj, { cartItemId });
       throw new BadRequestError('Failed to remove item from cart');
     }
 
@@ -222,7 +221,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Get cart item
-  const { data: cartItem, error: fetchError } = await client.database
+  const { data: cartItem, error: fetchError } = await client
     .from('cart_items')
     .select('*')
     .eq('id', cartItemId)
@@ -233,7 +232,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Verify stock availability
-  const { data: product } = await client.database
+  const { data: product } = await client
     .from('products')
     .select('stock_quantity, track_inventory')
     .eq('id', cartItem.product_id)
@@ -246,7 +245,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
   // Update quantity
   const newSubtotal = parseFloat(cartItem.price.toString()) * quantity;
 
-  const { error: updateError } = await client.database
+  const { error: updateError } = await client
     .from('cart_items')
     .update({
       quantity,
@@ -256,12 +255,16 @@ export const PATCH = withErrorHandler(async (request: NextRequest) => {
     .eq('id', cartItemId);
 
   if (updateError) {
-    logger.error('Failed to update cart item', { error: updateError, cartItemId });
+    const errorObj =
+      updateError instanceof Error
+        ? updateError
+        : new Error((updateError as any)?.message || 'Failed to update cart item');
+    logger.error('Failed to update cart item', errorObj, { cartItemId });
     throw new BadRequestError('Failed to update cart item');
   }
 
   // Update cart timestamp
-  await client.database
+  await client
     .from('cart')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', cartItem.cart_id);
@@ -286,15 +289,12 @@ export const DELETE = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Validate query parameters
-  const { sessionId } = validateSearchParams(
-    request,
-    z.object({ sessionId: z.string().min(1) })
-  );
+  const { sessionId } = validateSearchParams(request, z.object({ sessionId: z.string().min(1) }));
 
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Get cart
-  const { data: cart } = await client.database
+  const { data: cart } = await client
     .from('cart')
     .select('id')
     .eq('session_id', sessionId)
@@ -308,13 +308,12 @@ export const DELETE = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Delete all cart items
-  const { error } = await client.database
-    .from('cart_items')
-    .delete()
-    .eq('cart_id', cart.id);
+  const { error } = await client.from('cart_items').delete().eq('cart_id', cart.id);
 
   if (error) {
-    logger.error('Failed to clear cart', { error, cartId: cart.id });
+    const errorObj =
+      error instanceof Error ? error : new Error((error as any)?.message || 'Failed to clear cart');
+    logger.error('Failed to clear cart', errorObj, { cartId: cart.id });
     throw new BadRequestError('Failed to clear cart');
   }
 

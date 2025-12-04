@@ -4,12 +4,8 @@
  */
 
 import { NextRequest } from 'next/server';
-import { getInsforgeClient } from '@/lib/insforge';
-import {
-  UnauthorizedError,
-  ForbiddenError,
-  NotFoundError,
-} from '@/lib/errors/api-errors';
+import { getSupabaseClient } from '@/lib/supabase';
+import { UnauthorizedError, ForbiddenError, NotFoundError } from '@/lib/errors/api-errors';
 import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { logger } from '@/lib/utils/logger';
 
@@ -141,7 +137,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
  */
 export function getAuthToken(request: NextRequest): string | null {
   // Priority 1: Cookie (most secure)
-  const cookieToken = request.cookies.get('insforge_access_token')?.value;
+  const cookieToken = request.cookies.get('supabase_access_token')?.value;
   if (cookieToken) return cookieToken;
 
   // Priority 2: Authorization header
@@ -161,28 +157,43 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
   if (!token) return null;
 
   try {
-    const client = getInsforgeClient();
+    const client = getSupabaseClient();
 
-    // Set the token for this request
-    client.auth.setAccessToken(token);
+    // For Supabase, we need to set the session or create a client with the token
+    // Create a temporary client with the token for validation
+    const { createClient } = await import('@supabase/supabase-js');
+    const tempClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
 
-    const { data, error } = await client.auth.getCurrentUser();
+    const { data, error } = await tempClient.auth.getUser();
 
     if (error || !data?.user) {
-      logger.warn('Failed to get current user', { error });
+      logger.warn(
+        'Failed to get current user',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return null;
     }
 
     const user = data.user;
 
     // Get user's shop associations and role
-    const { data: userShops } = await client.database
+    const { data: userShops } = await client
       .from('shop_users')
       .select('shop_id, role')
       .eq('user_id', user.id);
 
     const role = (userShops?.[0]?.role as UserRole) || UserRole.CUSTOMER;
-    const shopIds = userShops?.map((s) => s.shop_id) || [];
+    const shopIds = userShops?.map((s: any) => s.shop_id) || [];
     const permissions = ROLE_PERMISSIONS[role] || [];
 
     return {
@@ -193,7 +204,10 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
       permissions,
     };
   } catch (error) {
-    logger.error('Error getting current user', { error });
+    logger.error(
+      'Error getting current user',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return null;
   }
 }
@@ -246,10 +260,7 @@ export async function requireRole(
 /**
  * Check if user owns a resource in a specific shop
  */
-export async function requireShopAccess(
-  user: AuthUser,
-  shopId: string
-): Promise<void> {
+export async function requireShopAccess(user: AuthUser, shopId: string): Promise<void> {
   if (user.role === UserRole.SUPER_ADMIN) {
     return; // Super admin has access to all shops
   }
@@ -268,7 +279,7 @@ export async function requireResourceOwnership(
   resourceId: string
 ): Promise<AuthUser> {
   const user = await requireAuth(request);
-  const client = getInsforgeClient();
+  const client = getSupabaseClient();
 
   // Super admin can access everything
   if (user.role === UserRole.SUPER_ADMIN) {
@@ -276,7 +287,7 @@ export async function requireResourceOwnership(
   }
 
   // Check if resource belongs to user's shop
-  const { data: resource, error } = await client.database
+  const { data: resource, error } = await client
     .from(resourceType === 'shop' ? 'shop_settings' : `${resourceType}s`)
     .select('shop_id')
     .eq('id', resourceId)
@@ -315,9 +326,7 @@ export function getPrimaryShopId(user: AuthUser): string | null {
 /**
  * Middleware wrapper for protected routes
  */
-export function withAuth(
-  handler: (request: NextRequest, user: AuthUser) => Promise<Response>
-) {
+export function withAuth(handler: (request: NextRequest, user: AuthUser) => Promise<Response>) {
   return async (request: NextRequest): Promise<Response> => {
     const user = await requireAuth(request);
     return handler(request, user);

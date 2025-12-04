@@ -1,5 +1,5 @@
 // Marketing Service - Discount codes, reviews, wishlists, and email marketing
-import { insforgeClient, STORAGE_BUCKETS, uploadFileWithRetry } from '../insforge';
+import { supabaseClient, STORAGE_BUCKETS, uploadFileWithRetry } from '../supabase';
 import { logger } from '../utils/logger';
 import type {
   DiscountCode,
@@ -27,7 +27,7 @@ export async function getDiscountCodes(
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('discount_codes')
       .select('*', { count: 'exact' })
       .eq('shop_id', shopId);
@@ -77,7 +77,7 @@ export async function createDiscountCode(
   discountData: Omit<DiscountCode, 'id' | 'created_at' | 'updated_at' | 'usage_count'>
 ): Promise<DiscountCode> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('discount_codes')
       .insert([{ ...discountData, usage_count: 0 }])
       .select()
@@ -106,7 +106,7 @@ export async function updateDiscountCode(
   updates: Partial<DiscountCode>
 ): Promise<DiscountCode> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('discount_codes')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', codeId)
@@ -141,7 +141,7 @@ export async function validateDiscountCode(
   reason?: string;
 }> {
   try {
-    const { data: discount, error } = await insforgeClient.database
+    const { data: discount, error } = await supabaseClient
       .from('discount_codes')
       .select('*')
       .eq('shop_id', shopId)
@@ -172,7 +172,7 @@ export async function validateDiscountCode(
 
     // Check per-customer usage limit
     if (discount.usage_limit_per_customer && customerId) {
-      const { data: usages } = await insforgeClient.database
+      const { data: usages } = await supabaseClient
         .from('discount_code_usage')
         .select('*')
         .eq('discount_code_id', discount.id)
@@ -221,7 +221,7 @@ export async function getProductReviews(
     const pageSize = filters?.pageSize || 20;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('product_reviews')
       .select('*', { count: 'exact' })
       .eq('product_id', productId);
@@ -239,7 +239,7 @@ export async function getProductReviews(
     // Fetch images for each review
     const reviewsWithImages = await Promise.all(
       (reviews || []).map(async (review) => {
-        const { data: images } = await insforgeClient.database
+        const { data: images } = await supabaseClient
           .from('review_images')
           .select('*')
           .eq('review_id', review.id);
@@ -283,7 +283,7 @@ export async function createProductReview(
 ): Promise<ProductReview> {
   try {
     // Check if customer has purchased the product
-    const { data: orderItem } = await insforgeClient.database
+    const { data: orderItem } = await supabaseClient
       .from('order_items')
       .select('*, orders!inner(customer_id)')
       .eq('product_id', reviewData.product_id)
@@ -294,7 +294,7 @@ export async function createProductReview(
     const verifiedPurchase = !!orderItem;
 
     // Create review
-    const { data: review, error } = await insforgeClient.database
+    const { data: review, error } = await supabaseClient
       .from('product_reviews')
       .insert([
         {
@@ -324,14 +324,14 @@ export async function createProductReview(
 
         return {
           review_id: review.id,
-          image_url: uploadData.url || '',
-          image_key: uploadData.key || fileName,
+          image_url: uploadData.fullPath || '',
+          image_key: uploadData.path || fileName,
         };
       });
 
       const imageRecords = await Promise.all(uploadPromises);
 
-      await insforgeClient.database.from('review_images').insert(imageRecords);
+      await supabaseClient.from('review_images').insert(imageRecords);
     }
 
     return review;
@@ -354,13 +354,13 @@ export async function createProductReview(
 export async function markReviewHelpful(reviewId: string): Promise<ProductReview> {
   try {
     // Get current count
-    const { data: review } = await insforgeClient.database
+    const { data: review } = await supabaseClient
       .from('product_reviews')
       .select('helpful_count')
       .eq('id', reviewId)
       .single();
 
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('product_reviews')
       .update({
         helpful_count: (review?.helpful_count || 0) + 1,
@@ -389,7 +389,7 @@ export async function markReviewHelpful(reviewId: string): Promise<ProductReview
  */
 export async function approveReview(reviewId: string): Promise<ProductReview> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('product_reviews')
       .update({
         is_approved: true,
@@ -422,7 +422,7 @@ export async function getProductRatingStats(productId: string): Promise<{
   ratingDistribution: Record<number, number>;
 }> {
   try {
-    const { data: reviews, error } = await insforgeClient.database
+    const { data: reviews, error } = await supabaseClient
       .from('product_reviews')
       .select('rating')
       .eq('product_id', productId)
@@ -465,7 +465,7 @@ export async function getProductRatingStats(productId: string): Promise<{
  */
 export async function getWishlist(customerId: string): Promise<Wishlist[]> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('wishlists')
       .select('*')
       .eq('customer_id', customerId)
@@ -495,7 +495,7 @@ export async function addToWishlist(
 ): Promise<Wishlist> {
   try {
     // Check if already in wishlist
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('wishlists')
       .select('*')
       .eq('customer_id', customerId)
@@ -512,7 +512,7 @@ export async function addToWishlist(
     }
 
     // Add to wishlist
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('wishlists')
       .insert([
         {
@@ -544,7 +544,7 @@ export async function addToWishlist(
  */
 export async function removeFromWishlist(wishlistId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database.from('wishlists').delete().eq('id', wishlistId);
+    const { error } = await supabaseClient.from('wishlists').delete().eq('id', wishlistId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -572,7 +572,7 @@ export async function subscribeToNewsletter(
   source?: string
 ): Promise<EmailSubscriber> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('email_subscribers')
       .upsert([
         {
@@ -605,7 +605,7 @@ export async function subscribeToNewsletter(
  */
 export async function unsubscribeFromNewsletter(shopId: string, email: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database
+    const { error } = await supabaseClient
       .from('email_subscribers')
       .update({
         status: 'unsubscribed',
@@ -640,7 +640,7 @@ export async function getSubscribers(
     const pageSize = filters?.pageSize || 50;
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('email_subscribers')
       .select('*', { count: 'exact' })
       .eq('shop_id', shopId);

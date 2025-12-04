@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { User, Mail, Phone, Save, Check } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface CustomerProfile {
@@ -38,7 +38,7 @@ export default function ProfilePage() {
     try {
       setLoading(true);
 
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('*')
         .eq('user_id', user?.id)
@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
     try {
       // Get customer record
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('id')
         .eq('user_id', user?.id)
@@ -82,7 +82,7 @@ export default function ProfilePage() {
       }
 
       // Update customer profile
-      const { error: updateError } = await insforgeClient.database
+      const { error: updateError } = await supabaseClient
         .from('customers')
         .update({
           first_name: profile.first_name,
@@ -210,15 +210,11 @@ export default function ProfilePage() {
               <input
                 type="checkbox"
                 checked={profile.accepts_marketing}
-                onChange={(e) =>
-                  setProfile({ ...profile, accepts_marketing: e.target.checked })
-                }
+                onChange={(e) => setProfile({ ...profile, accepts_marketing: e.target.checked })}
                 className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
               <div>
-                <p className="font-medium text-gray-900">
-                  Receive marketing emails
-                </p>
+                <p className="font-medium text-gray-900">Receive marketing emails</p>
                 <p className="text-sm text-gray-600">
                   Get updates about new products, special offers, and exclusive deals.
                 </p>

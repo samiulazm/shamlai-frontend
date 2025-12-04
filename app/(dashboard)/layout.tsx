@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
-import { insforgeClient, ShopService } from '@/lib';
+import { supabaseClient, ShopService } from '@/lib';
 import { getActiveTheme } from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       let tokenFromStorage: string | null = null;
       try {
         if (typeof window !== 'undefined') {
-          tokenFromStorage = localStorage.getItem('insforge_access_token');
+          tokenFromStorage = localStorage.getItem('supabase_access_token');
         }
       } catch (e) {
         // localStorage not available
@@ -95,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       // If API route didn't work, try SDK directly
       if (!userData) {
-        const { data, error } = await insforgeClient.auth.getCurrentUser();
+        const { data, error } = await supabaseClient.auth.getUser();
         if (error || !data?.user) {
           router.push('/login');
           return;

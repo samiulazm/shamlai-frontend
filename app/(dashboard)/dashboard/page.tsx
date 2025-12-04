@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { getDashboardStats, type DashboardStats } from '@/lib/services/dashboard';
 import StatCard from '@/components/dashboard/StatCard';
@@ -48,27 +48,29 @@ export default function Dashboard() {
       setLoading(true);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
       if (!user) return;
 
       // Set shop ID (user's ID is the shop ID)
-      setShopId(user.user.id);
+      setShopId(user.id);
 
       // Fetch enhanced dashboard stats
-      const dashboardStats = await getDashboardStats(user.user.id, dateRange || undefined);
+      const dashboardStats = await getDashboardStats(user.id, dateRange || undefined);
       setStats(dashboardStats);
 
       // Fetch orders for charts
-      const { data: orders } = await insforgeClient.database
+      const { data: orders } = await supabaseClient
         .from('orders')
         .select('*')
-        .eq('shop_id', user.user.id);
+        .eq('shop_id', user.id);
 
       // Fetch top products
-      const { data: products } = await insforgeClient.database
+      const { data: products } = await supabaseClient
         .from('products')
         .select('id, name, base_price')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .eq('is_active', true)
         .limit(5);
 

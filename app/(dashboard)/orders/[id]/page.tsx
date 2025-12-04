@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as OrderService from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
 import type { Order, OrderItem } from '@/lib/types/database';
@@ -29,18 +29,20 @@ export default function OrderDetail() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      setShopId(user.user.id);
+      setShopId(user.id);
 
       // Fetch order with items
       const orderData = await OrderService.getOrderById(orderId);
 
-      if (!orderData || orderData.shop_id !== user.user.id) {
+      if (!orderData || orderData.shop_id !== user.id) {
         setError('Order not found');
         return;
       }

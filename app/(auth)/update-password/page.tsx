@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 export default function UpdatePassword() {
@@ -16,7 +16,7 @@ export default function UpdatePassword() {
   useEffect(() => {
     // Check if we have a valid recovery token
     const checkToken = async () => {
-      const { data } = await insforgeClient.auth.getCurrentUser();
+      const { data } = await supabaseClient.auth.getUser();
       if (data) {
         setValidToken(true);
       } else {
@@ -43,8 +43,9 @@ export default function UpdatePassword() {
     setLoading(true);
 
     try {
-      const { updatePassword } = await import('@/lib/insforge');
-      const { error: updateError } = await updatePassword(password);
+      const { error: updateError } = await supabaseClient.auth.updateUser({
+        password,
+      });
 
       if (updateError) {
         setError(updateError.message || 'Failed to update password');

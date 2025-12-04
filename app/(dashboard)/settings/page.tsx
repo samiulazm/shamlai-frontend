@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as ShopService from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
 import type { ShopSettings } from '@/lib/types/database';
@@ -28,13 +28,15 @@ export default function Settings() {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      const shopSettings = await ShopService.getShopSettings(user.user.id);
+      const shopSettings = await ShopService.getShopSettings(user.id);
 
       if (shopSettings) {
         setSettings(shopSettings);
@@ -60,14 +62,16 @@ export default function Settings() {
       setError(null);
       setSuccess(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Update shop settings
-      const updatedSettings = await ShopService.upsertShopSettings(user.user.id, {
+      const updatedSettings = await ShopService.upsertShopSettings(user.id, {
         timezone: formData.timezone,
         currency: formData.currency,
         language: formData.language,

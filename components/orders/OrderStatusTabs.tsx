@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { OrderStatus } from '@/lib/types/database';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 
 interface OrderStatusTabsProps {
   shopId: string;
@@ -32,7 +32,7 @@ export default function OrderStatusTabs({
       setLoading(true);
 
       // Fetch all orders to count by status
-      const { data: orders, error } = await insforgeClient.database
+      const { data: orders, error } = await supabaseClient
         .from('orders')
         .select('status')
         .eq('shop_id', shopId);

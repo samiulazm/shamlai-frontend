@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient, ProductService } from "@/lib";
-import { logger } from "@/lib/utils/logger";
-import type { Category } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { supabaseClient, ProductService } from '@/lib';
+import { logger } from '@/lib/utils/logger';
+import type { Category } from '@/lib/types/database';
 
 interface CategoryWithStats extends Category {
   productCount: number;
 }
 
-export default function Categories(){
+export default function Categories() {
   const [categories, setCategories] = useState<CategoryWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +28,14 @@ export default function Categories(){
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
+      const { data: user } = await supabaseClient.auth.getUser();
       if (!user?.user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch categories from the database
-      const { data: categoriesData, error: categoriesError } = await insforgeClient.database
+      const { data: categoriesData, error: categoriesError } = await supabaseClient
         .from('categories')
         .select('*')
         .order('name', { ascending: true });
@@ -46,27 +46,34 @@ export default function Categories(){
       }
 
       // Fetch products to calculate category stats
-      const { data: productsData, error: productsError } = await insforgeClient.database
+      const { data: productsData, error: productsError } = await supabaseClient
         .from('products')
         .select('category_id')
         .eq('is_active', true);
 
       if (productsError) {
-        logger.warn('Error fetching products for category stats', productsError instanceof Error ? productsError : new Error(String(productsError)));
+        logger.warn(
+          'Error fetching products for category stats',
+          productsError instanceof Error ? productsError : new Error(String(productsError))
+        );
       }
 
       // Calculate product count for each category
-      const categoriesWithStats = (categoriesData || []).map(category => {
-        const productCount = productsData?.filter(product => product.category_id === category.id).length || 0;
+      const categoriesWithStats = (categoriesData || []).map((category) => {
+        const productCount =
+          productsData?.filter((product) => product.category_id === category.id).length || 0;
         return {
           ...category,
-          productCount
+          productCount,
         };
       });
 
       setCategories(categoriesWithStats);
     } catch (err: any) {
-      logger.error('Error fetching categories', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching categories',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch categories');
     } finally {
       setLoading(false);
@@ -81,21 +88,26 @@ export default function Categories(){
       setAddingCategory(true);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
+      const { data: user } = await supabaseClient.auth.getUser();
       if (!user?.user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Create new category
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('categories')
-        .insert([{
-          name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || null,
-          slug: newCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-          is_active: true
-        }])
+        .insert([
+          {
+            name: newCategoryName.trim(),
+            description: newCategoryDescription.trim() || null,
+            slug: newCategoryName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, ''),
+            is_active: true,
+          },
+        ])
         .select()
         .single();
 
@@ -138,7 +150,9 @@ export default function Categories(){
           <div className="card-pad">
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error: {error}</p>
-              <button onClick={fetchCategories} className="btn btn-outline">Try Again</button>
+              <button onClick={fetchCategories} className="btn btn-outline">
+                Try Again
+              </button>
             </div>
           </div>
         </div>
@@ -150,10 +164,7 @@ export default function Categories(){
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Categories</h1>
-        <button 
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn btn-primary"
-        >
+        <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-primary">
           {showAddForm ? 'Cancel' : '+ Add Category'}
         </button>
       </div>
@@ -165,8 +176,8 @@ export default function Categories(){
             <form onSubmit={handleAddCategory} className="grid gap-4">
               <div>
                 <label className="label">Category Name</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="text"
                   placeholder="e.g., Electronics, Clothing"
                   value={newCategoryName}
@@ -177,8 +188,8 @@ export default function Categories(){
               </div>
               <div>
                 <label className="label">Description (Optional)</label>
-                <textarea 
-                  className="input" 
+                <textarea
+                  className="input"
                   rows={3}
                   placeholder="Brief description of this category"
                   value={newCategoryDescription}
@@ -187,15 +198,15 @@ export default function Categories(){
                 />
               </div>
               <div className="flex gap-2">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn btn-primary"
                   disabled={addingCategory || !newCategoryName.trim()}
                 >
                   {addingCategory ? 'Adding...' : 'Add Category'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowAddForm(false)}
                   className="btn btn-outline"
                   disabled={addingCategory}
@@ -207,13 +218,16 @@ export default function Categories(){
           </div>
         </div>
       )}
-      
+
       <div className="card">
         <div className="card-pad">
           {categories.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map(category => (
-                <div key={category.id} className="rounded-xl border p-4 hover:shadow-md transition-shadow">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="rounded-xl border p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-lg">{category.name}</h3>
                     <span className="badge bg-blue-100 text-blue-800">
@@ -225,7 +239,9 @@ export default function Categories(){
                   )}
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Slug: {category.slug}</span>
-                    <span className={`badge ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    <span
+                      className={`badge ${category.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                    >
                       {category.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -235,15 +251,22 @@ export default function Categories(){
           ) : (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                <svg
+                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
                 </svg>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No categories yet</h3>
                 <p className="text-gray-500 mb-4">Create categories to organize your products</p>
-                <button 
-                  onClick={() => setShowAddForm(true)}
-                  className="btn btn-primary"
-                >
+                <button onClick={() => setShowAddForm(true)} className="btn btn-primary">
                   Add Your First Category
                 </button>
               </div>

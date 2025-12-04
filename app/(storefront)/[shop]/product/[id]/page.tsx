@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as CartService from '@/lib/services/cart';
 import { logger } from '@/lib/utils/logger';
 import type { Product, ProductVariant, ProductImage } from '@/lib/types/database';
@@ -33,7 +33,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       setError(null);
 
       // Fetch product with images
-      const { data: productData, error: productError } = await insforgeClient.database
+      const { data: productData, error: productError } = await supabaseClient
         .from('products')
         .select(
           `
@@ -62,7 +62,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
       // Fetch variants if product has variants
       if (productData.has_variants) {
-        const { data: variantsData, error: variantsError } = await insforgeClient.database
+        const { data: variantsData, error: variantsError } = await supabaseClient
           .from('product_variants')
           .select('*')
           .eq('product_id', productId)

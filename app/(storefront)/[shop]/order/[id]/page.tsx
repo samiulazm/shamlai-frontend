@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as OrderService from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
 import type { Order, OrderItem } from '@/lib/types/database';

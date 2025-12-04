@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
+import { createClient } from '@supabase/supabase-js';
 import { validateBody } from '@/lib/validation/validator';
 import { signupSchema } from '@/lib/validation/schemas';
 import { withErrorHandler, ConflictError, BadRequestError } from '@/lib/errors/api-errors';
@@ -7,8 +8,24 @@ import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { rateLimitEndpoint } from '@/lib/middleware/rate-limit';
 import { getClientIP } from '@/lib/redis/rate-limiter';
 
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
-const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+// Use fallback pattern consistent with lib/supabase.ts
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.INSFORGE_SERVICE_ROLE_KEY;
+
+// Create Supabase client for server-side use
+const supabaseClient = SUPABASE_ANON_KEY ? createClient(SUPABASE_URL!, SUPABASE_ANON_KEY) : null;
+// Create admin client with service role key (bypasses RLS and email confirmation)
+const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : null;
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   // Apply rate limiting
@@ -17,43 +34,108 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     return rateLimitResponse;
   }
 
+  // Check if Supabase client is available
+  if (!supabaseClient) {
+    throw new Error('Supabase client is not configured');
+  }
+
   // Validate request body
   const { email, password, shopName, phone } = await validateBody(request, signupSchema);
 
-  // Proxy the signup request to InsForge backend
-  const response = await fetch(`${INSFORGE_URL}/api/auth/users`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(INSFORGE_ANON_KEY && { Authorization: `Bearer ${INSFORGE_ANON_KEY}` }),
-    },
-    body: JSON.stringify({
+  // Try to use admin client for auto-confirmed signup if available
+  let data, error;
+  let useRegularSignup = !supabaseAdmin;
+
+  if (supabaseAdmin) {
+    // Use admin client to create user with email auto-confirmed
+    const signupResult = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      phone,
-      metadata: shopName ? { shopName } : undefined,
-    }),
-  });
+      email_confirm: true, // Auto-confirm email
+      user_metadata: {
+        shopName: shopName || undefined,
+        phone: phone || undefined,
+      },
+    });
 
-  const data = await response.json();
+    if (signupResult.error) {
+      // If admin signup fails (e.g., 401 unauthorized), fallback to regular signup
+      logger.warn('Admin signup failed, falling back to regular signup', signupResult.error);
+      useRegularSignup = true;
+    } else {
+      // Now sign in the user to get a session
+      const signInResult = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-  if (!response.ok) {
+      data = signInResult.data;
+      error = signInResult.error;
+    }
+  }
+
+  if (useRegularSignup) {
+    // Fallback to regular signup (will require email confirmation if enabled)
+    const signupResult = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          shopName: shopName || undefined,
+          phone: phone || undefined,
+        },
+      },
+    });
+
+    data = signupResult.data;
+    error = signupResult.error;
+  }
+
+  if (error) {
     const ip = getClientIP(request.headers);
-    logger.warn('Signup failed', {
-      status: response.status,
+    const errorObj =
+      error instanceof Error ? error : new Error((error as any)?.message || 'Unknown error');
+    logger.warn('Signup failed', errorObj, {
       email,
       ip,
-      error: data.error || data.message,
     });
 
     // Handle specific error cases
-    if (response.status === 409 || data.error?.includes('already exists')) {
+    if (
+      error.message?.includes('already registered') ||
+      error.message?.includes('already exists') ||
+      error.message?.includes('already been registered')
+    ) {
       throw new ConflictError(ERROR_MESSAGES.AUTH.EMAIL_ALREADY_EXISTS);
     }
 
-    throw new BadRequestError(data.error || data.message || 'Failed to create account');
+    throw new BadRequestError(error.message || 'Failed to create account');
   }
 
-  logger.info('User signup successful', { email, userId: data.user?.id });
-  return NextResponse.json(data, { status: 201 });
+  if (!data?.user) {
+    throw new BadRequestError('Failed to create account');
+  }
+
+  // Check if we have a session (required for immediate login)
+  if (!data.session) {
+    throw new BadRequestError(
+      'Email confirmation is required. Please check your email and confirm your account, then try logging in.'
+    );
+  }
+
+  // Validate session has access token
+  if (!data.session.access_token) {
+    throw new BadRequestError('Failed to generate access token. Please try again.');
+  }
+
+  logger.info('User signup successful', { email, userId: data.user.id });
+
+  // Transform response to match frontend expectations
+  const response = {
+    user: data.user,
+    session: data.session,
+    accessToken: data.session.access_token,
+  };
+
+  return NextResponse.json(response, { status: 201 });
 });

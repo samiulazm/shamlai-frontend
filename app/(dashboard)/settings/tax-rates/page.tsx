@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface TaxRate {
@@ -41,17 +41,19 @@ export default function TaxRates() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch tax rates
-      const { data: taxRatesData, error: taxRatesError } = await insforgeClient.database
+      const { data: taxRatesData, error: taxRatesError } = await supabaseClient
         .from('tax_rates')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('is_default', { ascending: false })
         .order('tax_name', { ascending: true });
 
@@ -72,27 +74,24 @@ export default function TaxRates() {
   const saveTaxRate = async () => {
     try {
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         alert('User not authenticated');
         return;
       }
 
       // If this is set as default, unset other defaults first
       if (formData.is_default) {
-        await insforgeClient.database
-          .from('tax_rates')
-          .update({ is_default: false })
-          .eq('shop_id', user.user.id);
+        await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', user.id);
       }
 
       // Save tax rate
-      const { error } = await insforgeClient.database
-        .from('tax_rates')
-        .insert({
-          ...formData,
-          shop_id: user.user.id,
-        });
+      const { error } = await supabaseClient.from('tax_rates').insert({
+        ...formData,
+        shop_id: user.id,
+      });
 
       if (error) throw error;
 
@@ -116,7 +115,7 @@ export default function TaxRates() {
 
   const toggleActive = async (taxRateId: string, currentStatus: boolean) => {
     try {
-      const { error } = await insforgeClient.database
+      const { error } = await supabaseClient
         .from('tax_rates')
         .update({ is_active: !currentStatus })
         .eq('id', taxRateId);
@@ -126,24 +125,26 @@ export default function TaxRates() {
       // Refresh tax rates
       fetchTaxRates();
     } catch (err: any) {
-      logger.error('Error toggling tax rate status', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error toggling tax rate status',
+        err instanceof Error ? err : new Error(String(err))
+      );
       alert('Failed to update tax rate');
     }
   };
 
   const setAsDefault = async (taxRateId: string) => {
     try {
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
       // Unset all defaults
-      await insforgeClient.database
-        .from('tax_rates')
-        .update({ is_default: false })
-        .eq('shop_id', user.user.id);
+      await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', user.id);
 
       // Set new default
-      const { error } = await insforgeClient.database
+      const { error } = await supabaseClient
         .from('tax_rates')
         .update({ is_default: true })
         .eq('id', taxRateId);
@@ -153,7 +154,10 @@ export default function TaxRates() {
       // Refresh tax rates
       fetchTaxRates();
     } catch (err: any) {
-      logger.error('Error setting default tax rate', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error setting default tax rate',
+        err instanceof Error ? err : new Error(String(err))
+      );
       alert('Failed to set default tax rate');
     }
   };
@@ -162,7 +166,7 @@ export default function TaxRates() {
     if (!confirm('Are you sure you want to delete this tax rate?')) return;
 
     try {
-      const { error } = await insforgeClient.database.from('tax_rates').delete().eq('id', taxRateId);
+      const { error } = await supabaseClient.from('tax_rates').delete().eq('id', taxRateId);
 
       if (error) throw error;
 
@@ -233,7 +237,9 @@ export default function TaxRates() {
                   type="number"
                   step="0.01"
                   value={formData.tax_rate}
-                  onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tax_rate: parseFloat(e.target.value) })
+                  }
                   className="w-full px-4 py-2 border rounded-lg"
                   placeholder="e.g., 15"
                 />
@@ -335,7 +341,9 @@ export default function TaxRates() {
                       <button
                         onClick={() => toggleActive(taxRate.id, taxRate.is_active)}
                         className={`badge ${
-                          taxRate.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          taxRate.is_active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
                         }`}
                       >
                         {taxRate.is_active ? 'Active' : 'Inactive'}
@@ -345,13 +353,19 @@ export default function TaxRates() {
                       {taxRate.is_default ? (
                         <span className="badge bg-blue-100 text-blue-800">Default</span>
                       ) : (
-                        <button onClick={() => setAsDefault(taxRate.id)} className="text-sm text-brand-indigo hover:underline">
+                        <button
+                          onClick={() => setAsDefault(taxRate.id)}
+                          className="text-sm text-brand-indigo hover:underline"
+                        >
                           Set as Default
                         </button>
                       )}
                     </td>
                     <td>
-                      <button onClick={() => deleteTaxRate(taxRate.id)} className="text-sm text-red-600 hover:underline">
+                      <button
+                        onClick={() => deleteTaxRate(taxRate.id)}
+                        className="text-sm text-red-600 hover:underline"
+                      >
                         Delete
                       </button>
                     </td>
@@ -362,11 +376,23 @@ export default function TaxRates() {
           ) : (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                <svg
+                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
                 </svg>
                 <p className="text-lg font-medium">No tax rates configured</p>
-                <p className="text-sm mt-2">Add your first tax rate to start applying taxes to orders</p>
+                <p className="text-sm mt-2">
+                  Add your first tax rate to start applying taxes to orders
+                </p>
               </div>
             </div>
           )}

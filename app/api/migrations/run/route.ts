@@ -2,7 +2,7 @@
  * Migration Run API Route
  *
  * This API route executes a single SQL migration.
- * Uses Insforge MCP tools to run raw SQL.
+ * Uses Supabase to run raw SQL.
  *
  * Usage: POST /api/migrations/run
  * Body: { sql: string, filename: string }
@@ -22,25 +22,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'SQL query is required' }, { status: 400 });
     }
 
-    // Get API key
-    const apiKey = process.env.INSFORGE_API_KEY || request.headers.get('x-insforge-api-key');
+    // Get service role key for Supabase
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || request.headers.get('x-supabase-service-key');
 
-    if (!apiKey) {
+    if (!serviceRoleKey) {
       return NextResponse.json(
-        { success: false, error: 'INSFORGE_API_KEY is required' },
+        { success: false, error: 'SUPABASE_SERVICE_ROLE_KEY is required' },
         { status: 401 }
       );
     }
 
-    // Note: In a real implementation, you would call the MCP tool here
+    // Note: In a real implementation, you would execute SQL via Supabase
     // For now, we'll return a success response
-    // The actual SQL execution should be done via MCP tools in your environment
+    // The actual SQL execution should be done via Supabase in your environment
 
     console.log(`Running migration: ${filename || 'unknown'}`);
     console.log(`SQL length: ${sql.length} characters`);
 
-    // TODO: Execute SQL using MCP tool
-    // const result = await mcp_insforge_run-raw-sql({ query: sql, apiKey });
+    // TODO: Execute SQL using Supabase service role client
+    // const { createClient } = await import('@supabase/supabase-js');
+    // const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+    // const result = await supabase.rpc('exec_sql', { sql_query: sql });
 
     return NextResponse.json({
       success: true,

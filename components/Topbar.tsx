@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Bell, Store, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface TopbarProps {
@@ -27,7 +27,7 @@ export default function Topbar({ title, user, shopId }: TopbarProps) {
   const handleLogout = async () => {
     try {
       setLoggingOut(true);
-      const { error } = await insforgeClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut();
 
       if (error) {
         logger.error('Logout error', error instanceof Error ? error : new Error(String(error)));

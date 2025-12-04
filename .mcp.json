@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=rcnlwyofzyqjovifxzcf",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjbmx3eW9menlxam92aWZ4emNmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDA5NDUyMCwiZXhwIjoyMDc5NjcwNTIwfQ.yd1Y9msJIL5SnGIoPqqabPYvEMzDGiGfcBVyt9CcZyQ"
+      }
+    }
+  }
+}

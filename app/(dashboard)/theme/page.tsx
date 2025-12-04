@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient } from "@/lib/insforge";
-import { getActiveTheme, upsertTheme } from "@/lib/services/shop";
-import { logger } from "@/lib/utils/logger";
-import type { Theme } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { supabaseClient } from '@/lib/supabase';
+import { getActiveTheme, upsertTheme } from '@/lib/services/shop';
+import { logger } from '@/lib/utils/logger';
+import type { Theme } from '@/lib/types/database';
 
 export default function ThemeCustomizer() {
   const [theme, setTheme] = useState<Theme | null>(null);
@@ -27,7 +27,7 @@ export default function ThemeCustomizer() {
     footer_style: 'standard',
     product_card_style: 'standard',
     custom_css: '',
-    custom_js: ''
+    custom_js: '',
   });
 
   useEffect(() => {
@@ -40,15 +40,17 @@ export default function ThemeCustomizer() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch active theme
-      const activeTheme = await getActiveTheme(user.user.id);
-      
+      const activeTheme = await getActiveTheme(user.id);
+
       if (activeTheme) {
         setTheme(activeTheme);
         setFormData({
@@ -64,7 +66,7 @@ export default function ThemeCustomizer() {
           footer_style: activeTheme.footer_style || 'standard',
           product_card_style: activeTheme.product_card_style || 'standard',
           custom_css: activeTheme.custom_css || '',
-          custom_js: activeTheme.custom_js || ''
+          custom_js: activeTheme.custom_js || '',
         });
       }
     } catch (err: any) {
@@ -77,21 +79,23 @@ export default function ThemeCustomizer() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Update theme
-      const updatedTheme = await upsertTheme(user.user.id, {
+      const updatedTheme = await upsertTheme(user.id, {
         name: formData.name,
         is_active: true,
         is_custom: true,
@@ -106,12 +110,12 @@ export default function ThemeCustomizer() {
         footer_style: formData.footer_style,
         product_card_style: formData.product_card_style,
         custom_css: formData.custom_css,
-        custom_js: formData.custom_js
+        custom_js: formData.custom_js,
       });
-      
+
       setTheme(updatedTheme);
       setSuccess('Theme saved successfully!');
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -123,9 +127,9 @@ export default function ThemeCustomizer() {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -137,7 +141,7 @@ export default function ThemeCustomizer() {
       '--background-color': formData.background_color,
       '--text-color': formData.text_color,
       '--heading-font': formData.heading_font,
-      '--body-font': formData.body_font
+      '--body-font': formData.body_font,
     } as React.CSSProperties;
   };
 
@@ -155,7 +159,7 @@ export default function ThemeCustomizer() {
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Theme Customizer</h1>
-      
+
       {error && (
         <div className="card">
           <div className="card-pad">
@@ -177,16 +181,16 @@ export default function ThemeCustomizer() {
       )}
 
       <form onSubmit={handleSave}>
-      <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Theme Settings */}
           <div className="card">
             <div className="card-pad grid gap-4">
               <h3 className="text-lg font-semibold">Theme Settings</h3>
-              
+
               <div>
                 <label className="label">Theme Name</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
@@ -197,17 +201,17 @@ export default function ThemeCustomizer() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-          <label className="label">Primary Color</label>
+                  <label className="label">Primary Color</label>
                   <div className="flex gap-2">
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="color"
                       value={formData.primary_color}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
                       disabled={saving}
                     />
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="text"
                       value={formData.primary_color}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
@@ -219,15 +223,15 @@ export default function ThemeCustomizer() {
                 <div>
                   <label className="label">Secondary Color</label>
                   <div className="flex gap-2">
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="color"
                       value={formData.secondary_color}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
                       disabled={saving}
                     />
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="text"
                       value={formData.secondary_color}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
@@ -239,15 +243,15 @@ export default function ThemeCustomizer() {
                 <div>
                   <label className="label">Accent Color</label>
                   <div className="flex gap-2">
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="color"
                       value={formData.accent_color}
                       onChange={(e) => handleInputChange('accent_color', e.target.value)}
                       disabled={saving}
                     />
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="text"
                       value={formData.accent_color}
                       onChange={(e) => handleInputChange('accent_color', e.target.value)}
@@ -259,15 +263,15 @@ export default function ThemeCustomizer() {
                 <div>
                   <label className="label">Background Color</label>
                   <div className="flex gap-2">
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="color"
                       value={formData.background_color}
                       onChange={(e) => handleInputChange('background_color', e.target.value)}
                       disabled={saving}
                     />
-                    <input 
-                      className="input" 
+                    <input
+                      className="input"
                       type="text"
                       value={formData.background_color}
                       onChange={(e) => handleInputChange('background_color', e.target.value)}
@@ -280,7 +284,7 @@ export default function ThemeCustomizer() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Heading Font</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.heading_font}
                     onChange={(e) => handleInputChange('heading_font', e.target.value)}
@@ -296,7 +300,7 @@ export default function ThemeCustomizer() {
 
                 <div>
                   <label className="label">Body Font</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.body_font}
                     onChange={(e) => handleInputChange('body_font', e.target.value)}
@@ -314,7 +318,7 @@ export default function ThemeCustomizer() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="label">Header Style</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.header_style}
                     onChange={(e) => handleInputChange('header_style', e.target.value)}
@@ -328,7 +332,7 @@ export default function ThemeCustomizer() {
 
                 <div>
                   <label className="label">Footer Style</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.footer_style}
                     onChange={(e) => handleInputChange('footer_style', e.target.value)}
@@ -342,7 +346,7 @@ export default function ThemeCustomizer() {
 
                 <div>
                   <label className="label">Product Cards</label>
-                  <select 
+                  <select
                     className="input"
                     value={formData.product_card_style}
                     onChange={(e) => handleInputChange('product_card_style', e.target.value)}
@@ -357,8 +361,8 @@ export default function ThemeCustomizer() {
 
               <div>
                 <label className="label">Custom CSS</label>
-                <textarea 
-                  className="input" 
+                <textarea
+                  className="input"
                   rows={4}
                   value={formData.custom_css}
                   onChange={(e) => handleInputChange('custom_css', e.target.value)}
@@ -369,8 +373,8 @@ export default function ThemeCustomizer() {
 
               <div>
                 <label className="label">Custom JavaScript</label>
-                <textarea 
-                  className="input" 
+                <textarea
+                  className="input"
                   rows={4}
                   value={formData.custom_js}
                   onChange={(e) => handleInputChange('custom_js', e.target.value)}
@@ -379,11 +383,7 @@ export default function ThemeCustomizer() {
                 />
               </div>
 
-              <button 
-                type="submit" 
-                className="btn btn-primary"
-                disabled={saving}
-              >
+              <button type="submit" className="btn btn-primary" disabled={saving}>
                 {saving ? 'Saving...' : 'Save Theme'}
               </button>
             </div>
@@ -393,16 +393,13 @@ export default function ThemeCustomizer() {
           <div className="card">
             <div className="card-pad">
               <h3 className="text-lg font-semibold mb-4">Live Preview</h3>
-              <div 
-                className="rounded-xl border p-4 bg-white"
-                style={applyPreviewStyles()}
-              >
+              <div className="rounded-xl border p-4 bg-white" style={applyPreviewStyles()}>
                 {/* Header Preview */}
-                <div 
+                <div
                   className="h-12 rounded mb-4 flex items-center px-4"
                   style={{ backgroundColor: formData.primary_color }}
                 >
-                  <div 
+                  <div
                     className="text-white font-semibold"
                     style={{ fontFamily: formData.heading_font }}
                   >
@@ -413,31 +410,31 @@ export default function ThemeCustomizer() {
                 {/* Product Grid Preview */}
                 <div className="grid grid-cols-2 gap-3">
                   {[...Array(4)].map((_, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="rounded-xl border p-3"
-                      style={{ 
+                      style={{
                         backgroundColor: formData.background_color,
                         color: formData.text_color,
-                        fontFamily: formData.body_font
+                        fontFamily: formData.body_font,
                       }}
                     >
-                      <div 
+                      <div
                         className="aspect-square rounded-lg mb-2"
                         style={{ backgroundColor: formData.secondary_color }}
                       />
-                      <div 
+                      <div
                         className="h-3 rounded mb-1"
-                        style={{ 
+                        style={{
                           backgroundColor: formData.accent_color,
-                          width: '75%'
+                          width: '75%',
                         }}
                       />
-                      <div 
+                      <div
                         className="h-2 rounded"
-                        style={{ 
+                        style={{
                           backgroundColor: formData.secondary_color,
-                          width: '50%'
+                          width: '50%',
                         }}
                       />
                     </div>
@@ -445,21 +442,18 @@ export default function ThemeCustomizer() {
                 </div>
 
                 {/* Footer Preview */}
-                <div 
+                <div
                   className="mt-4 h-8 rounded flex items-center px-4"
                   style={{ backgroundColor: formData.secondary_color }}
                 >
-                  <div 
-                    className="text-white text-sm"
-                    style={{ fontFamily: formData.body_font }}
-                  >
+                  <div className="text-white text-sm" style={{ fontFamily: formData.body_font }}>
                     Footer
                   </div>
                 </div>
               </div>
             </div>
           </div>
-      </div>
+        </div>
       </form>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as CartService from '@/lib/services/cart';
 import { getActiveTheme } from '@/lib/services/shop';
 import { logger } from '@/lib/utils/logger';
@@ -49,7 +49,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
   const fetchShopInfo = async () => {
     try {
       // Get shop settings
-      const { data: settings } = await insforgeClient.database
+      const { data: settings } = await supabaseClient
         .from('shop_settings')
         .select('shop_name')
         .eq('shop_id', shopId)
@@ -60,8 +60,10 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
       }
 
       // Check if current user is the shop owner
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (user?.user?.id === shopId) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (user?.id === shopId) {
         setIsOwner(true);
       }
     } catch (error) {

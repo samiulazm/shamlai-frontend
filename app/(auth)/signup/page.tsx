@@ -3,13 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
-import {
-  isSubdomainAvailable,
-  normalizeSubdomain,
-  generateUniqueShopId,
-} from '@/lib/services/shop';
+import { normalizeSubdomain } from '@/lib/services/shop';
 
 export default function Signup() {
   const router = useRouter();
@@ -87,6 +83,8 @@ export default function Signup() {
         body: JSON.stringify({
           email,
           password,
+          confirmPassword: password, // Required by backend validation
+          shopName,
         }),
       });
 
@@ -98,58 +96,57 @@ export default function Signup() {
         return;
       }
 
-      // If signup was successful, use the user data from the response
+      // If signup was successful, create shop settings
       if (signupData.user || signupData.data?.user) {
         const user = signupData.user || signupData.data?.user;
+        const accessToken = signupData.accessToken || signupData.data?.accessToken;
         console.log('✅ Account created!', user);
 
         const userId = user.id;
 
-        if (userId) {
-          // Set up user profile
-          const { error: profileError } = await insforgeClient.auth.setProfile({
-            nickname: shopName || email.split('@')[0],
-          });
-
-          if (profileError) {
-            logger.warn(
-              'Profile setup error',
-              profileError instanceof Error ? profileError : new Error(String(profileError))
-            );
-          }
-
-          // Create shop settings
-          try {
-            // Generate unique shop ID (8-10 digit random number)
-            const shopId = await generateUniqueShopId();
-
-            await insforgeClient.database.from('shop_settings').insert([
-              {
-                user_id: userId,
-                shop_id: shopId,
-                shop_name: shopName || 'My Shop',
-                shop_username: normalized,
-                subdomain: normalized,
-                shop_email: email,
-                currency: 'USD',
-                timezone: 'UTC',
-                weight_unit: 'kg',
-                enable_reviews: true,
-                enable_wishlists: true,
-                enable_guest_checkout: true,
-              },
-            ]);
-          } catch (shopError) {
-            logger.warn(
-              'Shop settings error',
-              shopError instanceof Error ? shopError : new Error(String(shopError))
-            );
-            // Continue anyway - user is created
-          }
+        if (!userId || !accessToken) {
+          setError('Account created but missing user ID or access token');
+          setLoading(false);
+          return;
         }
 
-        // Redirect to dashboard
-        router.push('/dashboard');
+        // Call centralized shop creation endpoint
+        try {
+          const shopResponse = await fetch('/api/auth/complete-signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId,
+              shopName: shopName || 'My Shop',
+              subdomain: normalized,
+              email,
+              accessToken,
+            }),
+          });
+
+          const shopData = await shopResponse.json();
+
+          if (!shopResponse.ok) {
+            setError(shopData.error || 'Failed to create shop settings');
+            setLoading(false);
+            return;
+          }
+
+          console.log('✅ Shop created!', shopData);
+
+          // Redirect to dashboard only after both user and shop are created
+          router.push('/dashboard');
+        } catch (shopError) {
+          logger.error(
+            'Shop creation error',
+            shopError instanceof Error ? shopError : new Error(String(shopError))
+          );
+          setError('Failed to create shop. Please contact support.');
+          setLoading(false);
+          return;
+        }
       } else {
         setError('Account created but user data not received');
         setLoading(false);
@@ -179,10 +176,11 @@ export default function Signup() {
   const handleOAuthSignup = async (provider: 'google' | 'github') => {
     try {
       setLoading(true);
-      const { data, error } = await insforgeClient.auth.signInWithOAuth({
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
-        redirectTo: window.location.origin + '/dashboard',
-        skipBrowserRedirect: true,
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
       });
 
       if (error) {
@@ -286,7 +284,9 @@ export default function Signup() {
                 minLength={8}
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
             </div>
             <button className="btn btn-primary w-full" type="submit" disabled={loading}>
               {loading ? 'Creating account...' : 'Create account'}

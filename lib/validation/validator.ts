@@ -18,7 +18,7 @@ export async function validateBody<T extends z.ZodType>(
     return schema.parse(body);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new ValidationError('Validation failed', error.errors);
+      throw new ValidationError('Validation failed', error.issues);
     }
     throw new ApiError('Invalid JSON body', 400);
   }
@@ -37,7 +37,7 @@ export function validateSearchParams<T extends z.ZodType>(
     return schema.parse(params);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new ValidationError('Invalid query parameters', error.errors);
+      throw new ValidationError('Invalid query parameters', error.issues);
     }
     throw new ApiError('Invalid query parameters', 400);
   }
@@ -54,7 +54,7 @@ export function validate<T extends z.ZodType>(
     return schema.parse(data);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new ValidationError('Validation failed', error.errors);
+      throw new ValidationError('Validation failed', error.issues);
     }
     throw error;
   }

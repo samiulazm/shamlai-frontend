@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as CartService from '@/lib/services/cart';
 import * as OrderService from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
@@ -98,7 +98,7 @@ export default function Checkout() {
 
   const fetchShippingMethods = async () => {
     try {
-      const { data } = await insforgeClient.database
+      const { data } = await supabaseClient
         .from('shipping_methods')
         .select('*')
         .eq('shop_id', shopId)
@@ -143,7 +143,7 @@ export default function Checkout() {
       setDiscountError(null);
       const code = discountCodeInput.trim().toUpperCase();
 
-      const { data: discount } = await insforgeClient.database
+      const { data: discount } = await supabaseClient
         .from('discount_codes')
         .select('*')
         .eq('code', code)
@@ -243,7 +243,7 @@ export default function Checkout() {
       }
 
       // Verify shop exists (shopId is the user ID)
-      const { data: shopSettings } = await insforgeClient.database
+      const { data: shopSettings } = await supabaseClient
         .from('shop_settings')
         .select('shop_id')
         .eq('shop_id', shopId)

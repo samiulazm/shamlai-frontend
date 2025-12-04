@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Package, TrendingDown, TrendingUp } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import type { Product } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { createShipment, CourierType } from '@/lib/services/courier';
 import { updateOrderWithWorkflow } from '@/lib/services/order-workflows';
 import { logger } from '@/lib/utils/logger';
@@ -10,7 +10,7 @@ import { logger } from '@/lib/utils/logger';
 export async function POST(request: NextRequest) {
   try {
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,16 +26,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Get order with details
-    const { data: order, error: orderError } = await insforgeClient.database
+    const { data: order, error: orderError } = await supabaseClient
       .from('orders')
-      .select(`
+      .select(
+        `
         *,
         items:order_items(
           quantity,
           price,
           product:products(name)
         )
-      `)
+      `
+      )
       .eq('id', orderId)
       .single();
 
@@ -60,11 +62,12 @@ export async function POST(request: NextRequest) {
         zip: order.shipping_zip,
         country: order.shipping_country || 'BD',
       },
-      items: order.items?.map((item: any) => ({
-        name: item.product?.name || 'Product',
-        quantity: item.quantity,
-        price: parseFloat(item.price.toString()),
-      })) || [],
+      items:
+        order.items?.map((item: any) => ({
+          name: item.product?.name || 'Product',
+          quantity: item.quantity,
+          price: parseFloat(item.price.toString()),
+        })) || [],
       totalAmount: parseFloat(order.total.toString()),
       weight,
       notes,
@@ -74,7 +77,10 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       logger.error('Shipment creation failed', new Error(result.error));
-      return NextResponse.json({ error: result.error || 'Failed to create shipment' }, { status: 500 });
+      return NextResponse.json(
+        { error: result.error || 'Failed to create shipment' },
+        { status: 500 }
+      );
     }
 
     // Update order with tracking info
@@ -98,7 +104,10 @@ export async function POST(request: NextRequest) {
       consignmentId: result.consignmentId,
     });
   } catch (error) {
-    logger.error('Courier shipment API error', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Courier shipment API error',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

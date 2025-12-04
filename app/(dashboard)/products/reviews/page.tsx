@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface ProductReview {
@@ -40,21 +40,25 @@ export default function ProductReviews() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Build query
-      let query = insforgeClient.database
+      let query = supabaseClient
         .from('product_reviews')
-        .select(`
+        .select(
+          `
           *,
           product:products(name),
           customer:customers(full_name)
-        `)
-        .eq('shop_id', user.user.id)
+        `
+        )
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       // Apply filter
@@ -73,7 +77,10 @@ export default function ProductReviews() {
 
       setReviews(reviewsData || []);
     } catch (err: any) {
-      logger.error('Error fetching product reviews', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching product reviews',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch product reviews');
     } finally {
       setLoading(false);
@@ -82,7 +89,7 @@ export default function ProductReviews() {
 
   const approveReview = async (reviewId: string) => {
     try {
-      const { error } = await insforgeClient.database
+      const { error } = await supabaseClient
         .from('product_reviews')
         .update({ is_approved: true })
         .eq('id', reviewId);
@@ -101,10 +108,7 @@ export default function ProductReviews() {
     if (!confirm('Are you sure you want to delete this review?')) return;
 
     try {
-      const { error } = await insforgeClient.database
-        .from('product_reviews')
-        .delete()
-        .eq('id', reviewId);
+      const { error } = await supabaseClient.from('product_reviews').delete().eq('id', reviewId);
 
       if (error) throw error;
 
@@ -205,7 +209,10 @@ export default function ProductReviews() {
                       <div className="flex items-center gap-2 mt-1">
                         {renderStars(review.rating)}
                         <span className="text-sm text-gray-600">
-                          by {review.reviewer_name || (review.customer as any)?.full_name || 'Anonymous'}
+                          by{' '}
+                          {review.reviewer_name ||
+                            (review.customer as any)?.full_name ||
+                            'Anonymous'}
                         </span>
                         {review.is_verified && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
@@ -260,7 +267,9 @@ export default function ProductReviews() {
                   />
                 </svg>
                 <p className="text-lg font-medium">No reviews yet</p>
-                <p className="text-sm mt-2">Product reviews will appear here once customers leave feedback</p>
+                <p className="text-sm mt-2">
+                  Product reviews will appear here once customers leave feedback
+                </p>
               </div>
             </div>
           )}

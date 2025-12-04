@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 /**
@@ -8,7 +8,7 @@ import { logger } from '@/lib/utils/logger';
 export async function GET(request: NextRequest) {
   try {
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     if (!query || query.length < 2) {
-      return NextResponse.json({ error: 'Search query must be at least 2 characters' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Search query must be at least 2 characters' },
+        { status: 400 }
+      );
     }
 
     const results: any = {
@@ -33,11 +36,13 @@ export async function GET(request: NextRequest) {
 
     // Search products
     if (!type || type === 'products' || type === 'all') {
-      const { data: products } = await insforgeClient.database
+      const { data: products } = await supabaseClient
         .from('products')
         .select('id, name, sku, barcode, price, stock_quantity, image_url')
         .eq('shop_id', user.id)
-        .or(`name.ilike.%${query}%,sku.ilike.%${query}%,barcode.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(
+          `name.ilike.%${query}%,sku.ilike.%${query}%,barcode.ilike.%${query}%,description.ilike.%${query}%`
+        )
         .limit(limit);
 
       results.products = products || [];
@@ -45,11 +50,13 @@ export async function GET(request: NextRequest) {
 
     // Search orders
     if (!type || type === 'orders' || type === 'all') {
-      const { data: orders } = await insforgeClient.database
+      const { data: orders } = await supabaseClient
         .from('orders')
         .select('id, order_number, customer_email, total, status, created_at')
         .eq('shop_id', user.id)
-        .or(`order_number.ilike.%${query}%,customer_email.ilike.%${query}%,customer_first_name.ilike.%${query}%,customer_last_name.ilike.%${query}%,customer_phone.ilike.%${query}%`)
+        .or(
+          `order_number.ilike.%${query}%,customer_email.ilike.%${query}%,customer_first_name.ilike.%${query}%,customer_last_name.ilike.%${query}%,customer_phone.ilike.%${query}%`
+        )
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -58,21 +65,27 @@ export async function GET(request: NextRequest) {
 
     // Search customers
     if (!type || type === 'customers' || type === 'all') {
-      const { data: customers } = await insforgeClient.database
+      const { data: customers } = await supabaseClient
         .from('customers')
         .select('id, first_name, last_name, email, phone, total_orders, total_spent')
         .eq('shop_id', user.id)
-        .or(`email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`)
+        .or(
+          `email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`
+        )
         .limit(limit);
 
       results.customers = customers || [];
     }
 
-    logger.info('Search completed', { query, type, resultsCount: {
-      products: results.products.length,
-      orders: results.orders.length,
-      customers: results.customers.length,
-    }});
+    logger.info('Search completed', {
+      query,
+      type,
+      resultsCount: {
+        products: results.products.length,
+        orders: results.orders.length,
+        customers: results.customers.length,
+      },
+    });
 
     return NextResponse.json(results);
   } catch (error) {

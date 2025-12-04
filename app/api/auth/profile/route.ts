@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseServerClient } from '@/lib/supabase';
 
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
-const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+// Use fallback pattern consistent with lib/supabase.ts
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,34 +19,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
     }
 
-    // Proxy the profile update request to InsForge backend
-    const response = await fetch(`${INSFORGE_URL}/api/auth/profile`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authHeader,
-        ...(INSFORGE_ANON_KEY && { 'X-InsForge-Anon-Key': INSFORGE_ANON_KEY }),
+    // Extract token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create authenticated Supabase client
+    const supabaseClient = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY || '', {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
       },
-      body: JSON.stringify({
-        nickname,
-        ...otherFields,
-      }),
     });
 
-    const data = await response.json();
+    // Update user metadata (Supabase stores user metadata in auth.users.raw_user_meta_data)
+    const { data: user, error } = await supabaseClient.auth.updateUser({
+      data: {
+        nickname: nickname || undefined,
+        ...otherFields,
+      },
+    });
 
-    if (!response.ok) {
-      logger.error('Profile update failed', new Error(data.error || 'Unknown error'), {
-        status: response.status,
-      });
+    if (error) {
+      logger.error(
+        'Profile update failed',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          error: error.message,
+        }
+      );
       return NextResponse.json(
-        { error: data.error || data.message || 'Failed to update profile' },
-        { status: response.status }
+        { error: error.message || 'Failed to update profile' },
+        { status: error.status || 500 }
       );
     }
 
-    logger.info('Profile updated successfully');
-    return NextResponse.json(data, { status: 200 });
+    logger.info('Profile updated successfully', { userId: user.user?.id });
+    return NextResponse.json(user, { status: 200 });
   } catch (error: any) {
     logger.error('Profile API error', error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(

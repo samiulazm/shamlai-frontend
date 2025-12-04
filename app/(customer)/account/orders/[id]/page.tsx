@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Package, Truck, MapPin, Calendar, CreditCard, CheckCircle } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface OrderDetails {
@@ -62,7 +62,7 @@ export default function OrderDetailPage() {
       setLoading(true);
 
       // Get order
-      const { data: orderData, error: orderError } = await insforgeClient.database
+      const { data: orderData, error: orderError } = await supabaseClient
         .from('orders')
         .select('*')
         .eq('id', orderId)
@@ -75,16 +75,18 @@ export default function OrderDetailPage() {
       }
 
       // Get order items with product details
-      const { data: items } = await insforgeClient.database
+      const { data: items } = await supabaseClient
         .from('order_items')
-        .select(`
+        .select(
+          `
           *,
           product:products(name, image_url)
-        `)
+        `
+        )
         .eq('order_id', orderId);
 
       // Get status history
-      const { data: statusHistory } = await insforgeClient.database
+      const { data: statusHistory } = await supabaseClient
         .from('order_status_history')
         .select('status, created_at, comment')
         .eq('order_id', orderId)
@@ -98,7 +100,10 @@ export default function OrderDetailPage() {
 
       setLoading(false);
     } catch (err) {
-      logger.error('Failed to load order details', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Failed to load order details',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError('Failed to load order');
       setLoading(false);
     }
@@ -119,7 +124,7 @@ export default function OrderDetailPage() {
         <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
         <p className="text-gray-600">{error || 'Order not found'}</p>
         <Link
-          href={"/account/orders" as any}
+          href={'/account/orders' as any}
           className="mt-4 inline-block text-indigo-600 hover:text-indigo-700 font-medium"
         >
           ← Back to Orders
@@ -155,7 +160,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <Link
-          href={"/account/orders" as any}
+          href={'/account/orders' as any}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -203,9 +208,7 @@ export default function OrderDetailPage() {
                   <div key={step.key} className="flex flex-col items-center">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
-                        isCompleted
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-200 text-gray-400'
+                        isCompleted ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-400'
                       } ${isCurrent ? 'ring-4 ring-indigo-100' : ''}`}
                     >
                       <Icon className="w-5 h-5" />
@@ -232,9 +235,7 @@ export default function OrderDetailPage() {
             <Truck className="w-6 h-6 text-indigo-600 mt-1" />
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900">Tracking Information</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Courier: {order.courier_name || 'N/A'}
-              </p>
+              <p className="text-sm text-gray-600 mt-1">Courier: {order.courier_name || 'N/A'}</p>
               <p className="text-sm font-mono text-gray-900 mt-2">
                 Tracking Number: {order.tracking_number}
               </p>
@@ -282,11 +283,15 @@ export default function OrderDetailPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">${parseFloat(order.subtotal.toString()).toFixed(2)}</span>
+                <span className="font-medium">
+                  ${parseFloat(order.subtotal.toString()).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
-                <span className="font-medium">${parseFloat(order.shipping.toString()).toFixed(2)}</span>
+                <span className="font-medium">
+                  ${parseFloat(order.shipping.toString()).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
@@ -295,7 +300,9 @@ export default function OrderDetailPage() {
               {order.discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span className="font-medium">-${parseFloat(order.discount.toString()).toFixed(2)}</span>
+                  <span className="font-medium">
+                    -${parseFloat(order.discount.toString()).toFixed(2)}
+                  </span>
                 </div>
               )}
               <div className="pt-2 border-t border-gray-200 flex justify-between text-lg font-bold">
@@ -312,8 +319,10 @@ export default function OrderDetailPage() {
               Shipping Address
             </h3>
             <address className="text-sm text-gray-600 not-italic leading-relaxed">
-              {order.shipping_street}<br />
-              {order.shipping_city}, {order.shipping_state} {order.shipping_zip}<br />
+              {order.shipping_street}
+              <br />
+              {order.shipping_city}, {order.shipping_state} {order.shipping_zip}
+              <br />
               {order.shipping_country}
             </address>
           </div>

@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Package, Search, Filter } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface Order {
@@ -39,7 +39,7 @@ export default function OrdersPage() {
       setLoading(true);
 
       // Get customer record
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('id')
         .eq('user_id', user?.id)
@@ -51,7 +51,7 @@ export default function OrdersPage() {
       }
 
       // Get all orders
-      const { data: ordersData } = await insforgeClient.database
+      const { data: ordersData } = await supabaseClient
         .from('orders')
         .select('id, order_number, total, status, created_at')
         .eq('customer_id', customer.id)
@@ -60,8 +60,8 @@ export default function OrdersPage() {
       if (ordersData) {
         // Get item counts
         const ordersWithCounts = await Promise.all(
-          ordersData.map(async (order) => {
-            const { count } = await insforgeClient.database
+          ordersData.map(async (order: any) => {
+            const { count } = await supabaseClient
               .from('order_items')
               .select('*', { count: 'exact', head: true })
               .eq('order_id', order.id);
@@ -78,7 +78,10 @@ export default function OrdersPage() {
 
       setLoading(false);
     } catch (error) {
-      logger.error('Failed to load orders', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to load orders',
+        error instanceof Error ? error : new Error(String(error))
+      );
       setLoading(false);
     }
   };
@@ -175,7 +178,9 @@ export default function OrdersPage() {
           <div className="p-12 text-center">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600">
-              {searchQuery || statusFilter !== 'all' ? 'No orders match your filters' : 'No orders yet'}
+              {searchQuery || statusFilter !== 'all'
+                ? 'No orders match your filters'
+                : 'No orders yet'}
             </p>
             {!searchQuery && statusFilter === 'all' && (
               <Link
@@ -208,7 +213,9 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                      <span>{order.items_count} item{order.items_count !== 1 ? 's' : ''}</span>
+                      <span>
+                        {order.items_count} item{order.items_count !== 1 ? 's' : ''}
+                      </span>
                       <span>•</span>
                       <span>{new Date(order.created_at).toLocaleDateString()}</span>
                     </div>

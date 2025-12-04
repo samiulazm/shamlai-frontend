@@ -1,10 +1,10 @@
 /**
  * Migration Utilities
  *
- * Helper functions for running database migrations using Insforge MCP tools
+ * Helper functions for running database migrations using Supabase
  *
  * Note: These functions are designed to be called from API routes or scripts
- * that have access to MCP tools. For client-side, use the API route instead.
+ * that have access to Supabase. For client-side, use the API route instead.
  */
 
 export interface MigrationResult {
@@ -14,10 +14,10 @@ export interface MigrationResult {
 }
 
 /**
- * Run a SQL migration using Insforge MCP tool
+ * Run a SQL migration using Supabase
  *
  * This function should be called from server-side code (API routes, scripts)
- * that has access to MCP tools via the MCP server.
+ * that has access to Supabase.
  */
 export async function runMigration(sql: string, apiKey?: string): Promise<MigrationResult> {
   // This will be implemented via API route that calls MCP tools

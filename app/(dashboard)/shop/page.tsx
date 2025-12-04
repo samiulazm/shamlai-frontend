@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { insforgeClient, ShopService } from "@/lib";
-import { logger } from "@/lib/utils/logger";
-import type { ShopSettings } from "@/lib/types/database";
+import { useEffect, useState } from 'react';
+import { supabaseClient, ShopService } from '@/lib';
+import { logger } from '@/lib/utils/logger';
+import type { ShopSettings } from '@/lib/types/database';
 
-export default function ShopDetails(){
+export default function ShopDetails() {
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,7 +34,7 @@ export default function ShopDetails(){
     city: '',
     state: '',
     postal_code: '',
-    country: ''
+    country: '',
   });
 
   useEffect(() => {
@@ -47,15 +47,17 @@ export default function ShopDetails(){
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch shop settings
-      const shopSettings = await ShopService.getShopSettings(user.user.id);
-      
+      const shopSettings = await ShopService.getShopSettings(user.id);
+
       if (shopSettings) {
         setSettings(shopSettings);
         setFormData({
@@ -79,11 +81,14 @@ export default function ShopDetails(){
           city: shopSettings.city || '',
           state: shopSettings.state || '',
           postal_code: shopSettings.postal_code || '',
-          country: shopSettings.country || ''
+          country: shopSettings.country || '',
         });
       }
     } catch (err: any) {
-      logger.error('Error fetching shop settings', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching shop settings',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch shop settings');
     } finally {
       setLoading(false);
@@ -92,30 +97,35 @@ export default function ShopDetails(){
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Update shop settings
-      const updatedSettings = await ShopService.upsertShopSettings(user.user.id, formData);
-      
+      const updatedSettings = await ShopService.upsertShopSettings(user.id, formData);
+
       setSettings(updatedSettings);
       setSuccess('Shop settings saved successfully!');
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      logger.error('Error saving shop settings', err instanceof Error ? err : new Error(String(err)));
-      
+      logger.error(
+        'Error saving shop settings',
+        err instanceof Error ? err : new Error(String(err))
+      );
+
       // Handle specific error cases
       if (err.message?.includes('duplicate key value violates unique constraint')) {
         setError('Shop settings already exist. Please refresh the page and try again.');
@@ -130,9 +140,9 @@ export default function ShopDetails(){
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -150,14 +160,14 @@ export default function ShopDetails(){
   return (
     <div className="grid gap-4">
       <h1 className="text-2xl font-bold">Shop Details</h1>
-      
+
       {error && (
         <div className="card">
           <div className="card-pad">
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-600 mb-2">{error}</p>
               {error.includes('duplicate key value violates unique constraint') && (
-                <button 
+                <button
                   onClick={fetchShopSettings}
                   className="text-sm text-red-700 underline hover:no-underline"
                 >
@@ -185,8 +195,8 @@ export default function ShopDetails(){
             <div className="grid gap-3">
               <div>
                 <label className="label">Shop Name</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="text"
                   value={formData.shop_name}
                   onChange={(e) => handleInputChange('shop_name', e.target.value)}
@@ -195,11 +205,11 @@ export default function ShopDetails(){
                   disabled={saving}
                 />
               </div>
-              
+
               <div>
                 <label className="label">Address Line 1</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="text"
                   value={formData.address1}
                   onChange={(e) => handleInputChange('address1', e.target.value)}
@@ -207,11 +217,11 @@ export default function ShopDetails(){
                   disabled={saving}
                 />
               </div>
-              
+
               <div>
                 <label className="label">Contact Email</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="email"
                   value={formData.shop_email}
                   onChange={(e) => handleInputChange('shop_email', e.target.value)}
@@ -220,11 +230,11 @@ export default function ShopDetails(){
                   disabled={saving}
                 />
               </div>
-              
+
               <div>
                 <label className="label">Phone</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="tel"
                   value={formData.shop_phone}
                   onChange={(e) => handleInputChange('shop_phone', e.target.value)}
@@ -235,8 +245,8 @@ export default function ShopDetails(){
 
               <div>
                 <label className="label">Description</label>
-                <textarea 
-                  className="input" 
+                <textarea
+                  className="input"
                   rows={3}
                   value={formData.shop_description}
                   onChange={(e) => handleInputChange('shop_description', e.target.value)}
@@ -245,11 +255,11 @@ export default function ShopDetails(){
                 />
               </div>
             </div>
-            
+
             <div className="grid gap-3">
               <div>
                 <label className="label">Currency</label>
-                <select 
+                <select
                   className="input"
                   value={formData.currency}
                   onChange={(e) => handleInputChange('currency', e.target.value)}
@@ -264,7 +274,7 @@ export default function ShopDetails(){
 
               <div>
                 <label className="label">Timezone</label>
-                <select 
+                <select
                   className="input"
                   value={formData.timezone}
                   onChange={(e) => handleInputChange('timezone', e.target.value)}
@@ -279,7 +289,7 @@ export default function ShopDetails(){
 
               <div>
                 <label className="label">Weight Unit</label>
-                <select 
+                <select
                   className="input"
                   value={formData.weight_unit}
                   onChange={(e) => handleInputChange('weight_unit', e.target.value)}
@@ -295,7 +305,7 @@ export default function ShopDetails(){
                 <label className="label">Features</label>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={formData.enable_reviews}
                       onChange={(e) => handleInputChange('enable_reviews', e.target.checked)}
@@ -305,7 +315,7 @@ export default function ShopDetails(){
                     <span className="text-sm">Enable product reviews</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={formData.enable_wishlists}
                       onChange={(e) => handleInputChange('enable_wishlists', e.target.checked)}
@@ -315,7 +325,7 @@ export default function ShopDetails(){
                     <span className="text-sm">Enable wishlists</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={formData.enable_guest_checkout}
                       onChange={(e) => handleInputChange('enable_guest_checkout', e.target.checked)}
@@ -329,40 +339,40 @@ export default function ShopDetails(){
 
               <div className="space-y-3">
                 <label className="label">Social Links</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="url"
                   value={formData.facebook_url}
                   onChange={(e) => handleInputChange('facebook_url', e.target.value)}
                   placeholder="Facebook Page URL"
                   disabled={saving}
                 />
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="url"
                   value={formData.instagram_url}
                   onChange={(e) => handleInputChange('instagram_url', e.target.value)}
                   placeholder="Instagram URL"
                   disabled={saving}
                 />
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="url"
                   value={formData.twitter_url}
                   onChange={(e) => handleInputChange('twitter_url', e.target.value)}
                   placeholder="Twitter URL"
                   disabled={saving}
                 />
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="url"
                   value={formData.youtube_url}
                   onChange={(e) => handleInputChange('youtube_url', e.target.value)}
                   placeholder="YouTube URL"
                   disabled={saving}
                 />
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="url"
                   value={formData.tiktok_url}
                   onChange={(e) => handleInputChange('tiktok_url', e.target.value)}
@@ -373,8 +383,8 @@ export default function ShopDetails(){
 
               <div className="space-y-3">
                 <label className="label">Address</label>
-                <input 
-                  className="input" 
+                <input
+                  className="input"
                   type="text"
                   value={formData.address2}
                   onChange={(e) => handleInputChange('address2', e.target.value)}
@@ -382,16 +392,16 @@ export default function ShopDetails(){
                   disabled={saving}
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="text"
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="City"
                     disabled={saving}
                   />
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="text"
                     value={formData.state}
                     onChange={(e) => handleInputChange('state', e.target.value)}
@@ -400,16 +410,16 @@ export default function ShopDetails(){
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="text"
                     value={formData.postal_code}
                     onChange={(e) => handleInputChange('postal_code', e.target.value)}
                     placeholder="Postal Code"
                     disabled={saving}
                   />
-                  <input 
-                    className="input" 
+                  <input
+                    className="input"
                     type="text"
                     value={formData.country}
                     onChange={(e) => handleInputChange('country', e.target.value)}
@@ -423,11 +433,7 @@ export default function ShopDetails(){
         </div>
 
         <div className="flex justify-end mt-4">
-          <button 
-            type="submit" 
-            className="btn btn-primary"
-            disabled={saving}
-          >
+          <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>

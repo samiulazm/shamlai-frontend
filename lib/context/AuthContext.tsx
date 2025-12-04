@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface User {
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Helper function to get shop_id from shop_settings by user_id
   const getShopIdByUserId = async (userId: string): Promise<string | undefined> => {
     try {
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('shop_settings')
         .select('shop_id')
         .eq('user_id', userId)
@@ -51,17 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for existing session
     checkUser();
 
-    // Try to use onAuthStateChange if available, otherwise fall back to polling
-    const { onAuthStateChange } = require('@/lib/insforge');
-    const subscription = onAuthStateChange(
-      (event: 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'USER_UPDATED', session: any) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          checkUser();
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
+    // Subscribe to auth state changes
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        checkUser();
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
       }
-    );
+    });
 
     // Fallback polling if onAuthStateChange is not available
     const interval = setInterval(
@@ -72,14 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
       clearInterval(interval);
     };
   }, []);
 
   const checkUser = async () => {
     try {
-      const { data, error } = await insforgeClient.auth.getCurrentUser();
+      const { data, error } = await supabaseClient.auth.getUser();
 
       if (error) {
         logger.error('Failed to get current user', error);
@@ -91,8 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: data.user.id,
           email: data.user.email || '',
-          nickname: data.profile?.nickname || '',
-          role: data.profile?.role || 'merchant',
+          nickname: data.user.user_metadata?.nickname || '',
+          role: data.user.user_metadata?.role || 'merchant',
           shop_id: shopId,
         });
       }
@@ -106,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await insforgeClient.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -116,15 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
-        // Fetch full user profile
-        const userProfile = await insforgeClient.auth.getCurrentUser();
+        // Fetch shop ID
         const shopId = await getShopIdByUserId(data.user.id);
 
         setUser({
           id: data.user.id,
           email: data.user.email || '',
-          nickname: userProfile.data?.profile?.nickname || '',
-          role: userProfile.data?.profile?.role || 'merchant',
+          nickname: data.user.user_metadata?.nickname || '',
+          role: data.user.user_metadata?.role || 'merchant',
           shop_id: shopId,
         });
       }
@@ -139,10 +137,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, shopName?: string) => {
     try {
-      const { data, error } = await insforgeClient.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
-        name: shopName || email.split('@')[0],
+        options: {
+          data: {
+            nickname: shopName || email.split('@')[0],
+          },
+        },
       });
 
       if (error) {
@@ -150,72 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
-        // Set profile with nickname and role
-        try {
-          await insforgeClient.auth.setProfile({
-            nickname: shopName || email.split('@')[0],
-            role: 'merchant',
-          });
-        } catch (profileError) {
-          logger.warn(
-            'Failed to set user profile',
-            profileError instanceof Error ? profileError : new Error(String(profileError))
-          );
-        }
-
-        // Create shop settings
-        try {
-          // Generate a unique subdomain for the shop
-          const { generateUniqueSubdomain, generateUniqueShopId } = await import(
-            '@/lib/services/shop'
-          );
-          const preferred = (shopName || email.split('@')[0] || 'shop').toString();
-          const subdomain = await generateUniqueSubdomain(preferred);
-          const shopId = await generateUniqueShopId();
-
-          await insforgeClient.database.from('shop_settings').insert({
-            user_id: data.user.id,
-            shop_id: shopId,
-            shop_name: shopName || 'My Shop',
-            shop_username: subdomain,
-            subdomain,
-            shop_email: email,
-            currency: 'USD',
-            timezone: 'UTC',
-            weight_unit: 'kg',
-            enable_reviews: true,
-            enable_wishlists: true,
-            enable_guest_checkout: true,
-          });
-
-          // Set user with the generated shop_id
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            nickname: shopName,
-            role: 'merchant',
-            shop_id: shopId,
-          });
-        } catch (shopError) {
-          const errorMessage =
-            shopError instanceof Error &&
-            shopError.message.includes('Unable to generate unique shop ID')
-              ? 'Unable to generate a unique shop ID. Please try again later.'
-              : 'Failed to create shop settings';
-
-          logger.warn(
-            errorMessage,
-            shopError instanceof Error ? shopError : new Error(String(shopError))
-          );
-
-          // Set user even if shop creation failed
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            nickname: shopName,
-            role: 'merchant',
-          });
-        }
+        // Set user immediately - shop creation is handled by signup page via /api/auth/complete-signup
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          nickname: shopName || email.split('@')[0],
+          role: 'merchant',
+          // shop_id will be set after shop creation via checkUser()
+        });
       }
 
       return { error: null };
@@ -228,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await insforgeClient.auth.signOut();
+      await supabaseClient.auth.signOut();
       setUser(null);
     } catch (err) {
       logger.error('Sign out error', err instanceof Error ? err : new Error(String(err)));
@@ -236,15 +180,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshSession = async () => {
-    // Try to use refreshSession if available, otherwise fall back to checkUser
     try {
-      const { refreshSession: refresh } = await import('@/lib/insforge');
-      const { error } = await refresh();
-      if (!error) {
-        await checkUser();
+      // Refresh the session using Supabase
+      const { data, error } = await supabaseClient.auth.refreshSession();
+
+      if (error) {
+        logger.error('Failed to refresh session', error);
       }
-    } catch {
-      // Fallback to checkUser if refreshSession is not available
+
+      // Update user state after refresh
+      await checkUser();
+    } catch (err) {
+      logger.error('Refresh session error', err instanceof Error ? err : new Error(String(err)));
+      // Fallback to checkUser
       await checkUser();
     }
   };

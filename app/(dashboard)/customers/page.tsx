@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient, OrderService } from '@/lib';
+import { supabaseClient, OrderService } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 import type { Customer } from '@/lib/types/database';
 
@@ -26,17 +26,19 @@ export default function Customers() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Fetch customers from the database
-      const { data: customersData, error: customersError } = await insforgeClient.database
+      const { data: customersData, error: customersError } = await supabaseClient
         .from('customers')
         .select('*')
-        .eq('shop_id', user.user.id)
+        .eq('shop_id', user.id)
         .order('created_at', { ascending: false });
 
       if (customersError) {
@@ -45,10 +47,10 @@ export default function Customers() {
       }
 
       // Fetch orders to calculate customer stats
-      const { data: ordersData, error: ordersError } = await insforgeClient.database
+      const { data: ordersData, error: ordersError } = await supabaseClient
         .from('orders')
         .select('customer_id, total, created_at')
-        .eq('shop_id', user.user.id);
+        .eq('shop_id', user.id);
 
       if (ordersError) {
         logger.warn(

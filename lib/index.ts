@@ -1,8 +1,8 @@
-// Main export file for InsForge integration
+// Main export file for Supabase integration
 // Provides easy access to all services, types, and utilities
 
 // Core client
-export { insforgeClient, default } from './insforge';
+export { supabaseClient, default } from './supabase';
 
 // Services
 export * as ProductService from './services/products';
@@ -21,7 +21,7 @@ export {
   PAYMENT_STATUS,
   FULFILLMENT_STATUS,
   DISCOUNT_TYPES,
-} from './insforge';
+} from './supabase';
 
 // Utilities
 export * as Validation from './utils/validation';
@@ -37,6 +37,7 @@ export * from './hooks/useRealtime';
 
 // Helper functions
 export {
+  handleSupabaseError,
   handleInsforgeError,
   uploadFile,
   uploadFileWithRetry,
@@ -48,8 +49,6 @@ export {
   resendVerificationEmail,
   refreshSession,
   onAuthStateChange,
-  generateAIContent,
-  chatCompletion,
   invokeFunction,
   subscribeToTable,
   getPublicUrl,
@@ -65,4 +64,4 @@ export {
   upsert,
   bulkInsert,
   bulkUpdate,
-} from './insforge';
+} from './supabase';

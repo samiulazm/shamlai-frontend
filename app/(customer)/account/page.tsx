@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface OrderStats {
@@ -25,7 +25,12 @@ interface RecentOrder {
 
 export default function AccountDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<OrderStats>({ total: 0, pending: 0, shipped: 0, delivered: 0 });
+  const [stats, setStats] = useState<OrderStats>({
+    total: 0,
+    pending: 0,
+    shipped: 0,
+    delivered: 0,
+  });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +45,7 @@ export default function AccountDashboard() {
       setLoading(true);
 
       // Get customer record
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('id')
         .eq('user_id', user?.id)
@@ -52,7 +57,7 @@ export default function AccountDashboard() {
       }
 
       // Get all orders for stats
-      const { data: allOrders } = await insforgeClient.database
+      const { data: allOrders } = await supabaseClient
         .from('orders')
         .select('status')
         .eq('customer_id', customer.id);
@@ -60,23 +65,25 @@ export default function AccountDashboard() {
       if (allOrders) {
         const stats: OrderStats = {
           total: allOrders.length,
-          pending: allOrders.filter((o) => o.status === 'pending').length,
-          shipped: allOrders.filter((o) => o.status === 'shipped').length,
-          delivered: allOrders.filter((o) => o.status === 'delivered').length,
+          pending: allOrders.filter((o: any) => o.status === 'pending').length,
+          shipped: allOrders.filter((o: any) => o.status === 'shipped').length,
+          delivered: allOrders.filter((o: any) => o.status === 'delivered').length,
         };
         setStats(stats);
       }
 
       // Get recent orders with item count
-      const { data: orders } = await insforgeClient.database
+      const { data: orders } = await supabaseClient
         .from('orders')
-        .select(`
+        .select(
+          `
           id,
           order_number,
           total,
           status,
           created_at
-        `)
+        `
+        )
         .eq('customer_id', customer.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -84,8 +91,8 @@ export default function AccountDashboard() {
       if (orders) {
         // Get item counts for each order
         const ordersWithCounts = await Promise.all(
-          orders.map(async (order) => {
-            const { count } = await insforgeClient.database
+          orders.map(async (order: any) => {
+            const { count } = await supabaseClient
               .from('order_items')
               .select('*', { count: 'exact', head: true })
               .eq('order_id', order.id);
@@ -102,7 +109,10 @@ export default function AccountDashboard() {
 
       setLoading(false);
     } catch (error) {
-      logger.error('Failed to load dashboard data', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to load dashboard data',
+        error instanceof Error ? error : new Error(String(error))
+      );
       setLoading(false);
     }
   };
@@ -176,7 +186,7 @@ export default function AccountDashboard() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
             <Link
-              href={"/account/orders" as any}
+              href={'/account/orders' as any}
               className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
             >
               View All
@@ -217,7 +227,9 @@ export default function AccountDashboard() {
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                      <span>{order.items_count} item{order.items_count !== 1 ? 's' : ''}</span>
+                      <span>
+                        {order.items_count} item{order.items_count !== 1 ? 's' : ''}
+                      </span>
                       <span>•</span>
                       <span>{new Date(order.created_at).toLocaleDateString()}</span>
                     </div>

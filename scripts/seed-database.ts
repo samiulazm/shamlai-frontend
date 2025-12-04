@@ -1,16 +1,16 @@
 #!/usr/bin/env ts-node
 /**
  * Database Seeding Script
- * 
+ *
  * This script populates the database with sample data for testing and development.
- * 
+ *
  * Usage:
  *   npm run seed
  *   or
  *   ts-node scripts/seed-database.ts
  */
 
-import { insforgeClient } from '../lib/insforge';
+import { supabaseClient } from '../lib/supabase';
 import { seedAllData, clearShopData } from '../lib/utils/seed-data';
 
 async function main() {
@@ -23,9 +23,9 @@ async function main() {
     const testEmail = 'test@shamlai.com';
     const testPassword = 'Test123456!';
 
-    const { data: authData, error: authError } = await insforgeClient.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
       email: testEmail,
-      password: testPassword
+      password: testPassword,
     });
 
     if (authError || !authData?.user) {
@@ -61,7 +61,7 @@ async function main() {
     // 3. Seed the database
     console.log('3️⃣  Seeding database with sample data...');
     console.log('   This may take a minute...\n');
-    
+
     await seedAllData(shopId);
 
     console.log('\n✨ Database seeding completed successfully!');
@@ -86,4 +86,3 @@ async function main() {
 
 // Run the script
 main();
-

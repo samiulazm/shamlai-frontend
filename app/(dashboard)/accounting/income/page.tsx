@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, TrendingUp, DollarSign } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';
 
@@ -28,10 +28,12 @@ export default function Income() {
   const fetchIncome = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
       setIncome([]);
     } catch (error) {
       logger.error(

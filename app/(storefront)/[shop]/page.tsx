@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import * as CartService from '@/lib/services/cart';
 import type { Product, ShopSettings } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
@@ -29,8 +29,8 @@ export default function StoreHome() {
 
       // Fetch shop settings and products in parallel (performance optimization)
       const [settingsResult, productsResult] = await Promise.all([
-        insforgeClient.database.from('shop_settings').select('*').eq('shop_id', shopId).single(),
-        insforgeClient.database
+        supabaseClient.from('shop_settings').select('*').eq('shop_id', shopId).single(),
+        supabaseClient
           .from('products')
           .select(
             `
@@ -77,7 +77,7 @@ export default function StoreHome() {
 
       let variantId: string | undefined;
       if (product.has_variants) {
-        const { data: variant } = await insforgeClient.database
+        const { data: variant } = await supabaseClient
           .from('product_variants')
           .select('id')
           .eq('product_id', product.id)

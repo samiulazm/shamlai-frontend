@@ -1,5 +1,5 @@
 // Shop Service - Shop settings and configuration
-import { insforgeClient, STORAGE_BUCKETS } from '../insforge';
+import { supabaseClient, STORAGE_BUCKETS } from '../supabase';
 import { logger } from '../utils/logger';
 import type {
   ShopSettings,
@@ -34,7 +34,7 @@ export function normalizeSubdomain(source: string): string {
  */
 export async function isSubdomainAvailable(subdomain: string): Promise<boolean> {
   const normalized = normalizeSubdomain(subdomain);
-  const { data, error } = await insforgeClient.database
+  const { data, error } = await supabaseClient
     .from('shop_settings')
     .select('id')
     .eq('subdomain', normalized)
@@ -110,7 +110,7 @@ export async function generateUniqueShopId(): Promise<string> {
  */
 export async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shop_settings')
       .select('shop_id')
       .eq('subdomain', subdomain)
@@ -127,7 +127,7 @@ export async function getShopIdBySubdomain(subdomain: string): Promise<string | 
  */
 export async function getShopSettings(shopId: string): Promise<ShopSettings | null> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shop_settings')
       .select('*')
       .eq('shop_id', shopId)
@@ -167,7 +167,7 @@ export async function upsertShopSettings(
 
     if (existingSettings) {
       // Update existing settings
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('shop_settings')
         .update({
           ...settings,
@@ -181,7 +181,7 @@ export async function upsertShopSettings(
       return data;
     } else {
       // Create new settings
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('shop_settings')
         .insert([
           {
@@ -216,16 +216,21 @@ export async function uploadShopLogo(shopId: string, file: File): Promise<string
   try {
     const fileName = `logo-${shopId}-${Date.now()}.${file.name.split('.').pop()}`;
 
-    const { data, error } = await insforgeClient.storage
+    const { data, error } = await supabaseClient.storage
       .from(STORAGE_BUCKETS.SHOP_ASSETS)
       .upload(fileName, file);
 
     if (error || !data) throw error || new Error('Upload failed');
 
-    // Update shop settings with new logo URL
-    await upsertShopSettings(shopId, { logo_url: data.url });
+    // Get public URL for the uploaded file
+    const { data: urlData } = supabaseClient.storage
+      .from(STORAGE_BUCKETS.SHOP_ASSETS)
+      .getPublicUrl(data.path);
 
-    return data.url;
+    // Update shop settings with new logo URL
+    await upsertShopSettings(shopId, { logo_url: urlData.publicUrl });
+
+    return urlData.publicUrl;
   } catch (error: any) {
     logger.error(
       'Error uploading shop logo',
@@ -247,7 +252,7 @@ export async function uploadShopLogo(shopId: string, file: File): Promise<string
  */
 export async function getActiveTheme(shopId: string): Promise<Theme | null> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('themes')
       .select('*')
       .eq('shop_id', shopId)
@@ -284,10 +289,7 @@ export async function upsertTheme(
   try {
     // If setting as active, deactivate other themes first
     if (themeData.is_active) {
-      await insforgeClient.database
-        .from('themes')
-        .update({ is_active: false })
-        .eq('shop_id', shopId);
+      await supabaseClient.from('themes').update({ is_active: false }).eq('shop_id', shopId);
     }
 
     // Check if there's already an active theme
@@ -295,7 +297,7 @@ export async function upsertTheme(
 
     if (existingTheme) {
       // Update existing theme
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('themes')
         .update({
           ...themeData,
@@ -309,7 +311,7 @@ export async function upsertTheme(
       return data;
     } else {
       // Create new theme
-      const { data, error } = await insforgeClient.database
+      const { data, error } = await supabaseClient
         .from('themes')
         .insert([
           {
@@ -346,7 +348,7 @@ export async function upsertTheme(
  */
 export async function getPages(shopId: string, isPublished?: boolean): Promise<Page[]> {
   try {
-    let query = insforgeClient.database.from('pages').select('*').eq('shop_id', shopId);
+    let query = supabaseClient.from('pages').select('*').eq('shop_id', shopId);
 
     if (isPublished !== undefined) {
       query = query.eq('is_published', isPublished);
@@ -375,7 +377,7 @@ export async function getPages(shopId: string, isPublished?: boolean): Promise<P
  */
 export async function getPageBySlug(shopId: string, slug: string): Promise<Page | null> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('pages')
       .select('*')
       .eq('shop_id', shopId)
@@ -411,11 +413,7 @@ export async function createPage(
   pageData: Omit<Page, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Page> {
   try {
-    const { data, error } = await insforgeClient.database
-      .from('pages')
-      .insert([pageData])
-      .select()
-      .single();
+    const { data, error } = await supabaseClient.from('pages').insert([pageData]).select().single();
 
     if (error) throw error;
     return data;
@@ -432,7 +430,7 @@ export async function createPage(
  */
 export async function updatePage(pageId: string, updates: Partial<Page>): Promise<Page> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('pages')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', pageId)
@@ -454,7 +452,7 @@ export async function updatePage(pageId: string, updates: Partial<Page>): Promis
  */
 export async function deletePage(pageId: string): Promise<void> {
   try {
-    const { error } = await insforgeClient.database.from('pages').delete().eq('id', pageId);
+    const { error } = await supabaseClient.from('pages').delete().eq('id', pageId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -474,7 +472,7 @@ export async function deletePage(pageId: string): Promise<void> {
  */
 export async function getPaymentMethods(shopId: string): Promise<PaymentMethod[]> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('payment_methods')
       .select('*')
       .eq('shop_id', shopId)
@@ -501,7 +499,7 @@ export async function createPaymentMethod(
   methodData: Omit<PaymentMethod, 'id' | 'created_at' | 'updated_at'>
 ): Promise<PaymentMethod> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('payment_methods')
       .insert([methodData])
       .select()
@@ -529,7 +527,7 @@ export async function updatePaymentMethod(
   updates: Partial<PaymentMethod>
 ): Promise<PaymentMethod> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('payment_methods')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', methodId)
@@ -559,7 +557,7 @@ export async function updatePaymentMethod(
  */
 export async function getShippingMethods(shopId: string): Promise<ShippingMethod[]> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shipping_methods')
       .select('*')
       .eq('shop_id', shopId)
@@ -586,7 +584,7 @@ export async function createShippingMethod(
   methodData: Omit<ShippingMethod, 'id' | 'created_at' | 'updated_at'>
 ): Promise<ShippingMethod> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shipping_methods')
       .insert([methodData])
       .select()
@@ -614,7 +612,7 @@ export async function updateShippingMethod(
   updates: Partial<ShippingMethod>
 ): Promise<ShippingMethod> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('shipping_methods')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', methodId)
@@ -644,7 +642,7 @@ export async function updateShippingMethod(
  */
 export async function getTaxRates(shopId: string): Promise<TaxRate[]> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('tax_rates')
       .select('*')
       .eq('shop_id', shopId)
@@ -671,7 +669,7 @@ export async function createTaxRate(
   rateData: Omit<TaxRate, 'id' | 'created_at' | 'updated_at'>
 ): Promise<TaxRate> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('tax_rates')
       .insert([rateData])
       .select()
@@ -696,7 +694,7 @@ export async function createTaxRate(
  */
 export async function updateTaxRate(rateId: string, updates: Partial<TaxRate>): Promise<TaxRate> {
   try {
-    const { data, error } = await insforgeClient.database
+    const { data, error } = await supabaseClient
       .from('tax_rates')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', rateId)
@@ -728,7 +726,7 @@ export async function calculateTax(
   postalCode?: string
 ): Promise<number> {
   try {
-    const query = insforgeClient.database
+    const query = supabaseClient
       .from('tax_rates')
       .select('rate')
       .eq('shop_id', shopId)

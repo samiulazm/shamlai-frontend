@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { insforgeClient, OrderService } from '@/lib';
+import { supabaseClient, OrderService } from '@/lib';
 import type { Order, OrderStatus } from '@/lib/types/database';
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge';
 import OrderStatusTabs from '@/components/orders/OrderStatusTabs';
@@ -33,13 +33,15 @@ export default function Orders() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      setShopId(user.user.id);
+      setShopId(user.id);
 
       // Fetch orders using the service
       const filters: any = {
@@ -55,7 +57,7 @@ export default function Orders() {
         filters.deliveryMethod = selectedDeliveryMethod;
       }
 
-      const response = await OrderService.getOrders(user.user.id, filters);
+      const response = await OrderService.getOrders(user.id, filters);
 
       setOrders(response.data || []);
       setPagination({

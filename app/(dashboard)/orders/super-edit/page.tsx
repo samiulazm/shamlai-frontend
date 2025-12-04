@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Check, X, Save, AlertCircle } from 'lucide-react';
-import { insforgeClient, OrderService } from '@/lib';
+import { supabaseClient, OrderService } from '@/lib';
 import type { Order, OrderStatus } from '@/lib/types/database';
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge';
 import { logger } from '@/lib/utils/logger';
@@ -27,11 +27,13 @@ export default function SuperEdit() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
-      const response = await OrderService.getOrders(user.user.id, {
+      setShopId(user.id);
+      const response = await OrderService.getOrders(user.id, {
         page: 1,
         pageSize: 100,
       });

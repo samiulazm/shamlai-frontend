@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { insforgeClient } from '@/lib';
+import { supabaseClient } from '@/lib';
 import { logger } from '@/lib/utils/logger';
 
 interface Notification {
@@ -31,17 +31,19 @@ export default function Notifications() {
       setError(null);
 
       // Get current user
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
       // Build query
-      let query = insforgeClient.database
+      let query = supabaseClient
         .from('notifications')
         .select('*')
-        .eq('user_id', user.user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       // Apply filter
@@ -60,7 +62,10 @@ export default function Notifications() {
 
       setNotifications(notificationsData || []);
     } catch (err: any) {
-      logger.error('Error fetching notifications', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error fetching notifications',
+        err instanceof Error ? err : new Error(String(err))
+      );
       setError(err.message || 'Failed to fetch notifications');
     } finally {
       setLoading(false);
@@ -69,7 +74,7 @@ export default function Notifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await insforgeClient.database
+      const { error } = await supabaseClient
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId);
@@ -81,19 +86,24 @@ export default function Notifications() {
         prev.map((notif) => (notif.id === notificationId ? { ...notif, is_read: true } : notif))
       );
     } catch (err: any) {
-      logger.error('Error marking notification as read', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error marking notification as read',
+        err instanceof Error ? err : new Error(String(err))
+      );
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      const { error } = await insforgeClient.database
+      const { error } = await supabaseClient
         .from('notifications')
         .update({ is_read: true })
-        .eq('user_id', user.user.id)
+        .eq('user_id', user.id)
         .eq('is_read', false);
 
       if (error) throw error;
@@ -101,7 +111,10 @@ export default function Notifications() {
       // Refresh notifications
       fetchNotifications();
     } catch (err: any) {
-      logger.error('Error marking all notifications as read', err instanceof Error ? err : new Error(String(err)));
+      logger.error(
+        'Error marking all notifications as read',
+        err instanceof Error ? err : new Error(String(err))
+      );
       alert('Failed to mark all as read');
     }
   };
@@ -111,32 +124,72 @@ export default function Notifications() {
       case 'order':
         return (
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            <svg
+              className="w-5 h-5 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              />
             </svg>
           </div>
         );
       case 'payment':
         return (
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
         );
       case 'marketing':
         return (
           <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            <svg
+              className="w-5 h-5 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+              />
             </svg>
           </div>
         );
       default:
         return (
           <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
             </svg>
           </div>
         );
@@ -180,7 +233,9 @@ export default function Notifications() {
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-gray-600 mt-1">{unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+            </p>
           )}
         </div>
         <div className="flex gap-2">
@@ -220,7 +275,9 @@ export default function Notifications() {
                 <div
                   key={notification.id}
                   className={`flex items-start gap-4 p-4 rounded-lg border ${
-                    !notification.is_read ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                    !notification.is_read
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'bg-white border-gray-200'
                   }`}
                   onClick={() => !notification.is_read && markAsRead(notification.id)}
                 >
@@ -240,7 +297,10 @@ export default function Notifications() {
                         {new Date(notification.created_at).toLocaleString()}
                       </span>
                       {notification.action_url && (
-                        <a href={notification.action_url} className="text-xs text-brand-indigo hover:underline">
+                        <a
+                          href={notification.action_url}
+                          className="text-xs text-brand-indigo hover:underline"
+                        >
                           View Details
                         </a>
                       )}
@@ -252,8 +312,18 @@ export default function Notifications() {
           ) : (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <svg
+                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
                 </svg>
                 <p className="text-lg font-medium">No notifications</p>
                 <p className="text-sm mt-2">You're all caught up!</p>

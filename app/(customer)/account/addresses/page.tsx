@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { MapPin, Plus, Edit, Trash2, Check, X } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 interface Address {
@@ -54,7 +54,7 @@ export default function AddressesPage() {
       setLoading(true);
 
       // Get customer
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('id')
         .eq('user_id', user?.id)
@@ -66,7 +66,7 @@ export default function AddressesPage() {
       }
 
       // Get addresses
-      const { data: addressesData } = await insforgeClient.database
+      const { data: addressesData } = await supabaseClient
         .from('addresses')
         .select('*')
         .eq('customer_id', customer.id)
@@ -86,7 +86,7 @@ export default function AddressesPage() {
 
     try {
       // Get customer
-      const { data: customer } = await insforgeClient.database
+      const { data: customer } = await supabaseClient
         .from('customers')
         .select('id')
         .eq('user_id', user?.id)
@@ -99,7 +99,7 @@ export default function AddressesPage() {
 
       if (editingId) {
         // Update existing address
-        const { error } = await insforgeClient.database
+        const { error } = await supabaseClient
           .from('addresses')
           .update({
             ...formData,
@@ -110,7 +110,7 @@ export default function AddressesPage() {
         if (error) throw error;
       } else {
         // Create new address
-        const { error } = await insforgeClient.database.from('addresses').insert({
+        const { error } = await supabaseClient.from('addresses').insert({
           ...formData,
           customer_id: customer.id,
         });
@@ -120,7 +120,7 @@ export default function AddressesPage() {
 
       // If set as default, unset other defaults
       if (formData.is_default && editingId) {
-        await insforgeClient.database
+        await supabaseClient
           .from('addresses')
           .update({ is_default: false })
           .eq('customer_id', customer.id)
@@ -150,10 +150,7 @@ export default function AddressesPage() {
     }
 
     try {
-      const { error } = await insforgeClient.database
-        .from('addresses')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabaseClient.from('addresses').delete().eq('id', id);
 
       if (error) throw error;
 
@@ -209,13 +206,14 @@ export default function AddressesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address Type
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address Type</label>
               <select
                 value={formData.address_type}
                 onChange={(e) =>
-                  setFormData({ ...formData, address_type: e.target.value as 'shipping' | 'billing' })
+                  setFormData({
+                    ...formData,
+                    address_type: e.target.value as 'shipping' | 'billing',
+                  })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
@@ -227,9 +225,7 @@ export default function AddressesPage() {
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                 <input
                   type="text"
                   value={formData.first_name}
@@ -240,9 +236,7 @@ export default function AddressesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                 <input
                   type="text"
                   value={formData.last_name}
@@ -255,9 +249,7 @@ export default function AddressesPage() {
 
             {/* Street */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Street Address
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
               <input
                 type="text"
                 value={formData.street}
@@ -396,16 +388,14 @@ export default function AddressesPage() {
                     {address.first_name} {address.last_name}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {address.street}<br />
-                    {address.city}, {address.state} {address.zip}<br />
+                    {address.street}
+                    <br />
+                    {address.city}, {address.state} {address.zip}
+                    <br />
                     {address.country}
                   </p>
-                  {address.phone && (
-                    <p className="text-sm text-gray-600 mt-2">{address.phone}</p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2 uppercase">
-                    {address.address_type}
-                  </p>
+                  {address.phone && <p className="text-sm text-gray-600 mt-2">{address.phone}</p>}
+                  <p className="text-xs text-gray-500 mt-2 uppercase">{address.address_type}</p>
                 </div>
               </div>
 

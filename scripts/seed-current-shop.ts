@@ -2,12 +2,19 @@
  * Seed products to currently logged-in user's shop
  */
 
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { seedAllData } from '../lib/utils/seed-data';
 
-const insforgeClient = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130',
-});
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  );
+}
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function main() {
   console.log("🌱 Seeding Current User's Shop\n");
@@ -15,7 +22,7 @@ async function main() {
   try {
     // Login with test credentials
     console.log('Logging in as test@shamlai.com...');
-    const { data: authData, error: authError } = await insforgeClient.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
       email: 'test@shamlai.com',
       password: 'Test123456!',
     });

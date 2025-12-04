@@ -23,9 +23,20 @@
       "Bash(curl:*)",
       "Bash(npm run dev:*)",
       "Bash(cat:*)",
-      "Bash(heroku config:*)"
+      "Bash(heroku config:*)",
+      "Bash(heroku config:set:*)",
+      "Bash(heroku config:get:*)",
+      "Bash(npx @insforge/install:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsx:*)",
+      "Bash(git -c user.useConfigOnly=true commit -m \"Fix TypeScript errors: add getInsforgeClient, fix logger signatures, fix type issues\")",
+      "Bash(if exist nul del /f nul)",
+      "Bash(git reset:*)",
+      "Bash(find:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": ["insforge"]
 }

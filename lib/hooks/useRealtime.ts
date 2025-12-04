@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { subscribeToTable } from '../insforge';
+import { subscribeToTable } from '../supabase';
 import { logger } from '../utils/logger';
 
 /**

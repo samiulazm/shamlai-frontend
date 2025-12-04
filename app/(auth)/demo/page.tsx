@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';
 
@@ -18,11 +18,11 @@ export default function DemoPage() {
 
         // Always log out first to ensure we're using the demo account
         console.log('🔓 Logging out current session...');
-        await insforgeClient.auth.signOut();
+        await supabaseClient.auth.signOut();
 
         // Auto-login with demo credentials
         console.log('🔐 Logging in with demo account...');
-        const { data, error: authError } = await insforgeClient.auth.signInWithPassword({
+        const { data, error: authError } = await supabaseClient.auth.signInWithPassword({
           email: 'test@shamlai.com',
           password: 'Test123456!',
         });

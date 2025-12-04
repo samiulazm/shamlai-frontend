@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { insforgeClient, OrderService } from '@/lib';
+import { supabaseClient, OrderService } from '@/lib';
 import type { Order } from '@/lib/types/database';
 import OrderTable from '@/components/orders/OrderTable';
 
@@ -20,13 +20,15 @@ export default function Preorders() {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) {
         setError('User not authenticated');
         return;
       }
 
-      const ordersData = await OrderService.getOrders(user.user.id, {
+      const ordersData = await OrderService.getOrders(user.id, {
         page: 1,
         pageSize: 100,
         status: 'preorder' as any,

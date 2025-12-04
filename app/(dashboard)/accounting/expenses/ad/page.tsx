@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Upload, Tag } from 'lucide-react';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import Link from 'next/link';
 
@@ -33,10 +33,12 @@ export default function NewAdExpense() {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const { data: user } = await insforgeClient.auth.getCurrentUser();
-      if (!user?.user?.id) return;
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user?.id) return;
 
-      setShopId(user.user.id);
+      setShopId(user.id);
       setAccounts([]);
     } catch (error) {
       logger.error(
@@ -65,7 +67,7 @@ export default function NewAdExpense() {
       }
 
       // Create ad expense with category='advertising'
-      // await insforgeClient.database
+      // await supabaseClient
       //   .from('expenses')
       //   .insert([{
       //     shop_id: shopId,

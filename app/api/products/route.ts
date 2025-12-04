@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 
 /**
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * pageSize;
 
-    let query = insforgeClient.database
+    let query = supabaseClient
       .from('products')
       .select('*', { count: 'exact' })
       .eq('shop_id', shopId)
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
     }
 
-    const { data: product, error } = await insforgeClient.database
+    const { data: product, error } = await supabaseClient
       .from('products')
       .insert({
         shop_id: user.id,

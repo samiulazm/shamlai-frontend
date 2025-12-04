@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insforgeClient } from '@/lib/insforge';
+import { supabaseClient } from '@/lib/supabase';
 import { getOrderById } from '@/lib/services/orders';
 import { updateOrderWithWorkflow } from '@/lib/services/order-workflows';
 import { logger } from '@/lib/utils/logger';
@@ -7,15 +7,12 @@ import { logger } from '@/lib/utils/logger';
 /**
  * Get single order
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     const order = await getOrderById(id);
 
@@ -43,15 +40,12 @@ export async function GET(
 /**
  * Update order status
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
     // Get current user
-    const { data } = await insforgeClient.auth.getCurrentUser();
+    const { data } = await supabaseClient.auth.getUser();
 
     if (!data?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -60,7 +54,7 @@ export async function PATCH(
     const user = data.user;
 
     // Verify ownership
-    const { data: order } = await insforgeClient.database
+    const { data: order } = await supabaseClient
       .from('orders')
       .select('shop_id')
       .eq('id', id)
