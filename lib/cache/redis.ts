@@ -3,9 +3,11 @@
  *
  * Provides a caching layer for database queries to improve performance.
  * Falls back gracefully to no-cache mode if Redis is unavailable.
+ *
+ * NOTE: This module uses ioredis which is server-only. The webpack config
+ * in next.config.mjs excludes it from client bundles.
  */
 
-import 'server-only';
 import { Redis } from 'ioredis';
 
 // Types

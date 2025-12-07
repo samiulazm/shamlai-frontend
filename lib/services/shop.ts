@@ -1,8 +1,8 @@
 // Shop Service - Shop settings and configuration
-import 'server-only';
 import { supabaseClient, STORAGE_BUCKETS } from '../supabase';
 
 import { logger } from '../utils/logger';
+
 import type {
   ShopSettings,
   Theme,
@@ -14,6 +14,7 @@ import type {
 import { cacheGetOrSet, cacheDelete, CACHE_TTL, REDIS_KEYS } from '../cache/redis';
 
 // ============================================================================
+
 // Shop Settings
 // ============================================================================
 
