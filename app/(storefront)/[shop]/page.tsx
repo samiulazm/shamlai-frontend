@@ -11,7 +11,8 @@ import { getOrCreateCartSessionId, dispatchCartUpdatedEvent } from '@/lib/utils/
 
 export default function StoreHome() {
   const params = useParams();
-  const shopId = params.shop as string;
+  // The [shop] param is actually the user_id, not shop_id
+  const userId = params.shop as string;
 
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,19 +22,32 @@ export default function StoreHome() {
 
   useEffect(() => {
     fetchShopData();
-  }, [shopId]);
+  }, [userId]);
 
   const fetchShopData = async () => {
     try {
       setLoading(true);
 
-      // Fetch shop settings and products in parallel (performance optimization)
-      const [settingsResult, productsResult] = await Promise.all([
-        supabaseClient.from('shop_settings').select('*').eq('shop_id', shopId).single(),
-        supabaseClient
-          .from('products')
-          .select(
-            `
+      // First get shop_settings by user_id to get the actual shop_id
+      const settingsResult = await supabaseClient
+        .from('shop_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (!settingsResult.data) {
+        setLoading(false);
+        return;
+      }
+
+      setShopSettings(settingsResult.data);
+
+      // Now fetch products using the actual shop_id from shop_settings
+      const actualShopId = settingsResult.data.shop_id;
+      const productsResult = await supabaseClient
+        .from('products')
+        .select(
+          `
             *,
             product_images (
               id,
@@ -42,13 +56,11 @@ export default function StoreHome() {
               sort_order
             )
           `
-          )
-          .eq('shop_id', shopId)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false }),
-      ]);
+        )
+        .eq('shop_id', actualShopId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-      setShopSettings(settingsResult.data);
       setProducts(productsResult.data || []);
     } catch (error) {
       logger.error(
@@ -89,7 +101,7 @@ export default function StoreHome() {
         variantId = variant?.id;
 
         if (!variantId) {
-          window.location.href = `/${shopId}/product/${product.id}`;
+          window.location.href = `/${userId}/product/${product.id}`;
           return;
         }
       }
@@ -174,7 +186,7 @@ export default function StoreHome() {
                   className="group rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
                   data-testid="product-card"
                 >
-                  <Link href={`/${shopId}/product/${product.id}`} className="block">
+                  <Link href={`/${userId}/product/${product.id}`} className="block">
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                       {(() => {
                         const images = (product as any).product_images as
@@ -261,7 +273,7 @@ export default function StoreHome() {
                           : 'Add to Cart'}
                     </button>
                     <Link
-                      href={`/${shopId}/product/${product.id}`}
+                      href={`/${userId}/product/${product.id}`}
                       className="btn btn-outline w-full text-sm mt-2 text-center"
                     >
                       View Details

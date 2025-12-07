@@ -106,17 +106,18 @@ export async function generateUniqueShopId(): Promise<string> {
 }
 
 /**
- * Resolve a shop ID by subdomain.
+ * Resolve a user ID (shop path) by subdomain.
+ * The storefront routes use user_id as the [shop] parameter.
  */
 export async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
   try {
     const { data, error } = await supabaseClient
       .from('shop_settings')
-      .select('shop_id')
+      .select('user_id')
       .eq('subdomain', subdomain)
       .single();
     if (error) return null;
-    return data?.shop_id || null;
+    return data?.user_id || null;
   } catch {
     return null;
   }

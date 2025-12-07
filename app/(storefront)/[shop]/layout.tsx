@@ -30,7 +30,9 @@ type CartDrawerItem = {
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
-  const shopId = params.shop as string;
+  // The [shop] param is actually the user_id, not shop_id
+  const userId = params.shop as string;
+  const [shopId, setShopId] = useState<string>(''); // Actual shop_id from shop_settings
   const [shopName, setShopName] = useState('Shop');
   const [isOwner, setIsOwner] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
@@ -43,27 +45,29 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
 
   useEffect(() => {
     fetchShopInfo();
-    fetchTheme();
-  }, [shopId]);
+  }, [userId]);
 
   const fetchShopInfo = async () => {
     try {
-      // Get shop settings
+      // Get shop settings by user_id
       const { data: settings } = await supabaseClient
         .from('shop_settings')
-        .select('shop_name')
-        .eq('shop_id', shopId)
+        .select('shop_name, shop_id')
+        .eq('user_id', userId)
         .single();
 
       if (settings) {
         setShopName(settings.shop_name || 'Shop');
+        setShopId(settings.shop_id); // Store actual shop_id for products
+        // Fetch theme after we have the actual shop_id
+        fetchTheme(settings.shop_id);
       }
 
       // Check if current user is the shop owner
       const {
         data: { user },
       } = await supabaseClient.auth.getUser();
-      if (user?.id === shopId) {
+      if (user?.id === userId) {
         setIsOwner(true);
       }
     } catch (error) {
@@ -71,7 +75,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
         'Error fetching shop info',
         error instanceof Error ? error : new Error(String(error)),
         {
-          shopId,
+          userId,
         }
       );
     }
@@ -138,16 +142,16 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
     }
   }, [fetchCartSummary]);
 
-  const fetchTheme = async () => {
+  const fetchTheme = async (actualShopId: string) => {
     try {
-      const activeTheme = await getActiveTheme(shopId);
+      const activeTheme = await getActiveTheme(actualShopId);
       setTheme(activeTheme);
     } catch (error) {
       logger.error(
         'Error fetching theme',
         error instanceof Error ? error : new Error(String(error)),
         {
-          shopId,
+          shopId: actualShopId,
         }
       );
       // Continue with default theme (null)
@@ -173,7 +177,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
           <div className="container-responsive h-14 sm:h-16 flex items-center justify-between gap-4">
             {/* Logo */}
             <Link
-              href={`/${shopId}`}
+              href={`/${userId}`}
               className="font-bold text-base sm:text-lg text-gray-900 transition-colors truncate"
               style={{ color: 'var(--theme-primary)' }}
             >
@@ -183,19 +187,19 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-4 lg:gap-6">
               <Link
-                href={`/${shopId}`}
+                href={`/${userId}`}
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 Home
               </Link>
               <Link
-                href={`/${shopId}#products`}
+                href={`/${userId}#products`}
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 Products
               </Link>
               <Link
-                href={`/${shopId}/cart`}
+                href={`/${userId}/cart`}
                 className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 View Cart
@@ -287,21 +291,21 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
             <div className="md:hidden border-t bg-white">
               <nav className="container-responsive py-3 space-y-1">
                 <Link
-                  href={`/${shopId}`}
+                  href={`/${userId}`}
                   className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors touch-manipulation"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   🏠 Home
                 </Link>
                 <Link
-                  href={`/${shopId}#products`}
+                  href={`/${userId}#products`}
                   className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors touch-manipulation"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   🛍️ Products
                 </Link>
                 <Link
-                  href={`/${shopId}/cart`}
+                  href={`/${userId}/cart`}
                   className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors touch-manipulation"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -456,7 +460,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                   </div>
                 </div>
                 <Link
-                  href={`/${shopId}/checkout`}
+                  href={`/${userId}/checkout`}
                   className="btn btn-primary w-full text-center text-sm sm:text-base font-semibold py-3 shadow-lg"
                   data-testid="checkout-button"
                   onClick={closeCartDrawer}
@@ -464,7 +468,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
                   Proceed to Checkout →
                 </Link>
                 <Link
-                  href={`/${shopId}/cart`}
+                  href={`/${userId}/cart`}
                   className="btn btn-outline w-full text-center text-sm"
                   onClick={closeCartDrawer}
                 >
