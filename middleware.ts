@@ -106,12 +106,16 @@ export async function middleware(request: NextRequest) {
   // Configure your root domain via env. Example: "yourdomain.com"
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
 
+  // Debug: Log every request
+  console.log('[Middleware] Request:', { hostname, pathname, rootDomain });
+
   // --- Subdomain routing for storefronts ---
   if (!isReservedPath(pathname)) {
     if (!rootDomain) {
-      console.warn('NEXT_PUBLIC_ROOT_DOMAIN is not set. Subdomain routing will not work.');
+      console.warn('[Middleware] NEXT_PUBLIC_ROOT_DOMAIN is not set!');
     }
     const sub = extractSubdomain(hostname, rootDomain);
+    console.log('[Middleware] Extracted subdomain:', sub);
 
     if (sub) {
       // Avoid loops if already rewritten to /<userId>
