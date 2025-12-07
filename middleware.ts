@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { normalizeSubdomain } from './lib/services/shop';
+import { normalizeSubdomain } from './lib/utils/subdomain';
 import { createClient } from './utils/supabase/middleware';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
