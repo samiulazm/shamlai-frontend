@@ -14,6 +14,7 @@ export default function NewProduct() {
 
   // User/shop state
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [shopId, setShopId] = useState<string>('');
   const [userLoading, setUserLoading] = useState(true);
 
   // Form state
@@ -46,6 +47,22 @@ export default function NewProduct() {
         const { data: user } = await supabaseClient.auth.getUser();
         if (user?.user) {
           setCurrentUser(user.user);
+
+          // Fetch shop_id for the current user
+          const { data: shop, error } = await supabaseClient
+            .from('shop_settings')
+            .select('shop_id')
+            .eq('user_id', user.user.id)
+            .single();
+
+          if (shop) {
+            setShopId(shop.shop_id);
+          } else {
+            // If user has no shop, they might need to be redirected to shop setup
+            // For now, logging error. 
+            logger.error('No shop found for user', new Error('User has no associated shop_id'));
+          }
+
         } else {
           // Redirect to login if not authenticated
           router.push('/login');
@@ -116,10 +133,15 @@ export default function NewProduct() {
       return;
     }
 
+    if (!shopId) {
+      alert('Error: No shop associated with your account. Please set up your shop settings first.');
+      return;
+    }
+
     try {
       // Create product data
       const productData: ProductInsert = {
-        shop_id: currentUser.id, // Use authenticated user's ID as shop_id
+        shop_id: shopId, // Use the correct shop_id (text slug)
         name: formData.name,
         slug: generateSlug(formData.name),
         description: formData.description,
