@@ -23,6 +23,8 @@ const nextConfig = {
       'insforge.app',
       '*.insforge.app',
       'localhost',
+      'supabase.co',
+      '*.supabase.co',
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,

@@ -402,6 +402,46 @@ export async function upsertTheme(
   }
 }
 
+/**
+ * Get products for a shop (Cached)
+ */
+export async function getProductsByShop(shopId: string): Promise<any[]> {
+  return cacheGetOrSet(
+    REDIS_KEYS.PRODUCT_LIST(shopId, 1), // Default to page 1 for now
+    async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select(
+            `
+            *,
+            product_images (
+              id,
+              image_url,
+              is_primary,
+              sort_order
+            )
+          `
+          )
+          .eq('shop_id', shopId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+      } catch (error: any) {
+        logger.error(
+          'Error fetching shop products',
+          error instanceof Error ? error : new Error(String(error)),
+          { shopId }
+        );
+        throw error;
+      }
+    },
+    { ttl: CACHE_TTL.PRODUCT_LIST }
+  );
+}
+
 // ============================================================================
 // Static Pages
 // ============================================================================
