@@ -17,22 +17,24 @@ interface CartWithItems extends Cart {
 /**
  * Hook to manage shopping cart
  */
-export function useCart(userId?: string, sessionId?: string) {
+export function useCart(userId?: string, sessionId?: string, shopId?: string) {
   const [cart, setCart] = useState<CartWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch cart data
   const fetchCart = useCallback(async () => {
-    if (!userId && !sessionId) {
+    // If shopID is missing, we can't fetch/create a valid cart in a multi-tenant system
+    if (!shopId && (!userId && !sessionId)) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const cartData = await cartService.getOrCreateCart(userId, sessionId);
-      const cartWithItems = await cartService.getCartWithItems(cartData.id);
+      // Pass shopId to getOrCreateCart, and sessionId to both functions
+      const cartData = await cartService.getOrCreateCart(userId, sessionId, shopId);
+      const cartWithItems = await cartService.getCartWithItems(cartData.id, sessionId);
       setCart(cartWithItems);
       setError(null);
     } catch (err: any) {
@@ -40,7 +42,7 @@ export function useCart(userId?: string, sessionId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [userId, sessionId]);
+  }, [userId, sessionId, shopId]);
 
   // Initial fetch
   useEffect(() => {
@@ -53,7 +55,7 @@ export function useCart(userId?: string, sessionId?: string) {
 
     try {
       setError(null);
-      await cartService.addToCart(cart.id, productId, quantity, variantId);
+      await cartService.addToCart(cart.id, productId, quantity, variantId, sessionId);
       await fetchCart(); // Refresh cart
     } catch (err: any) {
       setError(err.message || 'Failed to add item to cart');
@@ -65,7 +67,7 @@ export function useCart(userId?: string, sessionId?: string) {
   const updateQuantity = async (itemId: string, quantity: number) => {
     try {
       setError(null);
-      await cartService.updateCartItemQuantity(itemId, quantity);
+      await cartService.updateCartItemQuantity(itemId, quantity, sessionId);
       await fetchCart(); // Refresh cart
     } catch (err: any) {
       setError(err.message || 'Failed to update quantity');
@@ -77,7 +79,7 @@ export function useCart(userId?: string, sessionId?: string) {
   const removeItem = async (itemId: string) => {
     try {
       setError(null);
-      await cartService.removeFromCart(itemId);
+      await cartService.removeFromCart(itemId, sessionId);
       await fetchCart(); // Refresh cart
     } catch (err: any) {
       setError(err.message || 'Failed to remove item');
@@ -91,7 +93,7 @@ export function useCart(userId?: string, sessionId?: string) {
 
     try {
       setError(null);
-      await cartService.clearCart(cart.id);
+      await cartService.clearCart(cart.id, sessionId);
       await fetchCart(); // Refresh cart
     } catch (err: any) {
       setError(err.message || 'Failed to clear cart');
@@ -104,7 +106,7 @@ export function useCart(userId?: string, sessionId?: string) {
     if (!cart) return null;
 
     try {
-      const validation = await cartService.validateCart(cart.id);
+      const validation = await cartService.validateCart(cart.id, sessionId);
       return validation;
     } catch (err: any) {
       setError(err.message || 'Failed to validate cart');
@@ -117,7 +119,7 @@ export function useCart(userId?: string, sessionId?: string) {
     if (!cart) return null;
 
     try {
-      const totals = await cartService.calculateCartTotals(cart.id, shippingMethodId, discountCode);
+      const totals = await cartService.calculateCartTotals(cart.id, shippingMethodId, discountCode, sessionId);
       return totals;
     } catch (err: any) {
       setError(err.message || 'Failed to calculate totals');

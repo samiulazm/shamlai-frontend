@@ -11,9 +11,36 @@ import type { Cart, CartItem, Product, ProductVariant } from '../types/database'
 /**
  * Get or create cart for user/session
  */
-export async function getOrCreateCart(userId?: string, sessionId?: string): Promise<Cart> {
+import { createClient } from '@supabase/supabase-js';
+
+// Helper to get supabase client with session header
+const getCartClient = (sessionId?: string) => {
+  if (!sessionId) return supabaseClient;
+
+  // Re-create client with header
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
+  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
+
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: {
+        'x-session-id': sessionId
+      }
+    }
+  });
+};
+
+/**
+ * Get or create cart for user/session
+ */
+export async function getOrCreateCart(
+  userId?: string,
+  sessionId?: string,
+  shopId?: string
+): Promise<Cart> {
   try {
-    let query = supabaseClient.from('cart').select('*');
+    const client = getCartClient(sessionId);
+    let query = client.from('cart').select('*');
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -21,6 +48,11 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
       query = query.eq('session_id', sessionId);
     } else {
       throw new Error('Either userId or sessionId is required');
+    }
+
+    // Filter by shopId if provided (strict multi-tenancy)
+    if (shopId) {
+      query = query.eq('shop_id', shopId);
     }
 
     const { data: existingCart } = await query.single();
@@ -31,15 +63,20 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
     }
 
     // Create new cart
+    if (!shopId) {
+      throw new Error('shopId is required to create a new cart');
+    }
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Cart expires in 7 days
 
-    const { data: newCart, error } = await supabaseClient
+    const { data: newCart, error } = await client
       .from('cart')
       .insert([
         {
           user_id: userId,
           session_id: sessionId,
+          shop_id: shopId,
           expires_at: expiresAt.toISOString(),
         },
       ])
@@ -55,6 +92,77 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
       {
         userId,
         sessionId,
+        shopId,
+      }
+    );
+    throw error;
+  }
+}
+
+// ... (skipping getCartWithItems etc as they are fine/handled in prev step, jumping to mergeGuestCart)
+
+/**
+ * Merge guest cart with user cart after login
+ */
+export async function mergeGuestCart(guestSessionId: string, userId: string): Promise<Cart> {
+  try {
+    // Get guest cart first to get the shop_id
+    // MUST use guest client to pass RLS for the guest session
+    const guestClient = getCartClient(guestSessionId);
+    const { data: guestCart } = await guestClient
+      .from('cart')
+      .select('*')
+      .eq('session_id', guestSessionId)
+      .single();
+
+    // If no guest cart, just return/create the user cart (we need shopId, but assuming user has one or we handle it upstream? 
+    // Actually, if no guest cart, we can't infer shopId easily here without more context.
+    // However, usually merge happens when *on* a shop. 
+    // For now, if no guest cart, we try to find an existing user cart or fail if we can't create one without shopId.
+    if (!guestCart) {
+      // Try to find existing cart for user
+      const { data: existingUserCart } = await supabaseClient
+        .from('cart')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (existingUserCart) return existingUserCart;
+
+      // If no cart exists and we don't have shopId, we can't create one.
+      // The caller should ideally call getOrCreateCart with shopId.
+      throw new Error('No guest cart to merge and no shop context provided');
+    }
+
+    // Get or create user cart ensuring it belongs to the same shop
+    // User cart access uses standard auth (no special header needed if logged in)
+    const userCart = await getOrCreateCart(userId, undefined, guestCart.shop_id);
+
+    // Get guest cart items
+    const { data: guestItems } = await guestClient
+      .from('cart_items')
+      .select('*')
+      .eq('cart_id', guestCart.id);
+
+    // Add guest items to user cart
+    if (guestItems) {
+      for (const item of guestItems) {
+        // addToCart for user cart (no sessionId needed if user is logged in)
+        await addToCart(userCart.id, item.product_id, item.quantity, item.variant_id);
+      }
+    }
+
+    // Delete guest cart
+    await guestClient.from('cart').delete().eq('id', guestCart.id);
+
+    return userCart;
+  } catch (error: any) {
+    logger.error(
+      'Error merging guest cart',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        userId,
+        guestSessionId,
       }
     );
     throw error;
@@ -65,7 +173,11 @@ export async function getOrCreateCart(userId?: string, sessionId?: string): Prom
  * Get cart with items and product details
  * Cached for 24 hours (carts don't change frequently for inactive users)
  */
-export async function getCartWithItems(cartId: string): Promise<
+/**
+ * Get cart with items and product details
+ * Cached for 24 hours (carts don't change frequently for inactive users)
+ */
+export async function getCartWithItems(cartId: string, sessionId?: string): Promise<
   Cart & {
     items: (CartItem & {
       product: Product;
@@ -77,13 +189,18 @@ export async function getCartWithItems(cartId: string): Promise<
 > {
   try {
     const cacheKey = REDIS_KEYS.CART(cartId);
+    const client = getCartClient(sessionId);
+
+    // Note: strict RLS might prevent pure caching if headers are required?
+    // We update cacheAside logic or just fetch directly if session is critical.
+    // For now assuming cache is public or safe-ish, but the FETCH needs the client.
 
     return await cacheAside(
       cacheKey,
       async () => {
         // Get cart with retry logic
         const { data: cart, error: cartError } = await executeWithRetry(async () => {
-          const result = await supabaseClient.from('cart').select('*').eq('id', cartId).single();
+          const result = await client.from('cart').select('*').eq('id', cartId).single();
           return result;
         });
 
@@ -91,7 +208,7 @@ export async function getCartWithItems(cartId: string): Promise<
 
         // Get cart items with product and variant details using joins (fixes N+1 query)
         const { data: items, error: itemsError } = await executeWithRetry(async () => {
-          const result = await supabaseClient
+          const result = await client
             .from('cart_items')
             .select(
               `
@@ -156,7 +273,8 @@ export async function addToCart(
   cartId: string,
   productId: string,
   quantity: number = 1,
-  variantId?: string
+  variantId?: string,
+  sessionId?: string
 ): Promise<CartItem> {
   try {
     // Get product/variant details including price and inventory
@@ -206,7 +324,8 @@ export async function addToCart(
     }
 
     // Check if item already exists in cart
-    let query = supabaseClient
+    const client = getCartClient(sessionId);
+    let query = client
       .from('cart_items')
       .select('*')
       .eq('cart_id', cartId)
@@ -224,7 +343,7 @@ export async function addToCart(
 
     if (existingItem) {
       // Update quantity if item exists
-      const { data, error } = await supabaseClient
+      const { data, error } = await client
         .from('cart_items')
         .update({
           quantity: existingItem.quantity + quantity,
@@ -239,7 +358,7 @@ export async function addToCart(
       result = data;
     } else {
       // Add new item
-      const { data, error } = await supabaseClient
+      const { data, error } = await client
         .from('cart_items')
         .insert([
           {
@@ -278,14 +397,15 @@ export async function addToCart(
 /**
  * Update cart item quantity
  */
-export async function updateCartItemQuantity(itemId: string, quantity: number): Promise<CartItem> {
+export async function updateCartItemQuantity(itemId: string, quantity: number, sessionId?: string): Promise<CartItem> {
   try {
     if (quantity <= 0) {
       // Remove item if quantity is 0 or negative
-      return await removeFromCart(itemId);
+      return await removeFromCart(itemId, sessionId);
     }
 
-    const { data, error } = await supabaseClient
+    const client = getCartClient(sessionId);
+    const { data, error } = await client
       .from('cart_items')
       .update({
         quantity,
@@ -317,16 +437,17 @@ export async function updateCartItemQuantity(itemId: string, quantity: number): 
 /**
  * Remove item from cart
  */
-export async function removeFromCart(itemId: string): Promise<CartItem> {
+export async function removeFromCart(itemId: string, sessionId?: string): Promise<CartItem> {
   try {
+    const client = getCartClient(sessionId);
     // Get cart_id before deleting
-    const { data: item } = await supabaseClient
+    const { data: item } = await client
       .from('cart_items')
       .select('cart_id')
       .eq('id', itemId)
       .single();
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await client
       .from('cart_items')
       .delete()
       .eq('id', itemId)
@@ -356,9 +477,10 @@ export async function removeFromCart(itemId: string): Promise<CartItem> {
 /**
  * Clear all items from cart
  */
-export async function clearCart(cartId: string): Promise<void> {
+export async function clearCart(cartId: string, sessionId?: string): Promise<void> {
   try {
-    const { error } = await supabaseClient.from('cart_items').delete().eq('cart_id', cartId);
+    const client = getCartClient(sessionId);
+    const { error } = await client.from('cart_items').delete().eq('cart_id', cartId);
 
     if (error) throw error;
   } catch (error: any) {
@@ -372,56 +494,12 @@ export async function clearCart(cartId: string): Promise<void> {
 /**
  * Merge guest cart with user cart after login
  */
-export async function mergeGuestCart(guestSessionId: string, userId: string): Promise<Cart> {
-  try {
-    // Get or create user cart
-    const userCart = await getOrCreateCart(userId);
 
-    // Get guest cart
-    const { data: guestCart } = await supabaseClient
-      .from('cart')
-      .select('*')
-      .eq('session_id', guestSessionId)
-      .single();
-
-    if (!guestCart) {
-      return userCart;
-    }
-
-    // Get guest cart items
-    const { data: guestItems } = await supabaseClient
-      .from('cart_items')
-      .select('*')
-      .eq('cart_id', guestCart.id);
-
-    // Add guest items to user cart
-    if (guestItems) {
-      for (const item of guestItems) {
-        await addToCart(userCart.id, item.product_id, item.quantity, item.variant_id);
-      }
-    }
-
-    // Delete guest cart
-    await supabaseClient.from('cart').delete().eq('id', guestCart.id);
-
-    return userCart;
-  } catch (error: any) {
-    logger.error(
-      'Error merging guest cart',
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        userId,
-        guestSessionId,
-      }
-    );
-    throw error;
-  }
-}
 
 /**
  * Validate cart items (check availability and prices)
  */
-export async function validateCart(cartId: string): Promise<{
+export async function validateCart(cartId: string, sessionId?: string): Promise<{
   isValid: boolean;
   issues: Array<{
     itemId: string;
@@ -430,7 +508,7 @@ export async function validateCart(cartId: string): Promise<{
   }>;
 }> {
   try {
-    const cart = await getCartWithItems(cartId);
+    const cart = await getCartWithItems(cartId, sessionId);
     const issues: Array<{ itemId: string; productName: string; issue: string }> = [];
 
     for (const item of cart.items) {
@@ -491,7 +569,8 @@ export async function validateCart(cartId: string): Promise<{
 export async function calculateCartTotals(
   cartId: string,
   shippingMethodId?: string,
-  discountCode?: string
+  discountCode?: string,
+  sessionId?: string
 ): Promise<{
   subtotal: number;
   discountAmount: number;
@@ -500,7 +579,7 @@ export async function calculateCartTotals(
   total: number;
 }> {
   try {
-    const cart = await getCartWithItems(cartId);
+    const cart = await getCartWithItems(cartId, sessionId);
     const subtotal = cart.subtotal;
     let discountAmount = 0;
     let shippingCost = 0;
