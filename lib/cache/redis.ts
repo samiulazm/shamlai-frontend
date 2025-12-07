@@ -20,6 +20,43 @@ export interface CacheStats {
   hitRate: number;
 }
 
+/**
+ * Redis key prefixes for organization
+ */
+export const REDIS_KEYS = {
+  // Rate limiting
+  RATE_LIMIT: (identifier: string) => `rate_limit:${identifier}`,
+  RATE_LIMIT_API: (ip: string, endpoint: string) => `rate_limit:api:${ip}:${endpoint}`,
+
+  // Caching
+  PRODUCT: (id: string) => `cache:product:${id}`,
+  PRODUCT_LIST: (shopId: string, page: number) => `cache:products:${shopId}:page:${page}`,
+  SHOP: (id: string) => `cache:shop:${id}`,
+  SHOP_BY_SUBDOMAIN: (subdomain: string) => `cache:shop:subdomain:${subdomain}`,
+  CART: (id: string) => `cache:cart:${id}`,
+  ORDER: (id: string) => `cache:order:${id}`,
+
+  // Session data
+  SESSION: (userId: string) => `session:${userId}`,
+
+  // Analytics
+  ANALYTICS_COUNTER: (metric: string, date: string) => `analytics:${metric}:${date}`,
+} as const;
+
+/**
+ * Cache TTL (Time To Live) configurations in seconds
+ */
+export const CACHE_TTL = {
+  PRODUCT: 5 * 60, // 5 minutes
+  PRODUCT_LIST: 3 * 60, // 3 minutes
+  SHOP: 60 * 60, // 1 hour
+  SHOP_SUBDOMAIN: 60 * 60, // 1 hour
+  CART: 24 * 60 * 60, // 24 hours
+  ORDER: 30 * 60, // 30 minutes
+  RATE_LIMIT: 60, // 1 minute
+  SESSION: 7 * 24 * 60 * 60, // 7 days
+} as const;
+
 // Cache configuration
 const DEFAULT_TTL = 300; // 5 minutes
 const CACHE_PREFIX = 'shamlai:';

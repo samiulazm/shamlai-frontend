@@ -9,6 +9,7 @@ import type {
   ShippingMethod,
   TaxRate,
 } from '../types/database';
+import { cacheGetOrSet, cacheDelete, CACHE_TTL, REDIS_KEYS } from '../cache/redis';
 
 // ============================================================================
 // Shop Settings
@@ -158,32 +159,33 @@ export async function getSubdomainByShopId(id: string): Promise<string | null> {
  * Get shop settings
  */
 export async function getShopSettings(shopId: string): Promise<ShopSettings | null> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('shop_settings')
-      .select('*')
-      .eq('shop_id', shopId)
-      .single();
+  return cacheGetOrSet(
+    REDIS_KEYS.SHOP(shopId),
+    async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('shop_settings')
+          .select('*')
+          .eq('shop_id', shopId)
+          .single();
 
-    if (error) {
-      // If no settings exist, return null
-      if (error?.code === 'PGRST116') {
-        return null;
-      }
-      throw error;
-    }
+        if (error) {
+          if (error?.code === 'PGRST116') return null;
+          throw error;
+        }
 
-    return data;
-  } catch (error: any) {
-    logger.error(
-      'Error fetching shop settings',
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        shopId,
+        return data;
+      } catch (error: any) {
+        logger.error(
+          'Error fetching shop settings',
+          error instanceof Error ? error : new Error(String(error)),
+          { shopId }
+        );
+        throw error;
       }
-    );
-    throw error;
-  }
+    },
+    { ttl: CACHE_TTL.SHOP }
+  );
 }
 
 /**
@@ -195,7 +197,14 @@ export async function upsertShopSettings(
 ): Promise<ShopSettings> {
   try {
     // First, try to get existing settings
-    const existingSettings = await getShopSettings(shopId);
+    // Note: We bypass cache here to ensure we get latest DB state for updates
+    const { data: existingSettings } = await supabaseClient
+      .from('shop_settings')
+      .select('id')
+      .eq('shop_id', shopId)
+      .single();
+
+    let result: ShopSettings;
 
     if (existingSettings) {
       // Update existing settings
@@ -210,7 +219,7 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     } else {
       // Create new settings
       const { data, error } = await supabaseClient
@@ -227,8 +236,17 @@ export async function upsertShopSettings(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     }
+
+    // Invalidate cache
+    await cacheDelete(REDIS_KEYS.SHOP(shopId));
+    if (result.subdomain) {
+      // Also invalidate subdomain lookup cache if it exists
+      await cacheDelete(REDIS_KEYS.SHOP_BY_SUBDOMAIN(result.subdomain));
+    }
+
+    return result;
   } catch (error: any) {
     logger.error(
       'Error upserting shop settings',
@@ -283,32 +301,33 @@ export async function uploadShopLogo(shopId: string, file: File): Promise<string
  * Get active theme
  */
 export async function getActiveTheme(shopId: string): Promise<Theme | null> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('themes')
-      .select('*')
-      .eq('shop_id', shopId)
-      .eq('is_active', true)
-      .single();
+  return cacheGetOrSet(
+    `shop_theme:${shopId}`,
+    async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('themes')
+          .select('*')
+          .eq('shop_id', shopId)
+          .eq('is_active', true)
+          .single();
 
-    if (error) {
-      if (error?.code === 'PGRST116') {
-        return null;
+        if (error) {
+          if (error?.code === 'PGRST116') return null;
+          throw error;
+        }
+        return data;
+      } catch (error: any) {
+        logger.error(
+          'Error fetching active theme',
+          error instanceof Error ? error : new Error(String(error)),
+          { shopId }
+        );
+        throw error;
       }
-      throw error;
-    }
-
-    return data;
-  } catch (error: any) {
-    logger.error(
-      'Error fetching active theme',
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        shopId,
-      }
-    );
-    throw error;
-  }
+    },
+    { ttl: CACHE_TTL.SHOP }
+  );
 }
 
 /**
@@ -318,6 +337,7 @@ export async function upsertTheme(
   shopId: string,
   themeData: Partial<Omit<Theme, 'id' | 'shop_id' | 'created_at' | 'updated_at'>>
 ): Promise<Theme> {
+  let result: Theme;
   try {
     // If setting as active, deactivate other themes first
     if (themeData.is_active) {
@@ -325,7 +345,13 @@ export async function upsertTheme(
     }
 
     // Check if there's already an active theme
-    const existingTheme = await getActiveTheme(shopId);
+    // Direct DB check to avoid stale cache
+    const { data: existingTheme } = await supabaseClient
+      .from('themes')
+      .select('id')
+      .eq('shop_id', shopId)
+      .eq('is_active', true)
+      .single();
 
     if (existingTheme) {
       // Update existing theme
@@ -340,7 +366,7 @@ export async function upsertTheme(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     } else {
       // Create new theme
       const { data, error } = await supabaseClient
@@ -357,8 +383,13 @@ export async function upsertTheme(
         .single();
 
       if (error) throw error;
-      return data;
+      result = data;
     }
+
+    // Invalidate cache
+    await cacheDelete(`shop_theme:${shopId}`);
+
+    return result;
   } catch (error: any) {
     logger.error(
       'Error upserting theme',
@@ -379,29 +410,34 @@ export async function upsertTheme(
  * Get all pages
  */
 export async function getPages(shopId: string, isPublished?: boolean): Promise<Page[]> {
-  try {
-    let query = supabaseClient.from('pages').select('*').eq('shop_id', shopId);
+  const key = `shop_pages:${shopId}:${isPublished === undefined ? 'all' : isPublished}`;
+  return cacheGetOrSet(
+    key,
+    async () => {
+      try {
+        let query = supabaseClient.from('pages').select('*').eq('shop_id', shopId);
 
-    if (isPublished !== undefined) {
-      query = query.eq('is_published', isPublished);
-    }
+        if (isPublished !== undefined) {
+          query = query.eq('is_published', isPublished);
+        }
 
-    query = query.order('sort_order', { ascending: true });
+        query = query.order('sort_order', { ascending: true });
 
-    const { data, error } = await query;
+        const { data, error } = await query;
 
-    if (error) throw error;
-    return data || [];
-  } catch (error: any) {
-    logger.error(
-      'Error fetching pages',
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        shopId,
+        if (error) throw error;
+        return data || [];
+      } catch (error: any) {
+        logger.error(
+          'Error fetching pages',
+          error instanceof Error ? error : new Error(String(error)),
+          { shopId }
+        );
+        throw error;
       }
-    );
-    throw error;
-  }
+    },
+    { ttl: CACHE_TTL.SHOP }
+  );
 }
 
 /**

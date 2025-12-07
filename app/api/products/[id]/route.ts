@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
+import { cacheGetOrSet, cacheDelete, REDIS_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 
 /**
  * Get single product
@@ -9,20 +10,27 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   try {
     const { id } = params;
 
-    const { data: product, error } = await supabaseClient
-      .from('products')
-      .select(
-        `
-        *,
-        category:categories(id, name),
-        images:product_images(*),
-        variants:product_variants(*)
-      `
-      )
-      .eq('id', id)
-      .single();
+    const product = await cacheGetOrSet(
+      REDIS_KEYS.PRODUCT(id),
+      async () => {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select(
+            `
+            *,
+            category:categories(id, name),
+            images:product_images(*),
+            variants:product_variants(*)
+          `
+          )
+          .eq('id', id)
+          .single();
 
-    if (error) throw error;
+        if (error) throw error;
+        return data;
+      },
+      { ttl: CACHE_TTL.PRODUCT }
+    );
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
@@ -88,6 +96,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     if (error) throw error;
 
+    // Invalidate product cache
+    await cacheDelete(REDIS_KEYS.PRODUCT(id));
+
     logger.info('Product updated', { productId: id });
 
     return NextResponse.json({ success: true, product: updatedProduct });
@@ -142,6 +153,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       .eq('id', id);
 
     if (error) throw error;
+
+    // Invalidate product cache
+    await cacheDelete(REDIS_KEYS.PRODUCT(id));
 
     logger.info('Product deleted', { productId: id });
 
