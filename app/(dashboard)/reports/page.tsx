@@ -33,11 +33,23 @@ export default function Reports() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setLoading(false);
+        return;
+      }
+
       // Fetch orders for analytics
       const { data: orders, error: ordersError } = await supabaseClient
         .from('orders')
         .select('total, created_at, status')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;

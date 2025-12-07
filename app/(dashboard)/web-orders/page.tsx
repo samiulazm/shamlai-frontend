@@ -25,10 +25,19 @@ export default function WebOrders() {
       } = await supabaseClient.auth.getUser();
       if (!user?.id) return;
 
-      setShopId(user.id);
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!shop) return;
+
+      setShopId(shop.shop_id);
 
       // Fetch web orders (orders with source='web')
-      const response = await OrderService.getOrders(user.id, {
+      const response = await OrderService.getOrders(shop.shop_id, {
         page: 1,
         pageSize: 100,
       });
@@ -267,13 +276,12 @@ export default function WebOrders() {
                       </td>
                       <td>
                         <span
-                          className={`badge text-xs ${
-                            order.payment_status === 'paid'
+                          className={`badge text-xs ${order.payment_status === 'paid'
                               ? 'bg-green-100 text-green-800'
                               : order.payment_status === 'pending'
                                 ? 'bg-yellow-100 text-yellow-800'
                                 : 'bg-red-100 text-red-800'
-                          }`}
+                            }`}
                         >
                           {order.payment_status}
                         </span>

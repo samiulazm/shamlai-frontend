@@ -43,6 +43,22 @@ export default function Orders() {
 
       setShopId(user.id);
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        // Handle no shop case
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
+      setShopId(shop.shop_id);
+
       // Fetch orders using the service
       const filters: any = {
         page: pagination.page,
@@ -57,7 +73,7 @@ export default function Orders() {
         filters.deliveryMethod = selectedDeliveryMethod;
       }
 
-      const response = await OrderService.getOrders(user.id, filters);
+      const response = await OrderService.getOrders(shop.shop_id, filters);
 
       setOrders(response.data || []);
       setPagination({

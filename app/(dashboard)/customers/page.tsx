@@ -34,11 +34,25 @@ export default function Customers() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        // Handle no shop case
+        setCustomers([]);
+        setLoading(false);
+        return;
+      }
+
       // Fetch customers from the database
       const { data: customersData, error: customersError } = await supabaseClient
         .from('customers')
         .select('*')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('created_at', { ascending: false });
 
       if (customersError) {
@@ -50,7 +64,7 @@ export default function Customers() {
       const { data: ordersData, error: ordersError } = await supabaseClient
         .from('orders')
         .select('customer_id, total, created_at')
-        .eq('shop_id', user.id);
+        .eq('shop_id', shop.shop_id);
 
       if (ordersError) {
         logger.warn(
@@ -79,10 +93,10 @@ export default function Customers() {
         const lastOrderDate =
           customerOrders.length > 0
             ? customerOrders.reduce((latest, order) => {
-                const orderDate = new Date(order.created_at).getTime();
-                const latestDate = latest ? new Date(latest).getTime() : 0;
-                return orderDate > latestDate ? order.created_at : latest;
-              }, customerOrders[0].created_at)
+              const orderDate = new Date(order.created_at).getTime();
+              const latestDate = latest ? new Date(latest).getTime() : 0;
+              return orderDate > latestDate ? order.created_at : latest;
+            }, customerOrders[0].created_at)
             : undefined;
 
         return {

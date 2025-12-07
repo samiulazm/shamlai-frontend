@@ -53,24 +53,36 @@ export default function Dashboard() {
       } = await supabaseClient.auth.getUser();
       if (!user) return;
 
-      // Set shop ID (user's ID is the shop ID)
-      setShopId(user.id);
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setLoading(false);
+        return;
+      }
+
+      // Set shop ID (slug)
+      setShopId(shop.shop_id);
 
       // Fetch enhanced dashboard stats
-      const dashboardStats = await getDashboardStats(user.id, dateRange || undefined);
+      const dashboardStats = await getDashboardStats(shop.shop_id, dateRange || undefined);
       setStats(dashboardStats);
 
       // Fetch orders for charts
       const { data: orders } = await supabaseClient
         .from('orders')
         .select('*')
-        .eq('shop_id', user.id);
+        .eq('shop_id', shop.shop_id);
 
       // Fetch top products
       const { data: products } = await supabaseClient
         .from('products')
         .select('id, name, base_price')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .eq('is_active', true)
         .limit(5);
 
