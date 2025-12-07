@@ -55,6 +55,9 @@ export async function middleware(request: NextRequest) {
   if (!isReservedPath(pathname)) {
     // Configure your root domain via env. Example: "yourdomain.com"
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
+    if (!rootDomain) {
+      console.warn('NEXT_PUBLIC_ROOT_DOMAIN is not set. Subdomain routing will not work.');
+    }
     const sub = extractSubdomain(hostname, rootDomain);
 
     if (sub) {
