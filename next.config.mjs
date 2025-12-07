@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 import crypto from 'crypto';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = {
   // Experimental features
@@ -166,16 +170,16 @@ const nextConfig = {
         tls: false,
         dns: false,
         child_process: false,
-        // Exclude Redis from client bundles (server-only)
-        ioredis: false,
       };
 
-      // Prevent ioredis and other server-only packages from being bundled
-      config.externals = config.externals || [];
-      config.externals.push({
-        ioredis: 'ioredis',
-      });
+      // Replace ioredis with an empty stub on client-side
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ioredis: path.resolve(__dirname, 'lib/stubs/ioredis.ts'),
+      };
     }
+
+
 
     // Production optimizations
     if (!dev && !isServer) {
