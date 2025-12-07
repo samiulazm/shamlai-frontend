@@ -5,6 +5,7 @@
  * Falls back gracefully to no-cache mode if Redis is unavailable.
  */
 
+import 'server-only';
 import { Redis } from 'ioredis';
 
 // Types
