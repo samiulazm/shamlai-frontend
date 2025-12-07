@@ -1,10 +1,58 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  getShopIdBySubdomain,
-  getSubdomainByShopId,
-  normalizeSubdomain,
-} from './lib/services/shop';
+import { normalizeSubdomain } from './lib/services/shop';
 import { createClient } from './utils/supabase/middleware';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
+// Edge-compatible Supabase client (no browser session persistence)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const edgeSupabase = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+
+// Edge-compatible subdomain lookup (returns user_id for storefront routing)
+async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
+  try {
+    const { data, error } = await edgeSupabase
+      .from('shop_settings')
+      .select('user_id')
+      .eq('subdomain', subdomain)
+      .single();
+    if (error) {
+      console.log('[Middleware] Subdomain lookup error:', error.message);
+      return null;
+    }
+    console.log('[Middleware] Found user_id for subdomain:', subdomain, '=>', data?.user_id);
+    return data?.user_id || null;
+  } catch (e) {
+    console.error('[Middleware] getShopIdBySubdomain exception:', e);
+    return null;
+  }
+}
+
+// Edge-compatible shop_id/user_id to subdomain lookup
+async function getSubdomainByShopId(id: string): Promise<string | null> {
+  try {
+    // Try by shop_id first
+    const { data, error } = await edgeSupabase
+      .from('shop_settings')
+      .select('subdomain')
+      .eq('shop_id', id)
+      .single();
+    if (!error && data?.subdomain) return data.subdomain;
+
+    // Try by user_id
+    const result = await edgeSupabase
+      .from('shop_settings')
+      .select('subdomain')
+      .eq('user_id', id)
+      .single();
+    if (result.error) return null;
+    return result.data?.subdomain || null;
+  } catch {
+    return null;
+  }
+}
 
 // Reserved hosts and paths that should bypass subdomain routing
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'static', 'assets', 'localhost']);
