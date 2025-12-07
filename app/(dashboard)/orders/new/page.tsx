@@ -57,10 +57,19 @@ export default function NewOrder() {
       } = await supabaseClient.auth.getUser();
       if (!user?.id) return;
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) return;
+
       const { data, error } = await supabaseClient
         .from('products')
         .select('id, name, price, sku, image_url')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .eq('status', 'active')
         .order('name');
 
@@ -136,9 +145,21 @@ export default function NewOrder() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       // Get or create customer
       const customer = await OrderService.getOrCreateCustomer(
-        user.id,
+        shop.shop_id,
         customerEmail,
         customerFirstName,
         customerLastName,
@@ -151,7 +172,7 @@ export default function NewOrder() {
       const total = calculateTotal();
 
       const orderData = {
-        shop_id: user.id,
+        shop_id: shop.shop_id,
         customer_id: customer.id,
         status,
         payment_status: 'pending' as const,

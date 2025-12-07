@@ -45,6 +45,18 @@ export default function Wishlists() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       // Fetch wishlists with customer and product information
       const { data: wishlistsData, error: wishlistsError } = await supabaseClient
         .from('wishlists')
@@ -55,7 +67,7 @@ export default function Wishlists() {
           product:products(name, base_price, inventory_quantity)
         `
         )
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('created_at', { ascending: false });
 
       if (wishlistsError) {

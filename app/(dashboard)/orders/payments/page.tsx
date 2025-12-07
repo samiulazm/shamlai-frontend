@@ -51,6 +51,18 @@ export default function OrderPayments() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       // Build query
       let query = supabaseClient
         .from('payments')
@@ -60,7 +72,7 @@ export default function OrderPayments() {
           order:orders(order_number, customer_id)
         `
         )
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('created_at', { ascending: false });
 
       // Apply filter

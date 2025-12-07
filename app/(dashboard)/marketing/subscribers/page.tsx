@@ -40,11 +40,23 @@ export default function EmailSubscribers() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       // Build query
       let query = supabaseClient
         .from('email_subscribers')
         .select('*')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('subscribed_at', { ascending: false });
 
       // Apply filter

@@ -30,12 +30,21 @@ export default function DecreaseStock() {
       } = await supabaseClient.auth.getUser();
       if (!user?.id) return;
 
-      setShopId(user.id);
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) return;
+
+      setShopId(shop.shop_id);
 
       const { data: productsData } = await supabaseClient
         .from('products')
         .select('*')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .eq('is_active', true)
         .order('name');
 

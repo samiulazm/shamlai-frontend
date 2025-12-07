@@ -37,12 +37,24 @@ export default function OrderDetail() {
         return;
       }
 
-      setShopId(user.id);
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
+      setShopId(shop.shop_id);
 
       // Fetch order with items
       const orderData = await OrderService.getOrderById(orderId);
 
-      if (!orderData || orderData.shop_id !== user.id) {
+      if (!orderData || orderData.shop_id !== shop.shop_id) {
         setError('Order not found');
         return;
       }

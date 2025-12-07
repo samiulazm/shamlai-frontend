@@ -37,11 +37,23 @@ export default function Chatbot() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       // Fetch chatbot conversations with message count
       const { data: convData, error: convError } = await supabaseClient
         .from('chatbot_conversations')
         .select('*, chatbot_messages(id, created_at)')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('updated_at', { ascending: false })
         .limit(10);
 
