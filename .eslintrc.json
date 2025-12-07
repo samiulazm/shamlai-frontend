@@ -1,25 +1,18 @@
 {
-  "extends": [
-    "next/core-web-vitals"
-  ],
+  "root": true,
+  "extends": ["next/core-web-vitals"],
   "rules": {
-    // React specific
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
-    
-    // General (warnings only for production builds)
     "no-console": "off",
     "prefer-const": "warn",
     "no-var": "warn",
     "eqeqeq": "off",
     "curly": "off",
-    
-    // Next.js specific
     "@next/next/no-html-link-for-pages": "error",
     "@next/next/no-img-element": "warn",
     "react/no-unescaped-entities": "warn"
   }
 }
-
