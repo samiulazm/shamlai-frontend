@@ -66,19 +66,27 @@ export async function middleware(request: NextRequest) {
     const sub = extractSubdomain(hostname, rootDomain);
 
     if (sub) {
-      // Avoid loops if already rewritten to /<shopId>
-      // Shop IDs are now 8-10 digit numbers
-      const alreadyShopRouted = /^\/\d{8,10}(?:\/|$)/.test(pathname);
+      // Avoid loops if already rewritten to /<userId>
+      // User IDs are UUIDs (36 chars with hyphens) or 8-10 digit numbers
+      const uuidPattern =
+        /^\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?:\/|$)/i;
+      const numericPattern = /^\/\d{8,10}(?:\/|$)/;
+      const alreadyShopRouted = uuidPattern.test(pathname) || numericPattern.test(pathname);
+
       if (!alreadyShopRouted) {
-        const shopId = await getShopIdBySubdomain(sub);
-        if (shopId) {
-          const rewritePath = pathname === '/' ? `/${shopId}` : `/${shopId}${pathname}`;
+        const userId = await getShopIdBySubdomain(sub);
+        console.log('[Middleware] Subdomain lookup:', { subdomain: sub, userId });
+
+        if (userId) {
+          const rewritePath = pathname === '/' ? `/${userId}` : `/${userId}${pathname}`;
           const url = nextUrl.clone();
           url.pathname = rewritePath;
+          console.log('[Middleware] Rewriting to:', rewritePath);
           return NextResponse.rewrite(url);
         } else if (rootDomain) {
           // If a subdomain is present but no matching shop exists in the database,
           // redirect the visitor back to the main marketing site on the root domain.
+          console.log('[Middleware] No shop found for subdomain, redirecting to root');
           const url = new URL(`https://${rootDomain}${pathname}`);
           return NextResponse.redirect(url);
         }
