@@ -123,17 +123,31 @@ export async function getShopIdBySubdomain(subdomain: string): Promise<string | 
 }
 
 /**
- * Resolve a subdomain by shop ID.
+ * Resolve a subdomain by shop ID or user ID.
+ * The storefront URL may use either the shop_id or user_id.
  */
-export async function getSubdomainByShopId(shopId: string): Promise<string | null> {
+export async function getSubdomainByShopId(id: string): Promise<string | null> {
   try {
+    // First try by shop_id
     const { data, error } = await supabaseClient
       .from('shop_settings')
       .select('subdomain')
-      .eq('shop_id', shopId)
+      .eq('shop_id', id)
       .single();
-    if (error) return null;
-    return data?.subdomain || null;
+
+    if (!error && data?.subdomain) {
+      return data.subdomain;
+    }
+
+    // If not found, try by user_id
+    const result = await supabaseClient
+      .from('shop_settings')
+      .select('subdomain')
+      .eq('user_id', id)
+      .single();
+
+    if (result.error) return null;
+    return result.data?.subdomain || null;
   } catch {
     return null;
   }
