@@ -16,6 +16,19 @@ export async function GET(request: NextRequest) {
 
     const user = data.user;
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
+    const shopId = shop.shop_id;
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q');
     const type = searchParams.get('type'); // 'products', 'orders', 'customers', or 'all'
@@ -39,7 +52,7 @@ export async function GET(request: NextRequest) {
       const { data: products } = await supabaseClient
         .from('products')
         .select('id, name, sku, barcode, price, stock_quantity, image_url')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shopId)
         .or(
           `name.ilike.%${query}%,sku.ilike.%${query}%,barcode.ilike.%${query}%,description.ilike.%${query}%`
         )
@@ -53,7 +66,7 @@ export async function GET(request: NextRequest) {
       const { data: orders } = await supabaseClient
         .from('orders')
         .select('id, order_number, customer_email, total, status, created_at')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shopId)
         .or(
           `order_number.ilike.%${query}%,customer_email.ilike.%${query}%,customer_first_name.ilike.%${query}%,customer_last_name.ilike.%${query}%,customer_phone.ilike.%${query}%`
         )
@@ -68,7 +81,7 @@ export async function GET(request: NextRequest) {
       const { data: customers } = await supabaseClient
         .from('customers')
         .select('id, first_name, last_name, email, phone, total_orders, total_spent')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shopId)
         .or(
           `email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`
         )

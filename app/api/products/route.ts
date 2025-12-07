@@ -74,6 +74,17 @@ export async function POST(request: NextRequest) {
 
     const user = data.user;
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -94,7 +105,7 @@ export async function POST(request: NextRequest) {
     const { data: product, error } = await supabaseClient
       .from('products')
       .insert({
-        shop_id: user.id,
+        shop_id: shop.shop_id,
         name,
         description,
         price,

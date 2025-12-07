@@ -45,8 +45,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
     // Verify ownership
-    if (order.shop_id !== user.id) {
+    if (order.shop_id !== shop.shop_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

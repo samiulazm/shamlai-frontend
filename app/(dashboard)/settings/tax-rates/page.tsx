@@ -49,11 +49,25 @@ export default function TaxRates() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
+      const shopId = shop.shop_id;
+
       // Fetch tax rates
       const { data: taxRatesData, error: taxRatesError } = await supabaseClient
         .from('tax_rates')
         .select('*')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shopId)
         .order('is_default', { ascending: false })
         .order('tax_name', { ascending: true });
 
@@ -82,15 +96,29 @@ export default function TaxRates() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        alert('Shop not found');
+        return;
+      }
+
+      const shopId = shop.shop_id;
+
       // If this is set as default, unset other defaults first
       if (formData.is_default) {
-        await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', user.id);
+        await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', shopId);
       }
 
       // Save tax rate
       const { error } = await supabaseClient.from('tax_rates').insert({
         ...formData,
-        shop_id: user.id,
+        shop_id: shopId,
       });
 
       if (error) throw error;
@@ -140,8 +168,19 @@ export default function TaxRates() {
       } = await supabaseClient.auth.getUser();
       if (!user?.id) return;
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) return;
+
+      const shopId = shop.shop_id;
+
       // Unset all defaults
-      await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', user.id);
+      await supabaseClient.from('tax_rates').update({ is_default: false }).eq('shop_id', shopId);
 
       // Set new default
       const { error } = await supabaseClient

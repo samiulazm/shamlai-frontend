@@ -41,7 +41,19 @@ export default function Promos() {
         return;
       }
 
-      const response = await MarketingService.getDiscountCodes(user.id, {
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
+      const response = await MarketingService.getDiscountCodes(shop.shop_id, {
         page: 1,
         pageSize: 50,
       });
@@ -78,8 +90,20 @@ export default function Promos() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        setError('Shop not found');
+        return;
+      }
+
       await MarketingService.createDiscountCode({
-        shop_id: user.id,
+        shop_id: shop.shop_id,
         code: formData.code.toUpperCase(),
         discount_type: formData.discount_type,
         discount_value: formData.discount_value,

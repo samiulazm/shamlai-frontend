@@ -19,7 +19,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Check authorization (either shop owner or customer)
     if (data?.user) {
       const user = data.user;
-      if (order.shop_id !== user.id && order.customer?.user_id !== user.id) {
+
+      // Fetch shop_id for the current user
+      const { data: shop } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const userShopId = shop?.shop_id;
+
+      if (order.shop_id !== userShopId && order.customer?.user_id !== user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } else {
@@ -53,6 +63,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const user = data.user;
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
     // Verify ownership
     const { data: order } = await supabaseClient
       .from('orders')
@@ -60,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .eq('id', id)
       .single();
 
-    if (!order || order.shop_id !== user.id) {
+    if (!order || order.shop_id !== shop.shop_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

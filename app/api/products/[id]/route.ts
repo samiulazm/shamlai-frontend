@@ -51,6 +51,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const user = data.user;
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
     // Verify ownership
     const { data: product } = await supabaseClient
       .from('products')
@@ -58,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .eq('id', id)
       .single();
 
-    if (!product || product.shop_id !== user.id) {
+    if (!product || product.shop_id !== shop.shop_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -102,6 +113,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const user = data.user;
 
+    // Fetch shop_id for the current user
+    const { data: shop, error: shopError } = await supabaseClient
+      .from('shop_settings')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (shopError || !shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
     // Verify ownership
     const { data: product } = await supabaseClient
       .from('products')
@@ -109,7 +131,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       .eq('id', id)
       .single();
 
-    if (!product || product.shop_id !== user.id) {
+    if (!product || product.shop_id !== shop.shop_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
