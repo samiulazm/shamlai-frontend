@@ -16,6 +16,7 @@ export default function Categories() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [shopId, setShopId] = useState<string>('');
   const [addingCategory, setAddingCategory] = useState(false);
 
   useEffect(() => {
@@ -34,7 +35,29 @@ export default function Categories() {
         return;
       }
 
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (shop) {
+        setShopId(shop.shop_id);
+      } else {
+        // If user has no shop, logging error.
+        logger.warn('No shop found for user', new Error('User has no associated shop_id'));
+        // We might want to stop here if shop_id is strictly required for fetching categories too?
+        // Yes, technically categories also have RLS on shop_id.
+        // But the SELECT query below doesn't filter by shop_id explicitly in the client code?
+        // Wait, the RLS policy filters rows based on auth.uid() -> shop_settings -> shop_id.
+        // So the SELECT * will return empty if no policy matches.
+        // BUT when we insert, we must provide shop_id.
+      }
+
+
       // Fetch categories from the database
+      // RLS will automatically filter by the user's shop_id logic
       const { data: categoriesData, error: categoriesError } = await supabaseClient
         .from('categories')
         .select('*')
@@ -84,21 +107,23 @@ export default function Categories() {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
+    if (!shopId) {
+      setError('Shop ID missing. Cannot create category.');
+      return;
+    }
+
     try {
       setAddingCategory(true);
 
-      // Get current user
-      const { data: user } = await supabaseClient.auth.getUser();
-      if (!user?.user?.id) {
-        setError('User not authenticated');
-        return;
-      }
+      // Get current user (Double check, or just rely on session?)
+      // We already have shopId from state.
 
       // Create new category
       const { data, error } = await supabaseClient
         .from('categories')
         .insert([
           {
+            shop_id: shopId, // Inject shop_id
             name: newCategoryName.trim(),
             description: newCategoryDescription.trim() || null,
             slug: newCategoryName

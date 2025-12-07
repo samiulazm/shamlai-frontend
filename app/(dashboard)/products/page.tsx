@@ -29,11 +29,24 @@ export default function Products() {
         return;
       }
 
-      // Fetch products using the service
-      const productsData = await ProductService.getProducts(user.id, {
+      // Fetch shop_id for the current user
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        // If no shop, they can't have products yet (or haven't set up shop)
+        setProducts([]);
+        return;
+      }
+
+      // Fetch products using the service, passing the correct shop_id slug
+      const productsData = await ProductService.getProducts(shop.shop_id, {
         page: 1,
         pageSize: 50,
-        isActive: true,
+        isActive: undefined, // Show all (active and inactive) for dashboard
       });
 
       setProducts(productsData.data || []);
