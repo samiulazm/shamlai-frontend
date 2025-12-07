@@ -123,6 +123,23 @@ export async function getShopIdBySubdomain(subdomain: string): Promise<string | 
 }
 
 /**
+ * Resolve a subdomain by shop ID.
+ */
+export async function getSubdomainByShopId(shopId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('shop_settings')
+      .select('subdomain')
+      .eq('shop_id', shopId)
+      .single();
+    if (error) return null;
+    return data?.subdomain || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get shop settings
  */
 export async function getShopSettings(shopId: string): Promise<ShopSettings | null> {

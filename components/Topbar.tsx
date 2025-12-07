@@ -10,19 +10,28 @@ interface TopbarProps {
   title?: string;
   user?: any;
   shopId?: string;
+  subdomain?: string;
 }
 
-export default function Topbar({ title, user, shopId }: TopbarProps) {
+export default function Topbar({ title, user, shopId, subdomain }: TopbarProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  // Generate storefront URL - prefer subdomain URL over path-based
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'shamlai.co';
+  const storefrontUrl = subdomain
+    ? `https://${subdomain}.${rootDomain}/`
+    : shopId
+      ? `/${shopId}`
+      : null;
+
   // Debug: Log shop ID when it changes (development only)
   useEffect(() => {
     if (shopId && process.env.NODE_ENV === 'development') {
-      logger.debug('Shop ID loaded', { shopId, storefrontUrl: `/${shopId}` });
+      logger.debug('Shop ID loaded', { shopId, subdomain, storefrontUrl });
     }
-  }, [shopId]);
+  }, [shopId, subdomain, storefrontUrl]);
 
   const handleLogout = async () => {
     try {
@@ -72,9 +81,22 @@ export default function Topbar({ title, user, shopId }: TopbarProps) {
           <span className="font-semibold">{title ?? 'Shamlai'}</span>
         </div>
         <div className="flex items-center gap-3">
-          {shopId ? (
+          {subdomain ? (
+            // External subdomain URL - use regular anchor
+            <a
+              href={storefrontUrl || '#'}
+              className="btn btn-outline"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View your storefront in a new tab"
+            >
+              <Store className="h-4 w-4 mr-2" />
+              View Storefront
+            </a>
+          ) : shopId ? (
+            // Internal path - use Next.js Link (will redirect to subdomain via middleware)
             <Link
-              href={`/${shopId}`}
+              href={`/${shopId}` as any}
               className="btn btn-outline"
               target="_blank"
               rel="noopener noreferrer"

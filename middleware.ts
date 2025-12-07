@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getShopIdBySubdomain, normalizeSubdomain } from './lib/services/shop';
+import {
+  getShopIdBySubdomain,
+  getSubdomainByShopId,
+  normalizeSubdomain,
+} from './lib/services/shop';
 import { createClient } from './utils/supabase/middleware';
 
 // Reserved hosts and paths that should bypass subdomain routing
@@ -51,10 +55,11 @@ export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
   const { pathname, hostname } = nextUrl;
 
+  // Configure your root domain via env. Example: "yourdomain.com"
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
+
   // --- Subdomain routing for storefronts ---
   if (!isReservedPath(pathname)) {
-    // Configure your root domain via env. Example: "yourdomain.com"
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
     if (!rootDomain) {
       console.warn('NEXT_PUBLIC_ROOT_DOMAIN is not set. Subdomain routing will not work.');
     }
@@ -78,6 +83,21 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(url);
         }
       }
+    }
+  }
+
+  // --- Redirect shop ID paths to subdomain URLs ---
+  // Pattern: /uuid or /uuid/... or /8-10 digit shop ID
+  const shopIdPathMatch = pathname.match(
+    /^\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|\d{8,10})(\/.*)?$/i
+  );
+  if (shopIdPathMatch && rootDomain) {
+    const shopId = shopIdPathMatch[1];
+    const restPath = shopIdPathMatch[2] || '';
+    const subdomain = await getSubdomainByShopId(shopId);
+    if (subdomain) {
+      const redirectUrl = `https://${subdomain}.${rootDomain}${restPath}`;
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

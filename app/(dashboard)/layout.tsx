@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [shopName, setShopName] = useState<string>('Shamlai');
   const [shopId, setShopId] = useState<string>('');
+  const [subdomain, setSubdomain] = useState<string>('');
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
@@ -115,6 +116,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           // Update document title
           document.title = `${shopSettings.shop_name} - Dashboard`;
         }
+        if (shopSettings?.subdomain) {
+          setSubdomain(shopSettings.subdomain);
+        }
       } catch (shopErr) {
         logger.error(
           'Error fetching shop settings',
@@ -166,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ThemeProvider initialTheme={theme}>
       <ThemeInjector />
       <div className="min-h-screen bg-gray-50">
-        <Topbar title={shopName} user={user} shopId={shopId} />
+        <Topbar title={shopName} user={user} shopId={shopId} subdomain={subdomain} />
         <div className="flex">
           <Sidebar />
           <main className="flex-1">
