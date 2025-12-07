@@ -101,7 +101,11 @@ const storefrontPattern = /^\/[a-zA-Z0-9_-]+(?:\/(?:product|cart|checkout|order)
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
-  const { pathname, hostname } = nextUrl;
+  const { pathname } = nextUrl;
+
+  // Get the actual hostname from headers (Heroku uses proxy, nextUrl.hostname is '0.0.0.0')
+  const hostname =
+    request.headers.get('x-forwarded-host') || request.headers.get('host') || nextUrl.hostname;
 
   // Configure your root domain via env. Example: "yourdomain.com"
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || '';
