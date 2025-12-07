@@ -11,11 +11,14 @@ export default function Domain() {
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newDomain, setNewDomain] = useState('');
+  const [currentSubdomain, setCurrentSubdomain] = useState<string>('');
+  const [currentShopId, setCurrentShopId] = useState<string>('');
 
   useEffect(() => {
     fetchDomains();
   }, []);
 
+  // Fetch shop details and custom domains
   const fetchDomains = async () => {
     try {
       setLoading(true);
@@ -29,15 +32,33 @@ export default function Domain() {
         return;
       }
 
-      // Fetch custom domains
+      // Fetch shop settings to get subdomain and shop_id
+      const { data: shop, error: shopError } = await supabaseClient
+        .from('shop_settings')
+        .select('shop_id, subdomain')
+        .eq('user_id', user.id)
+        .single();
+
+      if (shopError || !shop) {
+        throw new Error('Shop not found');
+      }
+
+      // Fetch custom domains using proper shop_id
       const { data: domainsData, error: domainsError } = await supabaseClient
         .from('custom_domains')
         .select('*')
-        .eq('shop_id', user.id)
+        .eq('shop_id', shop.shop_id)
         .order('created_at', { ascending: false });
 
       if (domainsError) throw domainsError;
       setDomains(domainsData || []);
+
+      // Store shop subclass/subdomain for display if needed
+      // For now we just use it in the render logic via a separate state or just keeping the shop object if we fetched it.
+      // Better to store the current shop subdomain in a state if we want to display it.
+      setCurrentSubdomain(shop.subdomain);
+      setCurrentShopId(shop.shop_id);
+
     } catch (err: any) {
       logger.error('Error fetching domains', err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'Failed to fetch domains');
@@ -52,24 +73,21 @@ export default function Domain() {
       return;
     }
 
+    if (!currentShopId) {
+      setError('Shop ID not loaded');
+      return;
+    }
+
     try {
       setVerifying(true);
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!user?.id) {
-        setError('User not authenticated');
-        return;
-      }
-
-      // Create domain record
+      // Create domain record using currentShopId
       const { data, error: domainError } = await supabaseClient
         .from('custom_domains')
         .insert([
           {
-            shop_id: user.id,
+            shop_id: currentShopId,
             domain: newDomain.trim(),
             is_verified: false,
             is_active: false,
@@ -104,7 +122,8 @@ export default function Domain() {
   }
 
   // Get default domain from shop settings or use placeholder
-  const defaultDomain = domains.find((d) => d.is_primary)?.domain || 'eterni.shamlai.com';
+  const primaryCustomDomain = domains.find((d) => d.is_primary)?.domain;
+  const defaultDomain = primaryCustomDomain || (currentSubdomain ? `${currentSubdomain}.shamlai.co` : 'Checking...');
 
   return (
     <div className="grid gap-4">
