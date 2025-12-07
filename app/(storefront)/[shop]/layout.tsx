@@ -98,8 +98,8 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
           return;
         }
 
-        const cart = await CartService.getOrCreateCart(undefined, sessionId);
-        const cartWithItems = await CartService.getCartWithItems(cart.id);
+        const cart = await CartService.getOrCreateCart(undefined, sessionId, shopId);
+        const cartWithItems = await CartService.getCartWithItems(cart.id, sessionId);
 
         const itemCount = cartWithItems.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
         setCartItemCount(itemCount);

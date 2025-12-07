@@ -52,8 +52,8 @@ export default function Cart() {
         return;
       }
 
-      const cart = await CartService.getOrCreateCart(undefined, sessionId);
-      const cartWithItems = await CartService.getCartWithItems(cart.id);
+      const cart = await CartService.getOrCreateCart(undefined, sessionId, shopId);
+      const cartWithItems = await CartService.getCartWithItems(cart.id, sessionId);
 
       setCartItems(cartWithItems.items || []);
       setSubtotal(cartWithItems.subtotal || 0);
@@ -74,7 +74,8 @@ export default function Cart() {
 
     try {
       setUpdating(itemId);
-      await CartService.updateCartItemQuantity(itemId, newQuantity);
+      const sessionId = typeof window !== 'undefined' ? getOrCreateCartSessionId() : undefined;
+      await CartService.updateCartItemQuantity(itemId, newQuantity, sessionId);
       await fetchCart();
       dispatchCartUpdatedEvent({ action: 'update-item' });
     } catch (err: any) {
@@ -88,7 +89,8 @@ export default function Cart() {
   const removeItem = async (itemId: string) => {
     try {
       setUpdating(itemId);
-      await CartService.removeFromCart(itemId);
+      const sessionId = typeof window !== 'undefined' ? getOrCreateCartSessionId() : undefined;
+      await CartService.removeFromCart(itemId, sessionId);
       await fetchCart();
       dispatchCartUpdatedEvent({ action: 'remove-item' });
     } catch (err: any) {
