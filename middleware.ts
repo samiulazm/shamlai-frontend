@@ -1,54 +1,54 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { normalizeSubdomain } from './lib/utils/subdomain';
 import { createClient } from './utils/supabase/middleware';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseAnonKey, getSupabaseUrl } from './utils/supabase/env';
 
-// Edge-compatible Supabase client (no browser session persistence)
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const edgeSupabase = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const restHeaders = (): HeadersInit | null => {
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+  if (!url || !key) return null;
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    Accept: 'application/json',
+  };
+};
 
-// Edge-compatible subdomain lookup (returns user_id for storefront routing)
+/** PostgREST fetch — avoids @supabase/supabase-js in Edge (realtime uses Node-only APIs). */
 async function getShopIdBySubdomain(subdomain: string): Promise<string | null> {
+  const headers = restHeaders();
+  if (!headers) return null;
   try {
-    const { data, error } = await edgeSupabase
-      .from('shop_settings')
-      .select('user_id')
-      .eq('subdomain', subdomain)
-      .single();
-    if (error) {
-      console.log('[Middleware] Subdomain lookup error:', error.message);
+    const base = getSupabaseUrl();
+    const q = `subdomain=eq.${encodeURIComponent(subdomain)}&select=user_id&limit=1`;
+    const res = await fetch(`${base}/rest/v1/shop_settings?${q}`, { headers });
+    if (!res.ok) {
+      console.log('[Middleware] Subdomain lookup error:', res.status);
       return null;
     }
-    console.log('[Middleware] Found user_id for subdomain:', subdomain, '=>', data?.user_id);
-    return data?.user_id || null;
+    const rows = (await res.json()) as { user_id?: string }[];
+    const userId = rows[0]?.user_id;
+    console.log('[Middleware] Found user_id for subdomain:', subdomain, '=>', userId);
+    return userId || null;
   } catch (e) {
     console.error('[Middleware] getShopIdBySubdomain exception:', e);
     return null;
   }
 }
 
-// Edge-compatible shop_id/user_id to subdomain lookup
 async function getSubdomainByShopId(id: string): Promise<string | null> {
+  const headers = restHeaders();
+  if (!headers) return null;
   try {
-    // Try by shop_id first
-    const { data, error } = await edgeSupabase
-      .from('shop_settings')
-      .select('subdomain')
-      .eq('shop_id', id)
-      .single();
-    if (!error && data?.subdomain) return data.subdomain;
-
-    // Try by user_id
-    const result = await edgeSupabase
-      .from('shop_settings')
-      .select('subdomain')
-      .eq('user_id', id)
-      .single();
-    if (result.error) return null;
-    return result.data?.subdomain || null;
+    const base = getSupabaseUrl();
+    for (const col of ['shop_id', 'user_id'] as const) {
+      const q = `${col}=eq.${encodeURIComponent(id)}&select=subdomain&limit=1`;
+      const res = await fetch(`${base}/rest/v1/shop_settings?${q}`, { headers });
+      if (!res.ok) continue;
+      const rows = (await res.json()) as { subdomain?: string }[];
+      if (rows[0]?.subdomain) return rows[0].subdomain;
+    }
+    return null;
   } catch {
     return null;
   }

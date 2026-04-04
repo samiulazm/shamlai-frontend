@@ -1,14 +1,11 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseAnonKey, getSupabaseUrl } from '@/utils/supabase/env';
 import { logger } from './utils/logger';
 
 // Supabase Backend Configuration
 // Note: Validation happens at runtime, not during build time
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_INSFORGE_URL ||
-  'http://119.40.88.49:7130';
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const SUPABASE_URL = getSupabaseUrl() || 'http://119.40.88.49:7130';
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
 // Validate environment variable at runtime (not during build)
 if (
