@@ -4,12 +4,14 @@ import { getOrderById } from '@/lib/services/orders';
 import { updateOrderWithWorkflow } from '@/lib/services/order-workflows';
 import { logger } from '@/lib/utils/logger';
 
+type RouteContext = { params: Promise<{ id: string }> };
+
 /**
  * Get single order
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get current user
     const { data } = await supabaseClient.auth.getUser();
@@ -50,9 +52,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 /**
  * Update order status
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get current user
     const { data } = await supabaseClient.auth.getUser();

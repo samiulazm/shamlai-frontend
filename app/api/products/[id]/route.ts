@@ -3,12 +3,14 @@ import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { cacheGetOrSet, cacheDelete, REDIS_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 
+type RouteContext = { params: Promise<{ id: string }> };
+
 /**
  * Get single product
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const product = await cacheGetOrSet(
       REDIS_KEYS.PRODUCT(id),
@@ -46,9 +48,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 /**
  * Update product
  */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get current user
     const { data } = await supabaseClient.auth.getUser();
@@ -111,9 +113,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 /**
  * Delete product
  */
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get current user
     const { data } = await supabaseClient.auth.getUser();

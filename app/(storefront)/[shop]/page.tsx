@@ -8,13 +8,13 @@ import { supabaseClient } from '@/lib/supabase';
 export const revalidate = 60; // Revalidate every 60 seconds
 
 interface PageProps {
-  params: {
+  params: Promise<{
     shop: string; // This is actually user_id in the current routing scheme
-  };
+  }>;
 }
 
 export default async function StoreHome({ params }: PageProps) {
-  const userId = params.shop;
+  const { shop: userId } = await params;
 
   // 1. Get Shop Settings first to get the actual shop_id
   // We need to fetch this to resolve user_id -> shop_id

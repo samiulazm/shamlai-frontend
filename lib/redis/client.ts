@@ -9,6 +9,7 @@
 import type { Redis } from '@upstash/redis';
 import type IORedis from 'ioredis';
 import { REDIS_KEYS, CACHE_TTL } from '../cache/redis';
+import { getIoredisConnectionOptions } from './ioredis-options';
 
 // Redis client instance (singleton)
 let redisClient: Redis | IORedis | null = null;
@@ -41,27 +42,19 @@ export async function getRedisClient(): Promise<Redis | IORedis> {
     return redisClient;
   }
 
-  // Option 2: Standard Redis connection string
+  // Option 2: Standard Redis / Render Key Value (redis:// or rediss:// + ioredis)
   if (process.env.REDIS_URL) {
     const IORedisModule = await import('ioredis');
     const IORedisConstructor = IORedisModule.default;
 
-    redisClient = new IORedisConstructor(process.env.REDIS_URL, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-      enableReadyCheck: true,
-      connectTimeout: 10000,
-    });
+    redisClient = new IORedisConstructor(process.env.REDIS_URL, getIoredisConnectionOptions());
 
     redisClient.on('error', (err) => {
       console.error('Redis connection error:', err);
     });
 
     redisClient.on('connect', () => {
-      console.log('✅ Redis client connected (Standard Redis)');
+      console.log('✅ Redis client connected (REDIS_URL / ioredis)');
     });
 
     return redisClient;

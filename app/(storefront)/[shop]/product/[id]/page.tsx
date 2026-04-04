@@ -9,14 +9,14 @@ import { logger } from '@/lib/utils/logger';
 export const revalidate = 60; // Revalidate every 60 seconds
 
 interface PageProps {
-  params: {
+  params: Promise<{
     shop: string; // user_id
     id: string; // product_id
-  };
+  }>;
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const { id: productId, shop: userId } = params;
+  const { id: productId, shop: userId } = await params;
 
   let product: any = null;
   let variants: any[] = [];

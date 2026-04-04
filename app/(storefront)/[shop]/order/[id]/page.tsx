@@ -8,10 +8,10 @@ import * as OrderService from '@/lib/services/orders';
 import { logger } from '@/lib/utils/logger';
 import type { Order, OrderItem } from '@/lib/types/database';
 
-export default function OrderConfirmation({ params }: { params: { id: string } }) {
+export default function OrderConfirmation() {
   const routerParams = useParams();
   const shopId = routerParams.shop as string;
-  const orderId = params.id;
+  const orderId = routerParams.id as string;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);

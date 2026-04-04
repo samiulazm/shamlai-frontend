@@ -9,6 +9,7 @@
  */
 
 import { Redis } from 'ioredis';
+import { getIoredisConnectionOptions } from '../redis/ioredis-options';
 
 // Types
 export interface CacheOptions {
@@ -88,13 +89,13 @@ export function initializeRedis(): void {
     }
 
     redisClient = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
+      ...getIoredisConnectionOptions(),
       retryStrategy: (times: number) => {
         if (times > 3) {
           console.error('Redis connection failed after 3 retries');
-          return null; // Stop retrying
+          return null;
         }
-        return Math.min(times * 100, 3000); // Exponential backoff
+        return Math.min(times * 100, 3000);
       },
       lazyConnect: true,
     });

@@ -6,14 +6,16 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = {
-  // Experimental features
+  // Next.js 16+: typed routes moved out of experimental
+  typedRoutes: true,
+
   experimental: {
-    typedRoutes: true,
     serverActions: {
-      allowedOrigins: process.env.NODE_ENV === 'production'
-        ? process.env.ALLOWED_ORIGINS?.split(',') || []
-        : ['localhost:3000', '127.0.0.1:3000']
-    }
+      allowedOrigins:
+        process.env.NODE_ENV === 'production'
+          ? process.env.ALLOWED_ORIGINS?.split(',') || []
+          : ['localhost:3000', '127.0.0.1:3000'],
+    },
   },
 
   // Production optimizations
@@ -21,14 +23,14 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  // Image optimization
+  // Image optimization (remotePatterns replaces deprecated `domains`)
   images: {
-    domains: [
-      'insforge.app',
-      '*.insforge.app',
-      'localhost',
-      'supabase.co',
-      '*.supabase.co',
+    remotePatterns: [
+      { protocol: 'https', hostname: 'insforge.app', pathname: '/**' },
+      { protocol: 'https', hostname: '*.insforge.app', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', pathname: '/**' },
+      { protocol: 'https', hostname: 'supabase.co', pathname: '/**' },
+      { protocol: 'https', hostname: '*.supabase.co', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
@@ -247,11 +249,6 @@ const nextConfig = {
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors. NOT RECOMMENDED for production.
     ignoreBuildErrors: false,
-  },
-  eslint: {
-    // Disable ESLint during production builds (Heroku/VPS)
-    // Run linting in development and CI/CD pipelines instead
-    ignoreDuringBuilds: true,
   },
 };
 
