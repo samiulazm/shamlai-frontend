@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
 import { normalizeSubdomain } from '@/lib/services/shop';
+import { formatApiErrorMessage } from '@/lib/utils/format-api-error-message';
 
 export default function Signup() {
   const router = useRouter();
@@ -38,7 +39,9 @@ export default function Signup() {
       const data = await response.json();
 
       if (!response.ok || data.error) {
-        setSubdomainError(data.error || 'Failed to check subdomain availability');
+        setSubdomainError(
+          formatApiErrorMessage(data.error, 'Failed to check subdomain availability')
+        );
         setSubdomainStatus('idle');
         return false;
       }
@@ -91,7 +94,7 @@ export default function Signup() {
       const signupData = await signupResponse.json();
 
       if (!signupResponse.ok) {
-        setError(signupData.error || 'Failed to create account');
+        setError(formatApiErrorMessage(signupData.error, 'Failed to create account'));
         setLoading(false);
         return;
       }
@@ -129,7 +132,7 @@ export default function Signup() {
           const shopData = await shopResponse.json();
 
           if (!shopResponse.ok) {
-            setError(shopData.error || 'Failed to create shop settings');
+            setError(formatApiErrorMessage(shopData.error, 'Failed to create shop settings'));
             setLoading(false);
             return;
           }

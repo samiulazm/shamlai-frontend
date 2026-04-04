@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase';
 import { logger } from '@/lib/utils/logger';
+import { formatApiErrorMessage } from '@/lib/utils/format-api-error-message';
 
 export default function Login() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function Login() {
       const signinData = await signinResponse.json();
 
       if (!signinResponse.ok) {
-        setError(signinData.error || 'Invalid email or password');
+        setError(formatApiErrorMessage(signinData.error, 'Invalid email or password'));
         setLoading(false);
         return;
       }
