@@ -5,6 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseAnonKey, getSupabaseUrl } from '@/utils/supabase/env';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '@/lib/errors/api-errors';
 import { ERROR_MESSAGES } from '@/lib/errors/error-messages';
 import { logger } from '@/lib/utils/logger';
@@ -162,17 +163,13 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
     // For Supabase, we need to set the session or create a client with the token
     // Create a temporary client with the token for validation
     const { createClient } = await import('@supabase/supabase-js');
-    const tempClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    const tempClient = createClient(getSupabaseUrl() || '', getSupabaseAnonKey() || '', {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      }
-    );
+      },
+    });
 
     const { data, error } = await tempClient.auth.getUser();
 

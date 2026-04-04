@@ -2,10 +2,8 @@ import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/utils/supabase/env';
 import { logger } from './utils/logger';
 
-// Supabase Backend Configuration
-// Note: Validation happens at runtime, not during build time
-const SUPABASE_URL = getSupabaseUrl() || 'http://119.40.88.49:7130';
-const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+// Fallback when `getSupabaseUrl()` is empty (set NEXT_PUBLIC_SUPABASE_URL on deploy when possible)
+const DEFAULT_SUPABASE_URL = 'https://rcnlwyofzyqjovifxzcf.supabase.co';
 
 // Validate environment variable at runtime (not during build)
 if (
@@ -17,15 +15,43 @@ if (
   console.warn('NEXT_PUBLIC_SUPABASE_URL environment variable is not set in production');
 }
 
-// Create and export the Supabase client with latest configuration
+function createSupabasePublicClient(): SupabaseClient {
+  const url = getSupabaseUrl() || DEFAULT_SUPABASE_URL;
+  const key = getSupabaseAnonKey();
+  if (!key) {
+    throw new Error(
+      'Missing Supabase anon key. Set NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or SUPABASE_ANON_KEY (see utils/supabase/env.ts).'
+    );
+  }
+  return createSupabaseClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+}
+
+let _supabasePublicClient: SupabaseClient | null = null;
+
+function getSupabasePublicInstance(): SupabaseClient {
+  if (!_supabasePublicClient) {
+    _supabasePublicClient = createSupabasePublicClient();
+  }
+  return _supabasePublicClient;
+}
+
+// Lazy client: avoids createClient('', '') at module load (breaks `next build` when env is missing).
 // NOTE: For client components, use createClient from '@/utils/supabase/client'
 // For server components, use createClient from '@/utils/supabase/server'
-// This is kept for backwards compatibility but new code should use the SSR pattern
-export const supabaseClient = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+export const supabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    const client = getSupabasePublicInstance();
+    const value = Reflect.get(client as object, prop, receiver);
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
   },
 });
 
@@ -51,12 +77,16 @@ export const getSupabaseServerClient = () => {
       return supabaseClient;
     }
 
-    _supabaseServerClient = createSupabaseClient(SUPABASE_URL, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    _supabaseServerClient = createSupabaseClient(
+      getSupabaseUrl() || DEFAULT_SUPABASE_URL,
+      serviceRoleKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
   }
 
   return _supabaseServerClient;

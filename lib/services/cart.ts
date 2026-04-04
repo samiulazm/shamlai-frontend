@@ -12,21 +12,22 @@ import type { Cart, CartItem, Product, ProductVariant } from '../types/database'
  * Get or create cart for user/session
  */
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAnonKey, getSupabaseUrl } from '@/utils/supabase/env';
 
 // Helper to get supabase client with session header
 const getCartClient = (sessionId?: string) => {
   if (!sessionId) return supabaseClient;
 
   // Re-create client with header
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_URL || 'http://119.40.88.49:7130';
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY || '';
+  const SUPABASE_URL = getSupabaseUrl() || 'http://119.40.88.49:7130';
+  const SUPABASE_ANON_KEY = getSupabaseAnonKey();
 
   return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: {
       headers: {
-        'x-session-id': sessionId
-      }
-    }
+        'x-session-id': sessionId,
+      },
+    },
   });
 };
 
@@ -115,9 +116,9 @@ export async function mergeGuestCart(guestSessionId: string, userId: string): Pr
       .eq('session_id', guestSessionId)
       .single();
 
-    // If no guest cart, just return/create the user cart (we need shopId, but assuming user has one or we handle it upstream? 
+    // If no guest cart, just return/create the user cart (we need shopId, but assuming user has one or we handle it upstream?
     // Actually, if no guest cart, we can't infer shopId easily here without more context.
-    // However, usually merge happens when *on* a shop. 
+    // However, usually merge happens when *on* a shop.
     // For now, if no guest cart, we try to find an existing user cart or fail if we can't create one without shopId.
     if (!guestCart) {
       // Try to find existing cart for user
@@ -177,7 +178,10 @@ export async function mergeGuestCart(guestSessionId: string, userId: string): Pr
  * Get cart with items and product details
  * Cached for 24 hours (carts don't change frequently for inactive users)
  */
-export async function getCartWithItems(cartId: string, sessionId?: string): Promise<
+export async function getCartWithItems(
+  cartId: string,
+  sessionId?: string
+): Promise<
   Cart & {
     items: (CartItem & {
       product: Product;
@@ -397,7 +401,11 @@ export async function addToCart(
 /**
  * Update cart item quantity
  */
-export async function updateCartItemQuantity(itemId: string, quantity: number, sessionId?: string): Promise<CartItem> {
+export async function updateCartItemQuantity(
+  itemId: string,
+  quantity: number,
+  sessionId?: string
+): Promise<CartItem> {
   try {
     if (quantity <= 0) {
       // Remove item if quantity is 0 or negative
@@ -495,11 +503,13 @@ export async function clearCart(cartId: string, sessionId?: string): Promise<voi
  * Merge guest cart with user cart after login
  */
 
-
 /**
  * Validate cart items (check availability and prices)
  */
-export async function validateCart(cartId: string, sessionId?: string): Promise<{
+export async function validateCart(
+  cartId: string,
+  sessionId?: string
+): Promise<{
   isValid: boolean;
   issues: Array<{
     itemId: string;
